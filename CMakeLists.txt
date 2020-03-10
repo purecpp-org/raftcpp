@@ -6,9 +6,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -pthread -std=c++17")
 
 set(raftcpp
         main.cpp
-        )
+   )
 
 add_executable(${project_name} ${raftcpp})
-include_directories(${Boost_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR})
+include_directories(
+        rest_rpc
+        rest_rpc/third/msgpack/include
+)
 
-target_link_libraries(${project_name} ${Boost_LIBRARIES} -lstdc++fs)
+target_link_libraries(${project_name} -lstdc++fs)
