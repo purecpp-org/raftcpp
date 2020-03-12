@@ -77,4 +77,4 @@ namespace raftcpp {
 
         MSGPACK_DEFINE(term, success, last_log_index);
     };
-} 
+}
