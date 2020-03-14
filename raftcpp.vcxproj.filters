@@ -23,9 +23,6 @@
     <ClInclude Include="enity.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="node.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="memory_log_store.hpp">
       <Filter>头文件</Filter>
     </ClInclude>

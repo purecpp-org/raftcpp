@@ -135,7 +135,6 @@
   <ItemGroup>
     <ClInclude Include="enity.h" />
     <ClInclude Include="memory_log_store.hpp" />
-    <ClInclude Include="node.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
