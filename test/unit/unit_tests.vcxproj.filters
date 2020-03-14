@@ -15,19 +15,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="memory_log_store_test.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="enity.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="node.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="memory_log_store.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>
