@@ -16,8 +16,8 @@ set(raftcpp_test
 
 add_executable(${project_name} ${raftcpp_test})
 include_directories(
-        rest_rpc
-        rest_rpc/third/msgpack/include
+        ../../rest_rpc
+        ../../rest_rpc/third/msgpack/include
 )
 
 target_link_libraries(${project_name} -lstdc++fs)
