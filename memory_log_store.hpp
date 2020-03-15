@@ -10,17 +10,17 @@ namespace raftcpp {
     public:
         memory_log_store() = default;
 
-        int64_t first_log_index() {
+        int64_t first_log_index() const {
             return start_idx_;
         }
 
-        int64_t last_log_index() {
-            std::unique_lock lock(mtx_);
+        int64_t last_log_index() const {
+            std::shared_lock lock(mtx_);
             return start_idx_ + logs_.size() - 1;
         }
 
-        std::pair<bool, log_entry> entry_at(int64_t index) {
-            std::unique_lock lock(mtx_);
+        std::pair<bool, log_entry> entry_at(int64_t index) const {
+            std::shared_lock lock(mtx_);
             if (auto it = logs_.find(index); it != logs_.end()) {
                 return { true, it->second };
             }
@@ -28,8 +28,8 @@ namespace raftcpp {
             return {};
         }
 
-        int64_t term_at(int64_t index) {
-            std::unique_lock lock(mtx_);
+        int64_t term_at(int64_t index) const {
+            std::shared_lock lock(mtx_);
             if (auto it = logs_.find(index); it != logs_.end()) {
                 return it->second.term;
             }
@@ -107,6 +107,6 @@ namespace raftcpp {
 
         std::atomic<int64_t> start_idx_ = {0};
         std::map<int64_t, log_entry> logs_;
-        std::shared_mutex mtx_;
+        mutable std::shared_mutex mtx_;
     };
 }
