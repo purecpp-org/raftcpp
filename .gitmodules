@@ -1,3 +1,0 @@
-[submodule "rest_rpc"]
-	path = rest_rpc
-	url = https://github.com/qicosmos/rest_rpc.git
