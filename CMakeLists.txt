@@ -1,9 +1,10 @@
-cmake_minimum_required(VERSION 3.0)
+﻿cmake_minimum_required(VERSION 3.0)
 set(project_name raftcpp)
 project(${project_name})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -pthread -std=c++17")
 
+SET(ENABLE_ASIO_STANDALONE ON)
 if(ENABLE_ASIO_STANDALONE)
 	add_definitions(-DASIO_STANDALONE)
 else()
@@ -16,8 +17,9 @@ set(raftcpp
 
 add_executable(${project_name} ${raftcpp})
 include_directories(
-        rest_rpc
-        rest_rpc/third/msgpack/include
+		thirdparty/asio/asio/include
+        thirdparty/rest_rpc
+        thirdparty/rest_rpc/third/msgpack/include
 )
 
 target_link_libraries(${project_name} -lstdc++fs)
