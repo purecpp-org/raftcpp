@@ -11,7 +11,7 @@ TEST_CASE("test append log entry") {
     memory_log_store mem_log_store;
     CHECK(mem_log_store.append_entry({}));
 
-    log_entry entry{ 1, EntryType::APP_LOG };
+    log_entry entry{ 1, EntryType::APPEND_LOG };
     CHECK(mem_log_store.append_entry({}));
     CHECK(mem_log_store.append_entry(entry));
     CHECK(mem_log_store.append_entry({2}));
@@ -37,7 +37,7 @@ TEST_CASE("test append log entries") {
 
     std::vector<log_entry> entries;
     for (int i = 0; i < 100; i++) {
-        entries.push_back({ i, EntryType::APP_LOG });
+        entries.push_back({ i, EntryType::APPEND_LOG });
     }
     CHECK(mem_log_store.append_entries(entries)==100);
     CHECK(mem_log_store.last_log_index() == 99);
@@ -54,7 +54,7 @@ TEST_CASE("test truncate_prefix") {
 
     std::vector<log_entry> entries;
     for (int i = 0; i < 100; i++) {
-        entries.push_back({ i, EntryType::APP_LOG });
+        entries.push_back({ i, EntryType::APPEND_LOG });
     }
     CHECK(mem_log_store.append_entries(entries) == 100);
     CHECK(mem_log_store.truncate_prefix(50));

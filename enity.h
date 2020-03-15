@@ -5,11 +5,11 @@
 
 namespace raftcpp {
     enum class EntryType {
-        APP_LOG = 1,
+        APPEND_LOG = 1,
         CONF = 2,
         CLUSTER_SERVER = 3,
         LOG_PACK = 4,
-        SNP_SYNC_REQ = 5,
+        SNAPSHOT_SYNC_REQ = 5,
         CUSTOM = 999,
     };
 
@@ -21,10 +21,9 @@ namespace raftcpp {
 
     struct log_entry{
         int64_t term;
-        //EntryType
         EntryType type;
 
-        MSGPACK_DEFINE(term, (int&)type);
+        MSGPACK_DEFINE(term, (int32_t&)type);
     };
 
     struct snapshot_meta {
@@ -36,7 +35,7 @@ namespace raftcpp {
         MSGPACK_DEFINE(last_included_index, last_included_term, peers, old_peers);
     };
 
-    struct request_vote_req {
+    struct vote_req {
         int32_t src;
         int32_t dst;
         int64_t term;
@@ -47,7 +46,7 @@ namespace raftcpp {
         MSGPACK_DEFINE(src, dst, term, last_log_term, last_log_index, pre_vote);
     };
 
-    struct request_vote_resp {
+    struct vote_resp {
         int64_t term;
         bool granted;
 
