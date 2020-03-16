@@ -20,10 +20,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="enity.h">
+    <ClInclude Include="memory_log_store.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="memory_log_store.hpp">
+    <ClInclude Include="entity.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
