@@ -3,7 +3,7 @@
 #include <map>
 #include <vector>
 #include <shared_mutex>
-#include "enity.h"
+#include "entity.h"
 
 namespace raftcpp {
     class memory_log_store {
