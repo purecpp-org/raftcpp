@@ -26,5 +26,11 @@
     <ClInclude Include="entity.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="raft_node.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="node_config.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

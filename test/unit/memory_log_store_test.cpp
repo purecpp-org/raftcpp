@@ -10,17 +10,24 @@ TEST_CASE("test append log entry") {
 
     memory_log_store mem_log_store;
     CHECK(mem_log_store.append_entry({}));
+    CHECK(mem_log_store.append_entry({}));
 
     log_entry entry{ 1, EntryType::APPEND_LOG };
-    CHECK(mem_log_store.append_entry({}));
     CHECK(mem_log_store.append_entry(entry));
     CHECK(mem_log_store.append_entry({2}));
+
     CHECK(mem_log_store.entry_at(0).first);
 
     {
-        auto [r, en] = mem_log_store.entry_at(1);
+        auto [r, en] = mem_log_store.entry_at(2);
         CHECK(en.term==entry.term);
         CHECK(en.type == entry.type);
+    }
+
+    {
+        auto [r, en] = mem_log_store.entry_at(3);
+        CHECK(en.term == 2);
+        CHECK(mem_log_store.last_log_term() == 2);
     }
 
     {

@@ -19,6 +19,16 @@ namespace raftcpp {
             return start_idx_ + logs_.size() - 1;
         }
 
+        int64_t last_log_term() const {
+            std::shared_lock lock(mtx_);
+            if (logs_.empty())
+                return 0;
+
+            auto last = logs_.rbegin();
+            auto term = last->second.term;
+            return term;
+        }
+
         std::pair<bool, log_entry> entry_at(int64_t index) const {
             std::shared_lock lock(mtx_);
             if (auto it = logs_.find(index); it != logs_.end()) {
@@ -39,7 +49,7 @@ namespace raftcpp {
 
         bool append_entry(log_entry entry) {
             std::unique_lock lock(mtx_);
-            size_t idx = start_idx_ + logs_.size() - 1;
+            size_t idx = start_idx_ + logs_.empty() ? 0 : logs_.size();
             auto it = logs_.emplace(idx, entry);
             return it.second;
         }
