@@ -1,4 +1,5 @@
 #include <include/rpc_server.h>
+#include "raft_node.hpp"
 
 int main() {
     using namespace rest_rpc;

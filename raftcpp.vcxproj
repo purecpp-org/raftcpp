@@ -137,6 +137,8 @@
   <ItemGroup>
     <ClInclude Include="entity.h" />
     <ClInclude Include="memory_log_store.hpp" />
+    <ClInclude Include="node_config.h" />
+    <ClInclude Include="raft_node.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
