@@ -67,7 +67,15 @@ namespace raftcpp {
             vote_req request{};
             request.pre_vote = prevote;
             request.src = server_id_;
-            request.term = curr_term_ + 1;
+
+            if (prevote) {
+                request.term = curr_term_ + 1;
+            }
+            else {
+                //curr_term_++, before vote request
+                request.term = curr_term_;
+            }
+            
             request.last_log_index = log_store_.last_log_index();
             request.last_log_term = log_store_.last_log_term();
 
@@ -76,16 +84,70 @@ namespace raftcpp {
                     continue;
 
                 request.dst = id;
-                client->async_call("prevote", [this](const auto& ec, string_view data) {
+                client->async_call("prevote", [this, prevote](const auto& ec, string_view data) {
                     if (ec) {
                         std::cout << ec.value() << ", " << ec.message() << "\n";
                         return;
                     }
 
                     vote_resp resp = as<vote_resp>(data);
-                    handle_vote_response(std::move(resp));
+                    prevote ? handle_prevote_response(std::move(resp)) : handle_vote_response(std::move(resp));
                 }, request);
             }
+        }
+
+        void handle_prevote_response(vote_resp resp) {
+            if (state_ != State::FOLLOWER) {
+                return;
+            }
+
+            if (resp.term > curr_term_) {
+                stepdown(resp.term);
+                return;
+            }
+
+            if (resp.granted) {
+                prevote_ack_num_++;
+                //get quorum
+                if (prevote_ack_num_ > raft_clients_.size() / 2) {
+                    //elect_self();
+                }
+            }
+        }
+
+        void handle_vote_response(vote_resp resp) {
+            if (state_ != State::CANDIDATE) {
+                return;
+            }
+
+            if (resp.term > curr_term_) {
+                stepdown(resp.term);
+                return;
+            }
+
+            if (resp.granted) {
+                vote_ack_num_++;
+                //get quorum
+                if (vote_ack_num_ > raft_clients_.size() / 2) {
+                    //become_leader();
+                }
+            }
+        }
+
+        void stepdown(int64_t term) {
+            if (state_ == State::CANDIDATE) {
+                //TODO stop vote timer
+            }
+
+            leader_id_ = -1;
+            state_ = State::FOLLOWER;
+
+            if (term > curr_term_) {
+                curr_term_ = term;
+                voted_id_ = -1;
+            }
+
+            //TODO:election timer start
         }
 
         vote_resp handle_vote_request(vote_req req) {
@@ -96,24 +158,23 @@ namespace raftcpp {
                 std::cout << "get vote request\n";
             }
             return {};
-        }
-
-        void handle_vote_response(vote_resp resp) {
-            std::cout << "granted result: " << (resp.granted ? "yes" : "no") << "\n";
-        }
+        }        
 
         //connections
         raft_config conf_;
         rpc_server raft_server_;
-        int server_id_;
+        int server_id_ = -1;
         std::map<int, std::shared_ptr<rpc_client>> raft_clients_;        
 
         //raft business
-        State state_;
-        int64_t curr_term_ = 0;
-        int leader_id_;
-        int voted_id_;
+        State state_ = State::FOLLOWER;
+        std::atomic<int64_t> curr_term_ = 0;
+        std::atomic<int> leader_id_ = -1;
+        std::atomic<int> voted_id_ = -1;
         memory_log_store log_store_;
+
+        std::atomic<int> prevote_ack_num_ = 0;
+        std::atomic<int> vote_ack_num_ = 0;
         //timer
     };
 }
