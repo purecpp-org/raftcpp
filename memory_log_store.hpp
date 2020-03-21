@@ -16,7 +16,7 @@ namespace raftcpp {
 
         int64_t last_log_index() const {
             std::shared_lock lock(mtx_);
-            return start_idx_ + logs_.size() - 1;
+            return start_idx_ + (logs_.empty() ? 0 : logs_.size() - 1);
         }
 
         int64_t last_log_term() const {

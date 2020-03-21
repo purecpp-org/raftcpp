@@ -18,7 +18,6 @@ namespace raftcpp {
             conf_(std::move(conf)), server_id_(conf.self_addr.id)
         {
             init();
-            debug();
         }
 
         void run() {
