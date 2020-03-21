@@ -44,6 +44,17 @@ namespace raftcpp {
             raft_server_.register_handler("prevote", [this](rpc_conn conn, vote_req req) {
                 return handle_vote_request(std::move(req));
             });
+            raft_server_.register_handler("vote", [this](rpc_conn conn, vote_req req) {
+                return handle_vote_request(std::move(req));
+            });
+        }
+
+        State state() const {
+            return state_;
+        }
+
+        int64_t current_term() const {
+            return curr_term_;
         }
 
         void request_vote(bool prevote) {
@@ -56,7 +67,7 @@ namespace raftcpp {
                 prevote_ack_num_ = 0;
             }
             else {
-                //curr_term_++, before vote request
+                curr_term_++;
                 request.term = curr_term_;
                 vote_ack_num_ = 0;
             }
@@ -64,12 +75,13 @@ namespace raftcpp {
             request.last_log_index = log_store_.last_log_index();
             request.last_log_term = log_store_.last_log_term();
 
+            std::string service_name = prevote ? "prevote" : "vote";
             for (auto& [id, client] : raft_clients_) {
                 if (!client->has_connected())
                     continue;
 
                 request.dst = id;
-                client->async_call("prevote", [this, prevote](const auto& ec, string_view data) {
+                client->async_call(service_name, [this, prevote](const auto& ec, string_view data) {
                     if (ec) {
                         std::cout << ec.value() << ", " << ec.message() << "\n";
                         return;
