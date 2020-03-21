@@ -13,10 +13,9 @@ namespace raftcpp {
 
     class raft_node final {
     public:
-        raft_node(raft_config conf) : 
+        raft_node(raft_config conf) :
             raft_server_(conf.self_addr.port, std::thread::hardware_concurrency()),
-            conf_(std::move(conf)), server_id_(conf.self_addr.id)
-        {
+            conf_(std::move(conf)), server_id_(conf.self_addr.id) {
             init();
         }
 
@@ -28,7 +27,7 @@ namespace raftcpp {
             raft_server_.async_run();
         }
 
-    //private:
+        //private:
         void init() {
             for (auto& addr : conf_.all_peers) {
                 if (addr.id == conf_.self_addr.id)
@@ -57,6 +56,20 @@ namespace raftcpp {
             return curr_term_;
         }
 
+#ifdef _DEBUG
+        //void set_prevote_ack_num(int num) {
+        //    prevote_ack_num_ = num;
+        //}
+
+        void set_vote_ack_num(int num) {
+            vote_ack_num_ = num;
+        }
+
+        void set_current_term(int64_t term) {
+            curr_term_ = term;
+        }
+#endif
+
         void request_vote(bool prevote) {
             vote_req request{};
             request.pre_vote = prevote;
@@ -64,19 +77,19 @@ namespace raftcpp {
 
             if (prevote) {
                 request.term = curr_term_ + 1;
-                prevote_ack_num_ = 0;
+                prevote_ack_num_ = 1;
             }
             else {
                 curr_term_++;
                 request.term = curr_term_;
-                vote_ack_num_ = 0;
+                vote_ack_num_ = 1;
             }
-            
+
             request.last_log_index = log_store_.last_log_index();
             request.last_log_term = log_store_.last_log_term();
 
             std::string service_name = prevote ? "prevote" : "vote";
-            for (auto& [id, client] : raft_clients_) {
+            for (auto&[id, client] : raft_clients_) {
                 if (!client->has_connected())
                     continue;
 
@@ -107,7 +120,8 @@ namespace raftcpp {
                 prevote_ack_num_++;
                 //get quorum
                 if (prevote_ack_num_ > conf_.all_peers.size() / 2) {
-                    //elect_self();
+                    state_ = State::CANDIDATE;
+                    request_vote(false);
                 }
             }
         }
@@ -126,6 +140,7 @@ namespace raftcpp {
                 vote_ack_num_++;
                 //get quorum
                 if (vote_ack_num_ > conf_.all_peers.size() / 2) {
+                    state_ = State::LEADER;
                     //become_leader();
                 }
             }
@@ -155,13 +170,13 @@ namespace raftcpp {
                 std::cout << "get vote request\n";
             }
             return {};
-        }        
+        }
 
         //connections
         raft_config conf_;
         rpc_server raft_server_;
         int server_id_ = -1;
-        std::map<int, std::shared_ptr<rpc_client>> raft_clients_;        
+        std::map<int, std::shared_ptr<rpc_client>> raft_clients_;
 
         //raft business
         State state_ = State::FOLLOWER;
@@ -170,8 +185,8 @@ namespace raftcpp {
         std::atomic<int> voted_id_ = -1;
         memory_log_store log_store_;
 
-        std::atomic<int> prevote_ack_num_ = 0;
-        std::atomic<int> vote_ack_num_ = 0;
+        std::atomic<int> prevote_ack_num_ = 1;
+        std::atomic<int> vote_ack_num_ = 1;
         //timer
     };
 }

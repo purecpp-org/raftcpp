@@ -18,5 +18,8 @@
     <ClCompile Include="memory_log_store_test.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="request_vote_test.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
