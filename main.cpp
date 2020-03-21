@@ -36,10 +36,10 @@ int main() {
     while (true) {
         std::cin >> debug_str;
         if (debug_str == "prevote") {
-            node.vote(true);
+            node.request_vote(true);
         }
         else if(debug_str == "vote"){
-            node.vote(false);
+            node.request_vote(false);
         }
         else {
             std::cout << "bad command line\n";

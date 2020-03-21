@@ -30,22 +30,6 @@ namespace raftcpp {
         }
 
     //private:
-        void debug() {
-            std::thread thd([this] {
-                while (true) {
-                    std::this_thread::sleep_for(std::chrono::seconds(2));
-                    for (auto& [id, client] : raft_clients_) {
-                        if (client->has_connected()) {
-                            std::cout << "connected, id= " << id << "\n";
-                            return;
-                        }
-                    }
-                }
-                
-            });
-            thd.detach();
-        }
-
         void init() {
             for (auto& addr : conf_.all_peers) {
                 if (addr.id == conf_.self_addr.id)
@@ -63,7 +47,7 @@ namespace raftcpp {
             });
         }
 
-        void vote(bool prevote) {
+        void request_vote(bool prevote) {
             vote_req request{};
             request.pre_vote = prevote;
             request.src = server_id_;
@@ -111,7 +95,7 @@ namespace raftcpp {
             if (resp.granted) {
                 prevote_ack_num_++;
                 //get quorum
-                if (prevote_ack_num_ > raft_clients_.size() / 2) {
+                if (prevote_ack_num_ > conf_.all_peers.size() / 2) {
                     //elect_self();
                 }
             }
@@ -130,7 +114,7 @@ namespace raftcpp {
             if (resp.granted) {
                 vote_ack_num_++;
                 //get quorum
-                if (vote_ack_num_ > raft_clients_.size() / 2) {
+                if (vote_ack_num_ > conf_.all_peers.size() / 2) {
                     //become_leader();
                 }
             }
