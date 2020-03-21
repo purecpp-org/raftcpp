@@ -70,10 +70,12 @@ namespace raftcpp {
 
             if (prevote) {
                 request.term = curr_term_ + 1;
+                prevote_ack_num_ = 0;
             }
             else {
                 //curr_term_++, before vote request
                 request.term = curr_term_;
+                vote_ack_num_ = 0;
             }
             
             request.last_log_index = log_store_.last_log_index();
