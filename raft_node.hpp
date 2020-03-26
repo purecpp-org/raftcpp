@@ -41,7 +41,7 @@ namespace raftcpp {
             }
 
             raft_server_.register_handler("prevote", [this](rpc_conn conn, vote_req req) {
-                return handle_vote_request(std::move(req));
+                return handle_prevote_request(std::move(req));
             });
             raft_server_.register_handler("vote", [this](rpc_conn conn, vote_req req) {
                 return handle_vote_request(std::move(req));
@@ -72,7 +72,6 @@ namespace raftcpp {
 
         void request_vote(bool prevote) {
             vote_req request{};
-            request.pre_vote = prevote;
             request.src = server_id_;
 
             if (prevote) {
@@ -159,17 +158,60 @@ namespace raftcpp {
                 voted_id_ = -1;
             }
 
-            //TODO:election timer start
+            //TODO:election timer restart
+        }
+
+        vote_resp handle_prevote_request(vote_req req) {
+            bool granted = false;
+            do {
+                if (req.term < curr_term_) {
+                    break;
+                }
+
+                auto last_log_term = log_store_.last_log_term();
+                if (req.last_log_term < last_log_term) {
+                    break;
+                }
+
+                if (req.last_log_term > last_log_term) {
+                    granted = true;
+                    break;
+                }
+
+                if (req.last_log_index >= log_store_.last_log_index()) {
+                    granted = true;
+                }
+            } while (false);
+
+            return { curr_term_, granted };
         }
 
         vote_resp handle_vote_request(vote_req req) {
-            if (req.pre_vote) {
-                std::cout << "get pre_vote request\n";
-            }
-            else {
-                std::cout << "get vote request\n";
-            }
-            return {};
+            bool granted = false;
+            do {
+                if (req.term < curr_term_) {
+                    break;
+                }
+
+                if (req.term > curr_term_) {
+                    stepdown(req.term);
+                }
+
+                if (req.last_log_term < curr_term_) {
+                    break;
+                }
+
+                if (req.last_log_term > curr_term_) {
+                    granted = true;
+                    break;
+                }
+
+                if (req.last_log_index >= log_store_.last_log_index()) {
+                    granted = true;
+                }
+            } while (false);
+            
+            return { curr_term_, granted };
         }
 
         //connections
