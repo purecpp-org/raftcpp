@@ -68,6 +68,10 @@ namespace raftcpp {
         void set_current_term(int64_t term) {
             curr_term_ = term;
         }
+
+        void append(log_entry entry) {
+            log_store_.append_entry(entry);
+        }
 #endif
 
         void request_vote(bool prevote) {

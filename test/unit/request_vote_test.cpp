@@ -3,6 +3,109 @@
 #include "../../raft_node.hpp"
 #include <chrono>
 
+TEST_CASE("test handle prevote request") {
+    using namespace raftcpp;
+    raft_config conf{};
+    conf.all_peers = {
+        {"127.0.0.1", 8001, 0},
+        {"127.0.0.1", 8002, 1},
+        {"127.0.0.1", 8003, 2},
+    };
+    conf.self_addr = conf.all_peers[0];
+
+    raft_node node(conf);
+
+    vote_req req{};
+    vote_resp resp = node.handle_prevote_request(req);
+    CHECK(resp.granted);
+
+    {
+        vote_req req{};
+        node.set_current_term(1);
+        vote_resp resp = node.handle_prevote_request(req);
+        CHECK(!resp.granted);
+    }
+
+    {
+        vote_req req{};
+        node.set_current_term(0);
+        node.append({ 1 });
+        vote_resp resp = node.handle_prevote_request(req);
+        CHECK(!resp.granted);        
+    }
+
+    {
+        vote_req req{};
+        req.last_log_term = 2;
+        vote_resp resp = node.handle_prevote_request(req);
+        CHECK(resp.granted);
+    }
+
+    {
+        vote_req req{};
+        req.last_log_term = 1;
+        req.last_log_index = 2;
+        vote_resp resp = node.handle_prevote_request(req);
+        CHECK(resp.granted);
+    }
+}
+
+TEST_CASE("test handle vote request") {
+    using namespace raftcpp;
+    raft_config conf{};
+    conf.all_peers = {
+        {"127.0.0.1", 8001, 0},
+        {"127.0.0.1", 8002, 1},
+        {"127.0.0.1", 8003, 2},
+    };
+    conf.self_addr = conf.all_peers[0];
+
+    raft_node node(conf);
+
+    vote_req req{};
+    vote_resp resp = node.handle_vote_request(req);
+    CHECK(resp.granted);
+
+    {
+        vote_req req{};
+        node.set_current_term(1);
+        vote_resp resp = node.handle_vote_request(req);
+        CHECK(!resp.granted);
+    }
+
+    {
+        vote_req req{};
+        node.set_current_term(0);
+        node.append({ 1 });
+        node.append({ 1 });
+        vote_resp resp = node.handle_vote_request(req);
+        CHECK(!resp.granted);
+    }
+
+    {
+        vote_req req{};
+        req.last_log_term = 2;
+        vote_resp resp = node.handle_vote_request(req);
+        CHECK(resp.granted);
+    }
+
+    {
+        vote_req req{};
+        req.last_log_term = 1;
+        req.last_log_index = 2;
+        vote_resp resp = node.handle_vote_request(req);
+        CHECK(resp.granted);
+    }
+
+    {
+        vote_req req{};
+        req.term = 2;
+        vote_resp resp = node.handle_vote_request(req);
+        CHECK(!resp.granted);
+        CHECK(node.current_term() == req.term);
+    }
+}
+
 TEST_CASE("test request prevote no peers") {
     using namespace raftcpp;
     raft_config conf{};
