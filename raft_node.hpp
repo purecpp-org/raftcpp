@@ -15,8 +15,15 @@ namespace raftcpp {
     public:
         raft_node(raft_config conf) :
             raft_server_(conf.self_addr.port, std::thread::hardware_concurrency()),
-            conf_(std::move(conf)), server_id_(conf.self_addr.id) {
+            conf_(std::move(conf)), server_id_(conf.self_addr.id),
+            work_(ios_), election_timer_(ios_), vote_timer_(ios_){
             init();
+        }
+
+        ~raft_node() {
+            election_timer_.cancel();
+            vote_timer_.cancel();
+            ios_.stop();
         }
 
         void run() {
@@ -45,6 +52,29 @@ namespace raftcpp {
             });
             raft_server_.register_handler("vote", [this](rpc_conn conn, vote_req req) {
                 return handle_vote_request(std::move(req));
+            });
+
+            std::thread thd([this] { ios_.run(); });
+            thd.detach();
+        }
+
+        void reset_election_timer(size_t timeout) {
+            reset_timer(true, timeout);
+        }
+
+        void reset_vote_timer(size_t timeout) {
+            reset_timer(false, timeout);
+        }
+
+        void reset_timer(bool prevote, size_t timeout) {
+            auto& timer = prevote ? election_timer_ : vote_timer_;
+            timer.expires_from_now(std::chrono::milliseconds(timeout));
+            timer.async_wait([this](boost::system::error_code ec) {
+                if (ec) {
+                    return;
+                }
+
+                request_vote(false);
             });
         }
 
@@ -152,6 +182,7 @@ namespace raftcpp {
         void stepdown(int64_t term) {
             if (state_ == State::CANDIDATE) {
                 //TODO stop vote timer
+                vote_timer_.cancel();
             }
 
             leader_id_ = -1;
@@ -163,6 +194,11 @@ namespace raftcpp {
             }
 
             //TODO:election timer restart
+            reset_election_timer(get_random_milli());
+        }
+
+        size_t get_random_milli() {
+            return 0;//TODO
         }
 
         vote_resp handle_prevote_request(vote_req req) {
@@ -234,5 +270,10 @@ namespace raftcpp {
         std::atomic<int> prevote_ack_num_ = 1;
         std::atomic<int> vote_ack_num_ = 1;
         //timer
+        asio::io_service ios_;
+        asio::io_service::work work_;
+        
+        asio::steady_timer election_timer_;
+        asio::steady_timer vote_timer_;        
     };
 }
