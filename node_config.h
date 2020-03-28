@@ -15,5 +15,8 @@ namespace raftcpp {
         size_t election_timeout_milli = 2000; //upper 4000
         size_t heartbeat_interval = 1000;
         size_t req_timeout_milli = 3000;
+#ifdef DOCTEST_TEST_CASE
+        bool disable_election_timer = true;
+#endif 
     };
 }

@@ -1,12 +1,12 @@
 #include "raft_node.hpp"
-
+#include <random>
 int main() {
     using namespace raftcpp;
     raft_config conf{};
     conf.all_peers = { 
-        {"127.0.0.1", 8001, 0},
-        {"127.0.0.1", 8002, 1}, 
-        {"127.0.0.1", 8003, 2},
+        {"127.0.0.1", 8001, 1},
+        {"127.0.0.1", 8002, 2}, 
+        {"127.0.0.1", 8003, 3},
     };
 
     std::cout << "all the peers: \n";
@@ -25,9 +25,7 @@ int main() {
     }
 
     std::cout << "has chose id: " << std::to_string(select) << "\n";
-    std::cout << "wait input command: \n";
-
-    conf.self_addr = conf.all_peers[select];
+    conf.self_addr = conf.all_peers[select-1];
     
     raft_node node(conf);
     node.async_run();
@@ -35,14 +33,8 @@ int main() {
     std::string debug_str;
     while (true) {
         std::cin >> debug_str;
-        if (debug_str == "prevote") {
-            node.request_vote(true);
-        }
-        else if(debug_str == "vote"){
-            node.request_vote(false);
-        }
-        else {
-            std::cout << "bad command line\n";
-        }
+        if (debug_str == "quit"|| debug_str == "exit") {
+            break;
+        }        
     }
 }

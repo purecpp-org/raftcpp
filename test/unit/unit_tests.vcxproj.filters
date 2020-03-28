@@ -21,5 +21,11 @@
     <ClCompile Include="request_vote_test.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="timer_test.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="test_rpc.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
