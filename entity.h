@@ -41,9 +41,9 @@ namespace raftcpp {
         int64_t term;
         int64_t last_log_term;
         int64_t last_log_index;
-        bool pre_vote;
+        int32_t port;
 
-        MSGPACK_DEFINE(src, dst, term, last_log_term, last_log_index, pre_vote);
+        MSGPACK_DEFINE(src, dst, term, last_log_term, last_log_index, port);
     };
 
     struct vote_resp {

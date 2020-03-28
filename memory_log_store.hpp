@@ -11,12 +11,31 @@ namespace raftcpp {
         memory_log_store() = default;
 
         int64_t first_log_index() const {
+            if (logs_.empty())
+                return start_idx_;
+
+            if (start_idx_ < 0)
+                return 0;
+
             return start_idx_;
         }
 
         int64_t last_log_index() const {
             std::shared_lock lock(mtx_);
-            return start_idx_ + logs_.size() - 1;
+            if(start_idx_>=0)
+                return start_idx_ + (logs_.empty() ? 0 : logs_.size()-1);
+
+            return start_idx_ + (logs_.empty() ? 0 : logs_.size());
+        }
+
+        int64_t last_log_term() const {
+            std::shared_lock lock(mtx_);
+            if (logs_.empty())
+                return 0;
+
+            auto last = logs_.rbegin();
+            auto term = last->second.term;
+            return term;
         }
 
         std::pair<bool, log_entry> entry_at(int64_t index) const {
@@ -39,7 +58,7 @@ namespace raftcpp {
 
         bool append_entry(log_entry entry) {
             std::unique_lock lock(mtx_);
-            size_t idx = start_idx_ + logs_.size() - 1;
+            int64_t idx = start_idx_ + (logs_.empty() ? 1 : logs_.size() + 1);
             auto it = logs_.emplace(idx, entry);
             return it.second;
         }
@@ -51,7 +70,7 @@ namespace raftcpp {
             size_t size = entries.size();
 
             std::unique_lock lock(mtx_);
-            size_t idx = start_idx_ + logs_.size();            
+            int64_t idx = start_idx_ + (logs_.empty() ? 1 : logs_.size() + 1);
             for (size_t i = 0; i < size; i++) {
                 if (auto it = logs_.emplace(idx + i, entries[i]); !it.second)
                     return i;
@@ -105,7 +124,7 @@ namespace raftcpp {
         memory_log_store(memory_log_store&&) = delete;
         memory_log_store& operator=(memory_log_store&&) = delete;
 
-        std::atomic<int64_t> start_idx_ = {0};
+        std::atomic<int64_t> start_idx_ = { -1 };
         std::map<int64_t, log_entry> logs_;
         mutable std::shared_mutex mtx_;
     };
