@@ -28,6 +28,7 @@ namespace raftcpp {
 
             election_timer_.cancel();
             vote_timer_.cancel();
+            heratbeat_timer_.cancel();
             ios_.stop();
             timer_thd_.join();
         }
@@ -146,6 +147,7 @@ namespace raftcpp {
         }
 
         void handle_prevote_response(vote_resp resp) {
+            //TODO lock
             if (state_ != State::FOLLOWER) {
                 return;
             }
@@ -159,17 +161,15 @@ namespace raftcpp {
                 prevote_ack_num_++;
                 //get quorum
                 if (prevote_ack_num_ > conf_.all_peers.size() / 2) {
-                    print("get quorum prevote, become candidate");
-                    state_ = State::CANDIDATE;
+                    print("get quorum prevote, become candidate");                    
                     request_vote();
                     return;
                 }
             }
-
-            reset_election_timer(get_random_milli());
         }
 
         void handle_vote_response(vote_resp resp) {
+            //TODO lock
             if (state_ != State::CANDIDATE) {
                 return;
             }
@@ -187,9 +187,9 @@ namespace raftcpp {
                     become_leader();
                     return;
                 }                
-            }
-            
-            reset_vote_timer(get_random_milli());
+            }            
+
+            //TODO wait for automatic timeout
         }
 
         void become_leader() {
@@ -239,18 +239,20 @@ namespace raftcpp {
                 heratbeat_timer_.cancel();
             }
 
-            leader_id_ = -1;
+            leader_id_ = -1;            
             state_ = State::FOLLOWER;
 
             if (term > curr_term_) {
-                curr_term_ = term;
+                curr_term_ = term; 
+                //maybe recieve heartbeat, already has a leader, so need to keep voted id
                 voted_id_ = -1;
             }
 
             reset_election_timer(get_random_milli());
         }
 
-        vote_resp handle_prevote_request(const vote_req& req) {            
+        vote_resp handle_prevote_request(const vote_req& req) {
+            //TODO lock
             bool granted = false;
             do {
                 if (req.term < curr_term_) {
@@ -276,6 +278,7 @@ namespace raftcpp {
         }
 
         vote_resp handle_vote_request(const vote_req& req) {
+            //TODO lock
             bool granted = false;
             do {
                 if (req.term < curr_term_) {
@@ -334,6 +337,11 @@ namespace raftcpp {
         }
 
         void request_vote(bool prevote) {
+            //TODO LOCK
+            if (state_ == State::FOLLOWER) {
+                election_timer_.cancel();
+            }
+
             vote_req request{};
             request.src = conf_.self_addr.id;
 
@@ -343,11 +351,10 @@ namespace raftcpp {
             }
             else {
                 voted_id_ = server_id_;
+                state_ = State::CANDIDATE;
                 curr_term_++;
                 request.term = curr_term_;
                 vote_ack_num_ = 1;
-
-                //start vote timer
                 reset_vote_timer(get_random_milli());
             }
 
@@ -366,6 +373,7 @@ namespace raftcpp {
                 client->async_call(service_name, [this, prevote](const auto& ec, string_view data) {
                     if (ec) {
                         std::cout << ec.value() << ", " << ec.message() << "\n";
+                        //TODO maybe retry
                         return;
                     }
 
@@ -384,6 +392,7 @@ namespace raftcpp {
                 }
 
                 prevote ? request_prevote() : request_vote();
+                reset_timer(prevote, get_random_milli());
             });
         }
 
