@@ -162,12 +162,11 @@ namespace raftcpp {
                     print("get quorum prevote, become candidate");
                     state_ = State::CANDIDATE;
                     request_vote();
-                }
-                else {
-                    print("not get quorum prevote, request next prevote");
-                    reset_election_timer(get_random_milli());
+                    return;
                 }
             }
+
+            reset_election_timer(get_random_milli());
         }
 
         void handle_vote_response(vote_resp resp) {
@@ -186,12 +185,11 @@ namespace raftcpp {
                 if (vote_ack_num_ > conf_.all_peers.size() / 2) {
                     print("get quorum vote, become leader");
                     become_leader();
-                }
-                else {
-                    print("not get quorum vote, request next vote");
-                    reset_vote_timer(get_random_milli());
-                }
+                    return;
+                }                
             }
+            
+            reset_vote_timer(get_random_milli());
         }
 
         void become_leader() {
