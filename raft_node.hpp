@@ -202,6 +202,7 @@ namespace raftcpp {
 
         void send_heartbeat() {
             append_entries_req request{};
+            request.src = server_id_;
             for (auto&[id, client] : raft_clients_) {
                 if (!client->has_connected())
                     continue;
