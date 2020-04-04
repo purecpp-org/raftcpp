@@ -56,16 +56,20 @@ namespace raftcpp {
 
             raft_server_.register_handler("prevote", [this](rpc_conn conn, vote_req req) {
                 print("recieved prevote request from", req.src);
+                std::unique_lock lock(mtx_);
                 return handle_prevote_request(std::move(req));
             });
             raft_server_.register_handler("vote", [this](rpc_conn conn, vote_req req) {
                 print("recieved vote request from", req.src);
+                std::unique_lock lock(mtx_);
                 return handle_vote_request(std::move(req));
             });
             raft_server_.register_handler("heartbeat", [this](rpc_conn conn, append_entries_req req) {
+                std::unique_lock lock(mtx_);
                 return handle_heartbeat_request(std::move(req));
             });
             raft_server_.register_handler("append_entries", [this](rpc_conn conn, append_entries_req req) {
+                std::unique_lock lock(mtx_);
                 return handle_append_entries_request(std::move(req));
             });
 
@@ -147,7 +151,6 @@ namespace raftcpp {
         }
 
         void handle_prevote_response(vote_resp resp) {
-            //TODO lock
             if (state_ != State::FOLLOWER) {
                 return;
             }
@@ -169,7 +172,6 @@ namespace raftcpp {
         }
 
         void handle_vote_response(vote_resp resp) {
-            //TODO lock
             if (state_ != State::CANDIDATE) {
                 return;
             }
@@ -239,7 +241,7 @@ namespace raftcpp {
                 heratbeat_timer_.cancel();
             }
 
-            leader_id_ = -1;            
+            leader_id_ = -1;
             state_ = State::FOLLOWER;
 
             if (term > curr_term_) {
@@ -252,7 +254,6 @@ namespace raftcpp {
         }
 
         vote_resp handle_prevote_request(const vote_req& req) {
-            //TODO lock
             bool granted = false;
             do {
                 if (req.term < curr_term_) {
@@ -278,7 +279,6 @@ namespace raftcpp {
         }
 
         vote_resp handle_vote_request(const vote_req& req) {
-            //TODO lock
             bool granted = false;
             do {
                 if (req.term < curr_term_) {
@@ -337,7 +337,6 @@ namespace raftcpp {
         }
 
         void request_vote(bool prevote) {
-            //TODO LOCK
             if (state_ == State::FOLLOWER) {
                 election_timer_.cancel();
             }
@@ -378,6 +377,7 @@ namespace raftcpp {
                     }
 
                     vote_resp resp = as<vote_resp>(data);
+                    std::unique_lock lock(mtx_);
                     prevote ? handle_prevote_response(resp) : handle_vote_response(resp);
                 }, request);
             }
@@ -391,6 +391,7 @@ namespace raftcpp {
                     return;
                 }
 
+                std::unique_lock lock(mtx_);
                 prevote ? request_prevote() : request_vote();
                 reset_timer(prevote, get_random_milli());
             });
@@ -415,13 +416,13 @@ namespace raftcpp {
 
         //raft business
         State state_ = State::FOLLOWER;
-        std::atomic<int64_t> curr_term_ = 0;
-        std::atomic<int> leader_id_ = -1;
-        std::atomic<int> voted_id_ = -1;
+        int64_t curr_term_ = 0;
+        int leader_id_ = -1;
+        int voted_id_ = -1;
         memory_log_store log_store_;
 
-        std::atomic<int> prevote_ack_num_ = 1;
-        std::atomic<int> vote_ack_num_ = 1;
+        int prevote_ack_num_ = 1;
+        int vote_ack_num_ = 1;
         //timer
         std::thread timer_thd_;
         asio::io_service ios_;
@@ -430,5 +431,6 @@ namespace raftcpp {
         asio::steady_timer election_timer_;
         asio::steady_timer vote_timer_;
         asio::steady_timer heratbeat_timer_;
+        std::mutex mtx_;
     };
 }
