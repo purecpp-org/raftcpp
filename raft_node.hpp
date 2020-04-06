@@ -203,6 +203,12 @@ namespace raftcpp {
         }
 
         void send_heartbeat() {
+#ifdef DOCTEST_TEST_CASE
+            if (let_heartbeat_timeout) {
+                print("don't send heartbeat to");
+                return;
+            }
+#endif
             append_entries_req request{};
             request.src = server_id_;
             for (auto&[id, client] : raft_clients_) {
@@ -232,8 +238,24 @@ namespace raftcpp {
 
         }
 
+        std::string state_to_str() {
+            switch (state_) {
+            case raftcpp::State::LEADER:
+                return "leader";
+                break;
+            case raftcpp::State::CANDIDATE:
+                return "candidate";
+                break;
+            case raftcpp::State::FOLLOWER:
+                return "follower";
+                break;
+            default:
+                return "unknown";
+            }
+        }
+
         void stepdown(int64_t term) {
-            print("stepdown");
+            print("stepdown from", state_to_str());
             if (state_ == State::CANDIDATE) {
                 vote_timer_.cancel();
             }
@@ -254,6 +276,10 @@ namespace raftcpp {
         }
 
         vote_resp handle_prevote_request(const vote_req& req) {
+#ifdef DOCTEST_TEST_CASE
+            if (!always_prevote_granted)
+                return { curr_term_, false };
+#endif
             bool granted = false;
             do {
                 if (req.term < curr_term_) {
@@ -279,6 +305,11 @@ namespace raftcpp {
         }
 
         vote_resp handle_vote_request(const vote_req& req) {
+#ifdef DOCTEST_TEST_CASE
+            if (!always_vote_granted)
+                return { curr_term_, false };
+#endif
+
             bool granted = false;
             do {
                 if (req.term < curr_term_) {
@@ -315,6 +346,8 @@ namespace raftcpp {
             print("recieve heartbeat from", req.src);
             reset_election_timer(get_random_milli());
 
+            //TODO
+            //stepdown
             if (req.term < curr_term_) {
                 return { curr_term_, false };
             }
@@ -384,6 +417,7 @@ namespace raftcpp {
         }
 
         void reset_timer(bool prevote, size_t timeout) {
+            print("reset_timer", timeout);
             auto& timer = prevote ? election_timer_ : vote_timer_;
             timer.expires_from_now(std::chrono::milliseconds(timeout));
             timer.async_wait([this, prevote](boost::system::error_code ec) {
@@ -432,5 +466,11 @@ namespace raftcpp {
         asio::steady_timer vote_timer_;
         asio::steady_timer heratbeat_timer_;
         std::mutex mtx_;
+
+#ifdef DOCTEST_TEST_CASE
+        bool always_prevote_granted = true;
+        bool always_vote_granted = true;
+        bool let_heartbeat_timeout = false;
+#endif
     };
 }

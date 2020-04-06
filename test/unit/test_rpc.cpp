@@ -47,10 +47,71 @@ TEST_CASE("test election") {
     node.async_run();
     node2.async_run();
 
-    std::getchar();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+}
+
+TEST_CASE("test always prevote") {
+    using namespace raftcpp;
+    raft_config conf{};
+    conf.all_peers = {
+        {"127.0.0.1", 8001, 0},
+        {"127.0.0.1", 8002, 1},
+        {"127.0.0.1", 8003, 2},
+    };
+    conf.disable_election_timer = false;
+    conf.self_addr = conf.all_peers[0];
+    raft_node node(conf);
+
+    raft_config conf2 = conf;
+    conf2.self_addr = conf2.all_peers[1];
+    raft_node node2(conf2);
+    node2.always_prevote_granted = false;
+    node.async_run();
+    node2.async_run();
+
     std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 }
 
-TEST_CASE("test append entires") {
+TEST_CASE("test always vote") {
+    using namespace raftcpp;
+    raft_config conf{};
+    conf.all_peers = {
+        {"127.0.0.1", 8001, 0},
+        {"127.0.0.1", 8002, 1},
+        {"127.0.0.1", 8003, 2},
+    };
+    conf.disable_election_timer = false;
+    conf.self_addr = conf.all_peers[0];
+    raft_node node(conf);
 
+    raft_config conf2 = conf;
+    conf2.self_addr = conf2.all_peers[1];
+    raft_node node2(conf2);
+    node2.always_vote_granted = false;
+    node.async_run();
+    node2.async_run();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+}
+
+TEST_CASE("test heartbeat timeout") {
+    using namespace raftcpp;
+    raft_config conf{};
+    conf.all_peers = {
+        {"127.0.0.1", 8001, 0},
+        {"127.0.0.1", 8002, 1},
+        {"127.0.0.1", 8003, 2},
+    };
+    conf.disable_election_timer = false;
+    conf.self_addr = conf.all_peers[0];
+    raft_node node(conf);
+
+    raft_config conf2 = conf;
+    conf2.self_addr = conf2.all_peers[1];
+    raft_node node2(conf2);
+    node.let_heartbeat_timeout = true;
+    node.async_run();
+    node2.async_run();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(200000));
 }
