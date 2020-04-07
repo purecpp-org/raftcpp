@@ -95,6 +95,7 @@ TEST_CASE("test always vote") {
 }
 
 TEST_CASE("test heartbeat timeout") {
+    std::cout << "-----test heartbeat timeout; will block, need two or three nodes to test!-----\n";
     using namespace raftcpp;
     raft_config conf{};
     conf.all_peers = {
@@ -103,15 +104,14 @@ TEST_CASE("test heartbeat timeout") {
         {"127.0.0.1", 8003, 2},
     };
     conf.disable_election_timer = false;
-    conf.self_addr = conf.all_peers[0];
+    std::string select;
+    std::cin >> select;
+    int sel = atoi(select.data());
+    std::cout << "select " << sel << "\n";
+    conf.self_addr = conf.all_peers[sel];
     raft_node node(conf);
+    if(sel==0)
+        node.let_heartbeat_timeout = true;
 
-    raft_config conf2 = conf;
-    conf2.self_addr = conf2.all_peers[1];
-    raft_node node2(conf2);
-    node.let_heartbeat_timeout = true;
-    node.async_run();
-    node2.async_run();
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(200000));
+    node.run();
 }

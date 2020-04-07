@@ -65,6 +65,7 @@ namespace raftcpp {
                 return handle_vote_request(std::move(req));
             });
             raft_server_.register_handler("heartbeat", [this](rpc_conn conn, append_entries_req req) {
+                print("recieve heartbeat from", req.src);
                 std::unique_lock lock(mtx_);
                 return handle_heartbeat_request(std::move(req));
             });
@@ -99,6 +100,7 @@ namespace raftcpp {
                 }
 
                 send_heartbeat();
+                heratbeat_timer_.cancel();
                 start_heartbeat_timer();
             });
         }
@@ -123,7 +125,7 @@ namespace raftcpp {
 
             std::time_t t = std::chrono::system_clock::to_time_t(n);
             std::unique_lock lock(test_mtx_);
-            std::cout << "[id " << conf_.self_addr.id << " "<< 
+            std::cout << "[id " << conf_.self_addr.id << " "<< state_to_str()<<" "<<
                 std::put_time(std::localtime(&t), "%Y-%m-%d %H.%M.%S") << "." << msecs <<"] ";
             ((std::cout << args << ' '), ...);
             std::cout << "\n";
@@ -139,6 +141,10 @@ namespace raftcpp {
 
         void append(log_entry entry) {
             log_store_.append_entry(entry);
+        }
+#else
+        template<typename... Args>
+        void print(Args... args) {
         }
 #endif
 
@@ -205,7 +211,7 @@ namespace raftcpp {
         void send_heartbeat() {
 #ifdef DOCTEST_TEST_CASE
             if (let_heartbeat_timeout) {
-                print("don't send heartbeat to");
+                print("don't send heartbeat");
                 return;
             }
 #endif
@@ -215,8 +221,7 @@ namespace raftcpp {
                 if (!client->has_connected())
                     continue;
 
-                print("send heartbeat to", id);
-
+                print("send heartbeat to", id);                
                 request.dst = id;
                 client->async_call("heartbeat", [this](const auto& ec, string_view data) {
                     if (ec) {
@@ -231,7 +236,11 @@ namespace raftcpp {
         }
 
         void handle_heartbeat_response(const append_entries_resp& resp) {
+            if (resp.term > curr_term_) {
+                stepdown(resp.term);
+            }
 
+            //TODO
         }
 
         void handle_append_entries_response(const append_entries_resp& resp) {
@@ -342,14 +351,18 @@ namespace raftcpp {
             return { curr_term_, granted };
         }
 
-        append_entries_resp handle_heartbeat_request(const append_entries_req& req) {
-            print("recieve heartbeat from", req.src);
+        append_entries_resp handle_heartbeat_request(const append_entries_req& req) {            
             reset_election_timer(get_random_milli());
 
             //TODO
             //stepdown
             if (req.term < curr_term_) {
                 return { curr_term_, false };
+            }
+
+            if (req.src != server_id_) {
+                stepdown(req.term + 1);
+                return { req.term + 1, false };
             }
 
             return { req.term, true, log_store_.last_log_index() };
@@ -417,16 +430,17 @@ namespace raftcpp {
         }
 
         void reset_timer(bool prevote, size_t timeout) {
-            print("reset_timer", timeout);
+            prevote ? print("reset prevote timer", timeout) : print("reset vote timer", timeout);
             auto& timer = prevote ? election_timer_ : vote_timer_;
             timer.expires_from_now(std::chrono::milliseconds(timeout));
-            timer.async_wait([this, prevote](boost::system::error_code ec) {
+            timer.async_wait([this, prevote, &timer](boost::system::error_code ec) {
                 if (ec) {
                     return;
                 }
 
                 std::unique_lock lock(mtx_);
                 prevote ? request_prevote() : request_vote();
+                timer.cancel();
                 reset_timer(prevote, get_random_milli());
             });
         }
