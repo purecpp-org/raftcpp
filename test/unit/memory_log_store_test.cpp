@@ -72,3 +72,24 @@ TEST_CASE("test truncate_prefix") {
     CHECK(mem_log_store.term_at(99) == 99);
     CHECK(mem_log_store.term_at(100) == 0);
 }
+
+TEST_CASE("test reset") {
+    using namespace raftcpp;
+
+    memory_log_store mem_log_store;
+
+    std::vector<log_entry> entries;
+    for (int i = 0; i < 100; i++) {
+        entries.push_back({ i, EntryType::APPEND_LOG });
+    }
+    CHECK(mem_log_store.append_entries(entries)==100);
+    CHECK(mem_log_store.last_log_index() == 99);
+    CHECK(mem_log_store.first_log_index() == 0);
+    CHECK(mem_log_store.term_at(1) == 1);
+    CHECK(mem_log_store.term_at(99) == 99);
+    CHECK(mem_log_store.term_at(100) == 0);
+
+    mem_log_store.reset(100);
+    CHECK(mem_log_store.first_log_index() == 100);
+    CHECK(mem_log_store.last_log_index() == 100);
+}
