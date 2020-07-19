@@ -1,7 +1,7 @@
 # raftcpp
 An implementation of Raft consensus algorithm.
 
-Note that this project is now working on progress.
+**Note that this project is now working in progress.**
 
 ## Features
 - Header only
