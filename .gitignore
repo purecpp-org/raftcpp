@@ -34,3 +34,6 @@
 .idea/
 # cmake building
 cmake-build-debug/
+
+# build
+build
