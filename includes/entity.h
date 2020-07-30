@@ -19,7 +19,7 @@ namespace raftcpp {
         FOLLOWER,
     };
 
-    struct log_entry{
+    struct log_entry {
         int64_t term;
         EntryType type;
 

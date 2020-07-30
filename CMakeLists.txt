@@ -1,25 +1,36 @@
-﻿cmake_minimum_required(VERSION 3.0)
-set(project_name raftcpp)
-project(${project_name})
+﻿CMAKE_MINIMUM_REQUIRED(VERSION 3.11)
+SET(project_name raftcpp)
+PROJECT(${project_name})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -pthread -std=c++17")
+
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -pthread -std=c++17")
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
 
 SET(ENABLE_ASIO_STANDALONE ON)
 if(ENABLE_ASIO_STANDALONE)
-	add_definitions(-DASIO_STANDALONE)
+	ADD_DEFINITIONS(-DASIO_STANDALONE)
 else()
-	find_package(Boost 1.60 REQUIRED COMPONENTS system)
+	FIND_PACKAGE(Boost 1.60 REQUIRED COMPONENTS system)
 endif()
 
-set(raftcpp
-        main.cpp
-   )
+INCLUDE(ExternalProject)
+INCLUDE(GtestExternalProject)
+INCLUDE_DIRECTORIES(SYSTEM ${GTEST_INCLUDE_DIR})
 
-add_executable(${project_name} ${raftcpp})
-include_directories(
+INCLUDE_DIRECTORIES(includes)
+INCLUDE_DIRECTORIES(
 		thirdparty/asio/asio/include
-        thirdparty/rest_rpc
-        thirdparty/rest_rpc/third/msgpack/include
+		thirdparty/rest_rpc
+		thirdparty/rest_rpc/third/msgpack/include
 )
 
-target_link_libraries(${project_name} -lstdc++fs)
+SET(raftcpp main.cpp)
+
+ADD_EXECUTABLE(${project_name} ${raftcpp})
+TARGET_LINK_LIBRARIES(${project_name} -lstdc++fs)
+
+
+# Test targets
+ADD_EXECUTABLE(memory_log_store_test test/memory_log_store_test.cpp)
+ADD_DEPENDENCIES(memory_log_store_test googletest_ep)
+TARGET_LINK_LIBRARIES(memory_log_store_test ${GTEST_STATIC_LIB} ${GTEST_MAIN_STATIC_LIB} ${GMOCK_MAIN_STATIC_LIB} pthread)
