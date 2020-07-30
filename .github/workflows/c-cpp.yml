@@ -14,9 +14,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: configure
-      run: mkdir build && cmake ..
+      run: cmake .
     - name: make
-      run: cd build && make
+      run: make
     - name: test
       run: ./memory_log_store_test
 
