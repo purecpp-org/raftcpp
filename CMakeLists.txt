@@ -25,13 +25,13 @@ INCLUDE_DIRECTORIES(
 		thirdparty/rest_rpc/third/msgpack/include
 )
 
-SET(raftcpp main.cpp)
+SET(raftcpp src/main.cpp)
 
 ADD_EXECUTABLE(${project_name} ${raftcpp})
 TARGET_LINK_LIBRARIES(${project_name} -lstdc++fs)
 
 
 # Test targets
-ADD_EXECUTABLE(memory_log_store_test test/memory_log_store_test.cpp)
+ADD_EXECUTABLE(memory_log_store_test src/tests/memory_log_store_test.cpp)
 ADD_DEPENDENCIES(memory_log_store_test googletest_ep)
 TARGET_LINK_LIBRARIES(memory_log_store_test ${GTEST_STATIC_LIB} ${GTEST_MAIN_STATIC_LIB} ${GMOCK_MAIN_STATIC_LIB} pthread)

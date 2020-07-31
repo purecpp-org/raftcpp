@@ -2,7 +2,7 @@
 #include "gtest/gtest.h"
 
 #include "nanolog.hpp"
-#include "memory_log_store.hpp"
+#include "../memory_log_store.h"
 #include <iostream>
 
 TEST(MemoryLogEntry, LoggingTest) {
