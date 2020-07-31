@@ -1,9 +1,15 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
+#include "nanolog.hpp"
 #include "memory_log_store.hpp"
 #include <iostream>
 
+TEST(MemoryLogEntry, LoggingTest) {
+  nanolog::initialize(nanolog::GuaranteedLogger(), "/tmp/", "nanolog", 1);
+  LOG_INFO << "Sample NanoLog: " << 1 << 2.5 << 'c';
+  // TODO(qwang): assert the logging text is correct.
+}
 
 TEST(MemoryLogEntry, AppendLogEntry) {
   using namespace raftcpp;
