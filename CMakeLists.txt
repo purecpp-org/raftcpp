@@ -15,14 +15,16 @@ endif()
 
 INCLUDE(ExternalProject)
 INCLUDE(GtestExternalProject)
+INCLUDE(AsioExternalProject)
+INCLUDE(Rest_rpcExternalProject)
 INCLUDE_DIRECTORIES(SYSTEM ${GTEST_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(SYSTEM thirdparty/logging)
 
 INCLUDE_DIRECTORIES(includes)
 INCLUDE_DIRECTORIES(
-		thirdparty/asio/asio/include
-		thirdparty/rest_rpc
-		thirdparty/rest_rpc/third/msgpack/include
+		SYSTEM ${ASIO_INCLUDE_DIR}
+		SYSTEM ${REST_RPC_INCLUDE_DIR}
+		SYSTEM ${MSGPACK_INCLUDE_DIR}
 )
 
 SET(raftcpp src/main.cpp)
