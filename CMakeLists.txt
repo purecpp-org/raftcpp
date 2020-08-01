@@ -21,14 +21,9 @@ INCLUDE_DIRECTORIES(SYSTEM thirdparty/logging)
 INCLUDE_DIRECTORIES(includes)
 INCLUDE_DIRECTORIES(
 		thirdparty/asio/asio/include
-		thirdparty/rest_rpc
+		thirdparty/rest_rpc/include
 		thirdparty/rest_rpc/third/msgpack/include
 )
-
-SET(raftcpp src/main.cpp)
-
-ADD_EXECUTABLE(${project_name} ${raftcpp})
-TARGET_LINK_LIBRARIES(${project_name} -lstdc++fs)
 
 
 # Test targets
