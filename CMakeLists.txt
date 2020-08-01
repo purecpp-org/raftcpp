@@ -21,7 +21,7 @@ INCLUDE_DIRECTORIES(SYSTEM thirdparty/logging)
 INCLUDE_DIRECTORIES(includes)
 INCLUDE_DIRECTORIES(
 		thirdparty/asio/asio/include
-		thirdparty/rest_rpc
+		thirdparty/rest_rpc/include
 		thirdparty/rest_rpc/third/msgpack/include
 )
 
