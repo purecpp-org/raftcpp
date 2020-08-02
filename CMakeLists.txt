@@ -22,7 +22,7 @@ INCLUDE_DIRECTORIES(includes)
 INCLUDE_DIRECTORIES(
 		thirdparty/asio/asio/include
 		thirdparty/rest_rpc
-		thridparty/rest_rpc/third/msgpack/include
+		thirdparty/rest_rpc/third/msgpack/include
 )
 
 SET(raftcpp src/main.cpp)
