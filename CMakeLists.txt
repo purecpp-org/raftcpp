@@ -30,3 +30,8 @@ INCLUDE_DIRECTORIES(
 ADD_EXECUTABLE(memory_log_store_test src/tests/memory_log_store_test.cpp)
 ADD_DEPENDENCIES(memory_log_store_test googletest_ep)
 TARGET_LINK_LIBRARIES(memory_log_store_test ${GTEST_STATIC_LIB} ${GTEST_MAIN_STATIC_LIB} ${GMOCK_MAIN_STATIC_LIB} pthread)
+
+ADD_EXECUTABLE(nanolog_test src/tests/nanolog_test.cpp)
+ADD_DEPENDENCIES(nanolog_test googletest_ep)
+TARGET_LINK_LIBRARIES(nanolog_test ${GTEST_STATIC_LIB} ${GTEST_MAIN_STATIC_LIB})
+
