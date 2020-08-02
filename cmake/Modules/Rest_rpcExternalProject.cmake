@@ -17,4 +17,12 @@ set(REST_RPC_URL_MD5 "bb35e65ccb4928bdb7496d81840195bf")
 ExternalProject_Add(rest_rpc_ep
         PREFIX external/rest-rpc
         URL "https://github.com/qicosmos/rest_rpc/archive/master.zip"
-        URL_MD5 ${REST_RPC_URL_MD5})
+        URL_MD5 ${REST_RPC_URL_MD5}
+        BUILD_IN_SOURCE 1
+        CONFIGURE_COMMAND bash -c "git submodule init && git submodule update"
+        BUILD_COMMAND ""
+        INSTALL_COMMAND "")
+
+SET(REST_RPC_HOME ${CMAKE_CURRENT_BINARY_DIR}/external/rest-rpc/src/rest_rpc_ep)
+SET(REST_RPC_INCLUDE_DIR ${REST_RPC_HOME}/include)
+SET(MSGPACK_INCLUDE_DIR ${REST_RPC_HOME}/third/msgpack/include)
