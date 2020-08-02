@@ -15,8 +15,6 @@ endif()
 
 INCLUDE(ExternalProject)
 INCLUDE(GtestExternalProject)
-INCLUDE(AsioExternalProject)
-INCLUDE(Rest_rpcExternalProject)
 INCLUDE_DIRECTORIES(SYSTEM ${GTEST_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(SYSTEM thirdparty/logging)
 
