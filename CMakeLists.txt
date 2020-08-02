@@ -27,11 +27,6 @@ INCLUDE_DIRECTORIES(
 		SYSTEM ${MSGPACK_INCLUDE_DIR}
 )
 
-SET(raftcpp src/main.cpp)
-
-ADD_EXECUTABLE(${project_name} ${raftcpp})
-TARGET_LINK_LIBRARIES(${project_name} -lstdc++fs)
-
 
 # Test targets
 ADD_EXECUTABLE(memory_log_store_test src/tests/memory_log_store_test.cpp)
