@@ -17,7 +17,7 @@
 
 namespace nanolog
 {
-  enum class LogLevel : uint8_t { INFO, WARN, CRIT };
+  enum class LogLevel : uint8_t { INFO, DEBUG,WARN, CRIT };
 
   /*
   * Non guaranteed logging. Uses a ring buffer to hold log lines.
@@ -100,6 +100,8 @@ namespace nanolog
     {
       case LogLevel::INFO:
         return "INFO";
+	  case LogLevel::DEBUG:
+		  return "DEBUG";
       case LogLevel::WARN:
         return "WARN";
       case LogLevel::CRIT:
@@ -709,5 +711,6 @@ namespace nanolog
 
 #define NANO_LOG(LEVEL) nanolog::NanoLog() == nanolog::NanoLogLine(LEVEL, __FILE__, __func__, __LINE__)
 #define LOG_INFO nanolog::is_logged(nanolog::LogLevel::INFO) && NANO_LOG(nanolog::LogLevel::INFO)
+#define LOG_DEBUG nanolog::is_logged(nanolog::LogLevel::DEBUG) && NANO_LOG(nanolog::LogLevel::DEBUG)
 #define LOG_WARN nanolog::is_logged(nanolog::LogLevel::WARN) && NANO_LOG(nanolog::LogLevel::WARN)
 #define LOG_CRIT nanolog::is_logged(nanolog::LogLevel::CRIT) && NANO_LOG(nanolog::LogLevel::CRIT)
