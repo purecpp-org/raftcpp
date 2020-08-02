@@ -22,9 +22,9 @@ INCLUDE_DIRECTORIES(SYSTEM thirdparty/logging)
 
 INCLUDE_DIRECTORIES(includes)
 INCLUDE_DIRECTORIES(
-		SYSTEM ${ASIO_INCLUDE_DIR}
-		SYSTEM ${REST_RPC_INCLUDE_DIR}
-		SYSTEM ${MSGPACK_INCLUDE_DIR}
+		thirdparty/asio/asio/include
+		thirdparty/rest_rpc
+		thridparty/rest_rpc/third/msgpack/include
 )
 
 SET(raftcpp src/main.cpp)
