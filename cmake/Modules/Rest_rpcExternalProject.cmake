@@ -6,17 +6,17 @@
 #  - REST_RPC_INCLUDE_DIR
 #  - MSGPACK_INCLUDE_DIR
 
-#set(REST_RPC_VERSION "1.8.0")
+set(REST_RPC_VERSION "0.05")
 
 set(REST_RPC_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/external/rest-rpc-install")
 set(REST_RPC_INCLUDE_DIR "${REST_RPC_PREFIX}/include")
 set(MSGPACK_INCLUDE_DIR "${REST_RPC_PREFIX}/third/msgpack/include")
 
-set(REST_RPC_URL_MD5 "bb35e65ccb4928bdb7496d81840195bf")
+set(REST_RPC_URL_MD5 "d638bb0659b65161c3b8ab8c6e190ea0")
 
 ExternalProject_Add(rest_rpc_ep
         PREFIX external/rest-rpc
-        URL "https://github.com/qicosmos/rest_rpc/archive/master.zip"
+        URL "https://github.com/qicosmos/rest_rpc/archive/V${REST_RPC_VERSION}.tar.gz"
         URL_MD5 ${REST_RPC_URL_MD5}
         BUILD_IN_SOURCE 1
         CONFIGURE_COMMAND bash -c "git submodule init && git submodule update"
