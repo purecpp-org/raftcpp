@@ -19,7 +19,7 @@ ExternalProject_Add(rest_rpc_ep
         URL "https://github.com/qicosmos/rest_rpc/archive/V${REST_RPC_VERSION}.tar.gz"
         URL_MD5 ${REST_RPC_URL_MD5}
         BUILD_IN_SOURCE 1
-        CONFIGURE_COMMAND bash -c "git submodule init && git submodule update"
+        CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
         INSTALL_COMMAND "")
 
