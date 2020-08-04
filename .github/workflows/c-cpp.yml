@@ -9,8 +9,15 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+      include:
+        os: centos-7.4
+        compiler:
+          - gcc-8.4
     steps:
     - uses: actions/checkout@v2
     - name: build
