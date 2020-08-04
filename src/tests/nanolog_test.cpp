@@ -1,9 +1,18 @@
 #include <iostream>
 #include <string>
-#include "gtest/gtest.h"
 #include "nanolog.hpp"
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "doctest.h"
 
-class TestNanoLog : public testing::Test {
+#ifdef INFO
+#undef INFO
+#endif
+
+#ifdef WARN
+#undef WARN
+#endif
+
+class TestNanoLog {
 public:
     static void SetUpTestCase() {
         std::cout << "TestNanoLog SetUpTestCase" << std::endl;
@@ -14,7 +23,7 @@ public:
     }
 };
 
-TEST_F(TestNanoLog, TestLogLevel) {
+TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
     std::string log_directory = "/tmp/";
     std::string log_file_name = "test_nanolog";
     nanolog::initialize(nanolog::GuaranteedLogger(), log_directory, log_file_name, 1);
@@ -36,7 +45,7 @@ TEST_F(TestNanoLog, TestLogLevel) {
     nanolog::initialize(nanolog::GuaranteedLogger(), "", "", 1);
 
     std::fstream file(real_log_file_path);
-    ASSERT_TRUE(file);
+    REQUIRE(file);
 
     std::string line;
     uint8_t debug_count=0;
@@ -55,10 +64,10 @@ TEST_F(TestNanoLog, TestLogLevel) {
         }
     }
 
-    ASSERT_EQ(debug_count, 6);
-    ASSERT_EQ(info_count, 6);
-    ASSERT_EQ(warn_count, 6);
-    ASSERT_EQ(crit_count, 6);
+    REQUIRE_EQ(debug_count, 6);
+    REQUIRE_EQ(info_count, 6);
+    REQUIRE_EQ(warn_count, 6);
+    REQUIRE_EQ(crit_count, 6);
 
     std::remove(real_log_file_path.data());
 }
