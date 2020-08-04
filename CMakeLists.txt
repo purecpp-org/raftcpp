@@ -30,7 +30,7 @@ INCLUDE_DIRECTORIES(
 
 # Test targets
 ADD_EXECUTABLE(memory_log_store_test src/tests/memory_log_store_test.cpp)
-ADD_DEPENDENCIES(memory_log_store_test doctest_ep)
+ADD_DEPENDENCIES(memory_log_store_test rest_rpc_ep doctest_ep)
 TARGET_LINK_LIBRARIES(memory_log_store_test pthread)
 
 ADD_EXECUTABLE(nanolog_test src/tests/nanolog_test.cpp)
