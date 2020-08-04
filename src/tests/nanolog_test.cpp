@@ -73,7 +73,3 @@ TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
     std::remove(real_log_file_path.data());
 }
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
