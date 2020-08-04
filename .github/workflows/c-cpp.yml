@@ -13,10 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest]
-        include:
-          os: centos7
-          compiler:
-            - gcc-8.4
+
     steps:
     - uses: actions/checkout@v2
     - name: build
