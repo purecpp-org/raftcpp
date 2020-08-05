@@ -1,6 +1,0 @@
-[submodule "thirdparty/asio"]
-	path = thirdparty/asio
-	url = https://github.com/chriskohlhoff/asio.git
-[submodule "thirdparty/rest_rpc"]
-	path = thirdparty/rest_rpc
-	url = https://github.com/qicosmos/rest_rpc.git
