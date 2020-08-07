@@ -25,7 +25,7 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: cmake    
+    - name: build    
       run: |
         cmake . -Bbuild -G"Visual Studio 16 2019" -DCMAKE_GENERATOR_PLATFORM=x64 
         cmake --build build --target ALL_BUILD --config Release
