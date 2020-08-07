@@ -20,3 +20,12 @@ jobs:
       run: ./build.sh
     - name: run test
       run: ./build/memory_log_store_test && ./build/nanolog_test
+      
+  build_on_windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: cmake    
+      run: |
+        cmake . -Bbuild -G"Visual Studio 16 2019" -DCMAKE_GENERATOR_PLATFORM=x64 
+        cmake --build build --target ALL_BUILD --config Release
