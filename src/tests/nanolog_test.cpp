@@ -25,7 +25,13 @@ public:
 };
 
 TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
-    std::string log_directory = "/tmp/";
+#ifdef _WIN32
+	//define something for Windows (32-bit and 64-bit, this part is common)
+    std::string log_directory = "";
+#else __linux__
+	std::string log_directory = "/tmp/";
+#endif
+
     std::string log_file_name = "test_nanolog";
     nanolog::initialize(nanolog::GuaranteedLogger(), log_directory, log_file_name, 1);
     uint8_t n = 6;
@@ -55,7 +61,20 @@ TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
     uint8_t crit_count = 0;
     while (getline(file, line)) {
         if (line.find("DEBUG") != std::string::npos) {
-            debug_count++;
+#ifdef _WIN32
+			//define something for Windows (32-bit and 64-bit, this part is common)
+#ifdef _DEBUG
+			debug_count++;
+#else
+			//debug_count++;
+#endif
+#else __linux__
+#ifndef NDEBUG
+			//debug_count++;
+#else
+			debug_count++;
+#endif
+#endif
         } else if (line.find("INFO") != std::string::npos) {
             info_count++;
         } else if (line.find("WARN") != std::string::npos) {
@@ -65,7 +84,22 @@ TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
         }
     }
 
-    REQUIRE_EQ(debug_count, 6);
+#ifdef _WIN32
+	//define something for Windows (32-bit and 64-bit, this part is common)
+#ifdef _DEBUG
+	REQUIRE_EQ(debug_count, 6);
+#else
+	REQUIRE_EQ(debug_count, 0);
+#endif
+#else __linux__
+#ifndef NDEBUG
+	REQUIRE_EQ(debug_count, 0);
+#else
+	REQUIRE_EQ(debug_count, 6);
+#endif
+#endif
+
+
     REQUIRE_EQ(info_count, 6);
     REQUIRE_EQ(warn_count, 6);
     REQUIRE_EQ(crit_count, 6);
