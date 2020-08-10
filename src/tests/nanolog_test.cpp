@@ -25,9 +25,8 @@ public:
 };
 
 TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
-<<<<<<< HEAD
     std::string log_directory = "/tmp/";
-=======
+
 #ifdef _WIN32
 	//define something for Windows (32-bit and 64-bit, this part is common)
     std::string log_directory = "";
@@ -35,7 +34,6 @@ TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
 	std::string log_directory = "/tmp/";
 #endif
 
->>>>>>> 65ac8b86b08bfdabebc92361b959b274241847b0
     std::string log_file_name = "test_nanolog";
     nanolog::initialize(nanolog::GuaranteedLogger(), log_directory, log_file_name, 1);
     uint8_t n = 6;
