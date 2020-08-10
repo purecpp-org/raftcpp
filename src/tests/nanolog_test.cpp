@@ -88,9 +88,7 @@ TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
         }
     }
 
-<<<<<<< HEAD
     REQUIRE_EQ(debug_count, 6);
-=======
 #ifdef _WIN32
 	//define something for Windows (32-bit and 64-bit, this part is common)
 #ifdef _DEBUG
@@ -106,8 +104,6 @@ TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
 #endif
 #endif
 
-
->>>>>>> 65ac8b86b08bfdabebc92361b959b274241847b0
     REQUIRE_EQ(info_count, 6);
     REQUIRE_EQ(warn_count, 6);
     REQUIRE_EQ(crit_count, 6);
