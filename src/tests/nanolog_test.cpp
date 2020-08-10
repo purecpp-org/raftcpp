@@ -26,10 +26,10 @@ public:
 
 TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
 #ifdef _WIN32
-	//define something for Windows (32-bit and 64-bit, this part is common)
+    //define something for Windows (32-bit and 64-bit, this part is common)
     std::string log_directory = "";
 #else __linux__
-	std::string log_directory = "/tmp/";
+    std::string log_directory = "/tmp/";
 #endif
 
     std::string log_file_name = "test_nanolog";
@@ -52,7 +52,7 @@ TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
     nanolog::initialize(nanolog::GuaranteedLogger(), "", "", 1);
 
     std::fstream file(real_log_file_path);
-    REQUIRE(file);
+            REQUIRE(file);
 
     std::string line;
     uint8_t debug_count=0;
@@ -62,7 +62,7 @@ TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
     while (getline(file, line)) {
         if (line.find("DEBUG") != std::string::npos) {
 #ifdef _WIN32
-			//define something for Windows (32-bit and 64-bit, this part is common)
+            //define something for Windows (32-bit and 64-bit, this part is common)
 #ifdef _DEBUG
 			debug_count++;
 #else
@@ -70,9 +70,9 @@ TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
 #endif
 #else __linux__
 #ifndef NDEBUG
-			//debug_count++;
+            //debug_count++;
 #else
-			debug_count++;
+            debug_count++;
 #endif
 #endif
         } else if (line.find("INFO") != std::string::npos) {
@@ -84,9 +84,8 @@ TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
         }
     }
 
-    REQUIRE_EQ(debug_count, 6);
 #ifdef _WIN32
-	//define something for Windows (32-bit and 64-bit, this part is common)
+    //define something for Windows (32-bit and 64-bit, this part is common)
 #ifdef _DEBUG
 	REQUIRE_EQ(debug_count, 6);
 #else
@@ -94,16 +93,16 @@ TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
 #endif
 #else __linux__
 #ifndef NDEBUG
-	REQUIRE_EQ(debug_count, 0);
+            REQUIRE_EQ(debug_count, 0);
 #else
-	REQUIRE_EQ(debug_count, 6);
+    REQUIRE_EQ(debug_count, 6);
 #endif
 #endif
 
-    REQUIRE_EQ(info_count, 6);
-    REQUIRE_EQ(warn_count, 6);
-    REQUIRE_EQ(crit_count, 6);
+
+            REQUIRE_EQ(info_count, 6);
+            REQUIRE_EQ(warn_count, 6);
+            REQUIRE_EQ(crit_count, 6);
 
     std::remove(real_log_file_path.data());
 }
-
