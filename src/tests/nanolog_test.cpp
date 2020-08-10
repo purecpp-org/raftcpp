@@ -25,8 +25,6 @@ public:
 };
 
 TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
-    std::string log_directory = "/tmp/";
-
 #ifdef _WIN32
 	//define something for Windows (32-bit and 64-bit, this part is common)
     std::string log_directory = "";
