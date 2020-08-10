@@ -677,7 +677,28 @@ namespace nanolog
 
   inline bool is_logged(LogLevel level)
   {
-    return static_cast<unsigned int>(level) >= loglevel.load(std::memory_order_relaxed);
+#ifdef _WIN32
+	  //define something for Windows (32-bit and 64-bit, this part is common)
+#ifdef _DEBUG
+	  return static_cast<unsigned int>(level) >= loglevel.load(std::memory_order_relaxed);
+#else
+	  if (level == LogLevel::DEBUG)
+	  {
+		  return false;
+	  }
+	  return static_cast<unsigned int>(level) >= loglevel.load(std::memory_order_relaxed);
+#endif
+#else __linux__
+#ifndef NDEBUG
+	  if (level == LogLevel::DEBUG)
+	  {
+		  return false;
+	  }
+	  return static_cast<unsigned int>(level) >= loglevel.load(std::memory_order_relaxed);
+#else
+	  return static_cast<unsigned int>(level) >= loglevel.load(std::memory_order_relaxed);
+#endif
+#endif
   }
 
   //void set_log_level(LogLevel level);

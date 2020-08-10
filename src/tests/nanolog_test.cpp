@@ -1,9 +1,19 @@
 #include <iostream>
 #include <string>
-#include "gtest/gtest.h"
 #include "nanolog.hpp"
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "doctest.h"
 
-class TestNanoLog : public testing::Test {
+//nanolog INFO (WARN) and doctest INFO (WARN) conflict
+#ifdef INFO
+#undef INFO
+#endif
+
+#ifdef WARN
+#undef WARN
+#endif
+
+class TestNanoLog {
 public:
     static void SetUpTestCase() {
         std::cout << "TestNanoLog SetUpTestCase" << std::endl;
@@ -14,8 +24,14 @@ public:
     }
 };
 
-TEST_F(TestNanoLog, TestLogLevel) {
-    std::string log_directory = "/tmp/";
+TEST_CASE_FIXTURE(TestNanoLog, "TestLogLevel") {
+#ifdef _WIN32
+	//define something for Windows (32-bit and 64-bit, this part is common)
+    std::string log_directory = "";
+#else __linux__
+	std::string log_directory = "/tmp/";
+#endif
+
     std::string log_file_name = "test_nanolog";
     nanolog::initialize(nanolog::GuaranteedLogger(), log_directory, log_file_name, 1);
     uint8_t n = 6;
@@ -36,7 +52,7 @@ TEST_F(TestNanoLog, TestLogLevel) {
     nanolog::initialize(nanolog::GuaranteedLogger(), "", "", 1);
 
     std::fstream file(real_log_file_path);
-    ASSERT_TRUE(file);
+    REQUIRE(file);
 
     std::string line;
     uint8_t debug_count=0;
@@ -45,7 +61,20 @@ TEST_F(TestNanoLog, TestLogLevel) {
     uint8_t crit_count = 0;
     while (getline(file, line)) {
         if (line.find("DEBUG") != std::string::npos) {
-            debug_count++;
+#ifdef _WIN32
+			//define something for Windows (32-bit and 64-bit, this part is common)
+#ifdef _DEBUG
+			debug_count++;
+#else
+			//debug_count++;
+#endif
+#else __linux__
+#ifndef NDEBUG
+			//debug_count++;
+#else
+			debug_count++;
+#endif
+#endif
         } else if (line.find("INFO") != std::string::npos) {
             info_count++;
         } else if (line.find("WARN") != std::string::npos) {
@@ -55,15 +84,26 @@ TEST_F(TestNanoLog, TestLogLevel) {
         }
     }
 
-    ASSERT_EQ(debug_count, 6);
-    ASSERT_EQ(info_count, 6);
-    ASSERT_EQ(warn_count, 6);
-    ASSERT_EQ(crit_count, 6);
+#ifdef _WIN32
+	//define something for Windows (32-bit and 64-bit, this part is common)
+#ifdef _DEBUG
+	REQUIRE_EQ(debug_count, 6);
+#else
+	REQUIRE_EQ(debug_count, 0);
+#endif
+#else __linux__
+#ifndef NDEBUG
+	REQUIRE_EQ(debug_count, 0);
+#else
+	REQUIRE_EQ(debug_count, 6);
+#endif
+#endif
+
+
+    REQUIRE_EQ(info_count, 6);
+    REQUIRE_EQ(warn_count, 6);
+    REQUIRE_EQ(crit_count, 6);
 
     std::remove(real_log_file_path.data());
 }
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

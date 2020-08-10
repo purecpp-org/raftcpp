@@ -2,8 +2,6 @@
 SET(project_name raftcpp)
 PROJECT(${project_name})
 
-
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -pthread -std=c++17")
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
 
 #SET(ENABLE_ASIO_STANDALONE ON)
@@ -12,12 +10,12 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
 #else()
 #	FIND_PACKAGE(Boost 1.60 REQUIRED COMPONENTS system)
 #endif()
-
+INCLUDE(CompilerOptions)
 INCLUDE(ExternalProject)
-INCLUDE(GtestExternalProject)
+INCLUDE(DoctestExternalProject)
 INCLUDE(AsioExternalProject)
 INCLUDE(Rest_rpcExternalProject)
-INCLUDE_DIRECTORIES(SYSTEM ${GTEST_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(SYSTEM ${DOCTEST_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(SYSTEM thirdparty/logging)
 
 INCLUDE_DIRECTORIES(includes)
@@ -30,10 +28,13 @@ INCLUDE_DIRECTORIES(
 
 # Test targets
 ADD_EXECUTABLE(memory_log_store_test src/tests/memory_log_store_test.cpp)
-ADD_DEPENDENCIES(memory_log_store_test googletest_ep rest_rpc_ep asio_ep)
-TARGET_LINK_LIBRARIES(memory_log_store_test ${GTEST_STATIC_LIB} ${GTEST_MAIN_STATIC_LIB} ${GMOCK_MAIN_STATIC_LIB} pthread)
+ADD_DEPENDENCIES(memory_log_store_test rest_rpc_ep doctest_ep)
+if(UNIX)
+TARGET_LINK_LIBRARIES(memory_log_store_test pthread)
+else()
+	TARGET_LINK_LIBRARIES(memory_log_store_test )
+endif()
 
 ADD_EXECUTABLE(nanolog_test src/tests/nanolog_test.cpp)
-ADD_DEPENDENCIES(nanolog_test googletest_ep)
-TARGET_LINK_LIBRARIES(nanolog_test ${GTEST_STATIC_LIB} ${GTEST_MAIN_STATIC_LIB})
-
+ADD_DEPENDENCIES(nanolog_test doctest_ep)
+TARGET_LINK_LIBRARIES(nanolog_test)
