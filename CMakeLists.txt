@@ -29,8 +29,6 @@ INCLUDE_DIRECTORIES(
 # Test targets
 ADD_EXECUTABLE(memory_log_store_test src/tests/memory_log_store_test.cpp)
 ADD_DEPENDENCIES(memory_log_store_test rest_rpc_ep doctest_ep)
-TARGET_LINK_LIBRARIES(memory_log_store_test pthread)
-
 if(UNIX)
 	TARGET_LINK_LIBRARIES(memory_log_store_test pthread)
 else()
