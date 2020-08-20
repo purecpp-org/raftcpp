@@ -56,3 +56,4 @@ TARGET_LINK_LIBRARIES(raft_node_test)
 
 ADD_EXECUTABLE(flag_test tests/flag_test.cc)
 ADD_DEPENDENCIES(flag_test common_lib)
+TARGET_LINK_LIBRARIES(flag_test common_lib)
