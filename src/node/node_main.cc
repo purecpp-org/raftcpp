@@ -1,6 +1,5 @@
 #include "raft_node.h"
 
-//namespace raftcpp::node {
 using namespace raftcpp;
 using namespace raftcpp::node;
 
@@ -29,5 +28,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
-//}
