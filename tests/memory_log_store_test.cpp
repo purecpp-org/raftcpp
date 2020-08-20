@@ -1,5 +1,5 @@
 #include "nanolog.hpp"
-#include "../memory_log_store.h"
+#include "../src/memory_log_store.h"
 #include <iostream>
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
