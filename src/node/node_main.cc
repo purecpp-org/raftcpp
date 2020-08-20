@@ -1,4 +1,8 @@
-#include "raft_node.hpp"
+#include "raft_node.h"
+
+//namespace raftcpp::node {
+using namespace raftcpp;
+using namespace raftcpp::node;
 
 int main(int argc, char *argv[]) {
     if (argc != 4) {
@@ -9,12 +13,12 @@ int main(int argc, char *argv[]) {
     std::string address = argv[1];
     int port = std::atoi(argv[2]);
     std::string state_string(argv[3]);
-    raftcpp::node::State state;
+    RaftState state;
 
     if (state_string == "leader") {
-        state = raftcpp::node::Leader;
+        state = RaftState::LEADER;
     } else if (state_string == "follower") {
-        state = raftcpp::node::Follower;
+        state = RaftState::FOLLOWER;
     } else {
         raftcpp::node::ShowUsage();
         exit(EXIT_FAILURE);
@@ -22,4 +26,8 @@ int main(int argc, char *argv[]) {
 
     raftcpp::node::RaftNode node{address, port, state};
     node.start();
+
+    return 0;
 }
+
+//}

@@ -17,7 +17,7 @@ INCLUDE(AsioExternalProject)
 INCLUDE(Rest_rpcExternalProject)
 INCLUDE_DIRECTORIES(SYSTEM ${DOCTEST_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(SYSTEM thirdparty/logging)
-
+INCLUDE_DIRECTORIES(src/)
 INCLUDE_DIRECTORIES(includes)
 INCLUDE_DIRECTORIES(
 		SYSTEM ${ASIO_INCLUDE_DIR}
@@ -40,9 +40,9 @@ ADD_DEPENDENCIES(nanolog_test doctest_ep)
 TARGET_LINK_LIBRARIES(nanolog_test)
 
 
-ADD_EXECUTABLE(raft_node src/raft_node.cpp)
+ADD_EXECUTABLE(raft_node src/node/node_main.cc src/node/raft_node.cc)
 ADD_DEPENDENCIES(raft_node asio_ep rest_rpc_ep)
-TARGET_LINK_LIBRARIES(raft_node)
+#TARGET_LINK_LIBRARIES(raft_node)
 
 ADD_EXECUTABLE(raft_node_test tests/raft_node_test.cpp)
 ADD_DEPENDENCIES(raft_node_test doctest_ep raft_node)
