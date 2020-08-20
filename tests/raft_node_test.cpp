@@ -4,7 +4,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
 #include "doctest.h"
-#include "../raft_node.hpp"
+#include "../src/raft_node.hpp"
 
 //nanolog INFO (WARN) and doctest INFO (WARN) conflict
 #ifdef INFO

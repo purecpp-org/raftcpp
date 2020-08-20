@@ -27,7 +27,7 @@ INCLUDE_DIRECTORIES(
 
 
 # Test targets
-ADD_EXECUTABLE(memory_log_store_test src/tests/memory_log_store_test.cpp)
+ADD_EXECUTABLE(memory_log_store_test tests/memory_log_store_test.cpp)
 ADD_DEPENDENCIES(memory_log_store_test rest_rpc_ep doctest_ep)
 if(UNIX)
 TARGET_LINK_LIBRARIES(memory_log_store_test pthread)
@@ -35,7 +35,7 @@ else()
 	TARGET_LINK_LIBRARIES(memory_log_store_test )
 endif()
 
-ADD_EXECUTABLE(nanolog_test src/tests/nanolog_test.cpp)
+ADD_EXECUTABLE(nanolog_test tests/nanolog_test.cpp)
 ADD_DEPENDENCIES(nanolog_test doctest_ep)
 TARGET_LINK_LIBRARIES(nanolog_test)
 
@@ -44,6 +44,6 @@ ADD_EXECUTABLE(raft_node src/raft_node.cpp)
 ADD_DEPENDENCIES(raft_node asio_ep rest_rpc_ep)
 TARGET_LINK_LIBRARIES(raft_node)
 
-ADD_EXECUTABLE(raft_node_test src/tests/raft_node_test.cpp)
+ADD_EXECUTABLE(raft_node_test tests/raft_node_test.cpp)
 ADD_DEPENDENCIES(raft_node_test doctest_ep raft_node)
 TARGET_LINK_LIBRARIES(raft_node_test)
