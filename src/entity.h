@@ -13,7 +13,7 @@ namespace raftcpp {
         CUSTOM = 999,
     };
 
-    enum State {
+    enum RaftState {
         LEADER,
         CANDIDATE,
         FOLLOWER,
