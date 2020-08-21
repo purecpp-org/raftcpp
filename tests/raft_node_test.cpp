@@ -5,6 +5,7 @@
 
 #include "doctest.h"
 #include "../src/node/raft_node.h"
+#include "common/type_def.h"
 
 //nanolog INFO (WARN) and doctest INFO (WARN) conflict
 #ifdef INFO
@@ -30,7 +31,7 @@ void TestErrStateParameter() {
     std::string address = "127.0.0.1 ";
     int port = 9000;
 
-    raftcpp::node::State state = raftcpp::node::Candidate;
+    const auto state = raftcpp::RaftState::CANDIDATE;
     raftcpp::node::RaftNode node{address, port, state};
 }
 
@@ -38,7 +39,7 @@ void LeaderNode() {
     std::string address = "127.0.0.1 ";
     int port = 9000;
 
-    raftcpp::node::State state = raftcpp::node::Leader;
+    const auto state = raftcpp::RaftState::LEADER;
     raftcpp::node::RaftNode node{address, port, state};
     node.start();
 }
@@ -47,7 +48,7 @@ void FollowerNode() {
     std::string address = "127.0.0.1 ";
     int port = 9000;
 
-    raftcpp::node::State state = raftcpp::node::Follower;
+    const auto state = raftcpp::RaftState::FOLLOWER;
     raftcpp::node::RaftNode node{address, port, state};
     node.start();
 }
