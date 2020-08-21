@@ -31,6 +31,8 @@ INCLUDE_DIRECTORIES(
 # common library
 ADD_LIBRARY(common_lib src/common/flags.cc)
 
+# node library
+ADD_LIBRARY(node_lib src/node/raft_node.cc)
 
 # Test targets
 ADD_EXECUTABLE(memory_log_store_test tests/memory_log_store_test.cpp)
@@ -51,8 +53,8 @@ ADD_DEPENDENCIES(raft_node asio_ep rest_rpc_ep)
 #TARGET_LINK_LIBRARIES(raft_node)
 
 ADD_EXECUTABLE(raft_node_test tests/raft_node_test.cpp)
-ADD_DEPENDENCIES(raft_node_test doctest_ep raft_node)
-TARGET_LINK_LIBRARIES(raft_node_test)
+ADD_DEPENDENCIES(raft_node_test common_lib node_lib doctest_ep raft_node)
+TARGET_LINK_LIBRARIES(raft_node_test node_lib common_lib)
 
 ADD_EXECUTABLE(flag_test tests/flag_test.cc)
 ADD_DEPENDENCIES(flag_test common_lib)

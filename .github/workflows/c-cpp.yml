@@ -19,7 +19,7 @@ jobs:
     - name: build
       run: ./build.sh
     - name: run test
-      run: ./build/memory_log_store_test && ./build/nanolog_test
+      run: ./build/memory_log_store_test && ./build/nanolog_test && ./build/flag_test
       
   build_on_windows:
     runs-on: windows-latest
