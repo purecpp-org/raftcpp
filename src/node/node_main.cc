@@ -9,11 +9,8 @@ DEFINE_int32(port, 8080, "What port to listen on");
 DEFINE_string(state_string, "follower", "What the initial state the node is");
 
 int main(int argc, char *argv[]) {
-   
-    raftcpp::node::ShowUsage();
-   
+      
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    
     
     RaftState state;
 
