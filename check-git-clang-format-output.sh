@@ -6,6 +6,7 @@ set -x
 if git rev-parse --verify HEAD >/dev/null 2>&1; then
   # Not in a pull request, so compare against parent commit
   base_commit=`git rev-parse --verify HEAD`
+  git branch -a
   git checkout master >/dev/null 2>&1
   origin_commit=`git rev-parse --verify master`
   echo "Running clang-format against parent commit $base_commit, and $origin_commit"
