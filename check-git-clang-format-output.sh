@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -x
+
 if git rev-parse --verify HEAD >/dev/null 2>&1; then
   # Not in a pull request, so compare against parent commit
   base_commit=`git rev-parse --verify HEAD`
