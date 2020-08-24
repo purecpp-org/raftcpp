@@ -8,7 +8,7 @@ if git rev-parse --verify HEAD >/dev/null 2>&1; then
   base_commit=`git rev-parse --verify HEAD`
   #echo "$(git rev-parse --git-dir)"
   builtin cd "$(git rev-parse --git-dir)"
-  builtin cd refs/heads/
+  builtin cd refs
   ls
   #git checkout --progress --force refs/heads/master >/dev/null 2>&1
   origin_commit=`git rev-parse --verify refs/heads/master`
