@@ -8,6 +8,7 @@ if git rev-parse --verify HEAD >/dev/null 2>&1; then
   base_commit=`git rev-parse --verify HEAD`
   #echo "$(git rev-parse --git-dir)"
   builtin cd "$(git rev-parse --git-dir)"
+  ls -l
   builtin cd refs
   ls
   builtin cd heads
