@@ -9,8 +9,9 @@ if git rev-parse --verify HEAD >/dev/null 2>&1; then
   #echo "$(git rev-parse --git-dir)"
   builtin cd "$(git rev-parse --git-dir)"
   builtin cd refs
-  builtin cd heads
   ls
+  builtin cd heads
+  ls -l
   #git checkout --progress --force refs/heads/master >/dev/null 2>&1
   #origin_commit=`git rev-parse --verify refs/heads/master`
   echo "Running clang-format against parent commit $base_commit, and $origin_commit"
