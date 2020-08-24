@@ -6,6 +6,7 @@ set -x
 if git rev-parse --verify HEAD >/dev/null 2>&1; then
   # Not in a pull request, so compare against parent commit
   base_commit=`git rev-parse --verify HEAD`
+  echo "$(git rev-parse --git-dir)"
   builtin cd "$(git rev-parse --git-dir)"
   ls
   git checkout --progress --force refs/remotes/origin/master >/dev/null 2>&1
