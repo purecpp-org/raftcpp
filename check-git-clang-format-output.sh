@@ -12,7 +12,7 @@ if git rev-parse --verify HEAD >/dev/null 2>&1; then
   builtin cd heads
   ls
   #git checkout --progress --force refs/heads/master >/dev/null 2>&1
-  origin_commit=`git rev-parse --verify refs/heads/master`
+  #origin_commit=`git rev-parse --verify refs/heads/master`
   echo "Running clang-format against parent commit $base_commit, and $origin_commit"
 else
   base_commit=4b825dc642cb6eb9a060e54bf8d69288fbee4904
