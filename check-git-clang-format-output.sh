@@ -13,8 +13,8 @@ if git rev-parse --verify HEAD >/dev/null 2>&1; then
   ls
   builtin cd remotes
   ls -l
-  #builtin cd origin
-  #ls -l
+  builtin cd pull
+  ls -l
   #git checkout --progress --force refs/heads/master >/dev/null 2>&1
   #origin_commit=`git rev-parse --verify refs/heads/master`
   echo "Running clang-format against parent commit $base_commit, and $origin_commit"
