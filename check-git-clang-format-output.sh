@@ -11,7 +11,9 @@ if git rev-parse --verify HEAD >/dev/null 2>&1; then
   ls -l
   builtin cd refs
   ls
-  builtin cd heads
+  builtin cd remotes
+  ls -l
+  builtin cd origin
   ls -l
   #git checkout --progress --force refs/heads/master >/dev/null 2>&1
   #origin_commit=`git rev-parse --verify refs/heads/master`
