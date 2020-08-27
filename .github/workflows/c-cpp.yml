@@ -16,6 +16,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: cpplint
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: ./check-git-clang-format-output.sh
     - name: build
       run: ./build.sh
     - name: run test
