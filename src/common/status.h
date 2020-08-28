@@ -4,7 +4,7 @@ namespace raftcpp {
 
 enum class Status {
     OK = 0,
-    UNKNOWN_REQUEST = 100;
+    UNKNOWN_REQUEST = 100,
 };
 
 }
