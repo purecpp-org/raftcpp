@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set -e
-#set -x
 
 pull_request=$(echo "$GITHUB_CONTEXT" | jq -r '.event.pull_request')
 if [ "$pull_request" != null ]; then
