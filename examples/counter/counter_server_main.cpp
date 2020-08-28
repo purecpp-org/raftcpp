@@ -1,5 +1,8 @@
 #include <thread>
 
+#include "node/node.h"
+#include "common/type_def.h"
+
 #include "counter_state_machine.h"
 #include "rpc_server.h"
 
@@ -12,8 +15,8 @@ using namespace examples::counter;
 class CounterServiceImpl {
 public:
   // TODO(qwang): Are node and fsm uncopyable?
-  CounterServiceImpl(RaftcppNode node, CounterStateMachine fsm)
-    : node_(node), fsm_(fsm) {}
+  CounterServiceImpl(std::shared_ptr<raftcpp::node::RaftNode> node, std::shared_ptr<CounterStateMachine> &fsm)
+    : node_(std::move(node)), fsm_(std::move(fsm)) {}
 
   void incr(int delta) {
     IncrRequest request = IncrRequest(delta);
@@ -24,12 +27,12 @@ public:
     // There is no need to gurantee the write-read consistency,
     // so we can get the value directly from this fsm instead of
     // apply it to all nodes.
-    return fsm_.GetValue();
+    return fsm_->GetValue();
   }
 
 private:
-  RaftcppNode node_;
-  CounterStateMachine fsm_;
+  std::shared_ptr<raftcpp::node::RaftNode> node_;
+  std::shared_ptr<CounterStateMachine> fsm_;
 };
 
 
@@ -37,8 +40,9 @@ private:
 int main(int argc, char *argv[]) {
   rpc_server server(10001, std::thread::hardware_concurrency());
 
-  RaftcppNode node;
-  CounterStateMachine fsm;
+  std::shared_ptr<raftcpp::node::RaftNode> node = std::make_shared<raftcpp::node::RaftNode>(
+          "127.0.0.1", 10001, raftcpp::RaftState::LEADER);
+  std::shared_ptr<CounterStateMachine> fsm = std::make_shared<CounterStateMachine>();
   CounterServiceImpl service(node, fsm);
   server.register_handler("incr", &CounterServiceImpl::incr, &service);
   server.register_handler("get", &CounterServiceImpl::get, &service);

@@ -3,9 +3,14 @@
 
 #include <atomic>
 
+#include "statemachine/state_machine.h"
+#include "common/file.h"
+#include "common/status.h"
+
 namespace examples {
 namespace counter {
 
+using Status = raftcpp::Status;
 /**
  * The CounterStateMachine extends from raftcpp::StateMachine. It overrides
  * the snapshot interfaces that user can decide when and how do snapshot.
@@ -20,21 +25,21 @@ public:
 
   // We should do snapshot for every 3 requests.
   bool ShouldDoSnapshot() override {
-    return received_requests_num_.get() % 3;
+    return received_requests_num_.load() % 3;
   }
 
   void SaveSnapshot() override {
-    File snapshot_file = File::Open("/tmp/raftcpp/counter/snapshot.txt");
-    snapshot_file.CleanAndWrite(std::to_string(atomic_value_.get()));
+    raftcpp::File snapshot_file = raftcpp::File::Open("/tmp/raftcpp/counter/snapshot.txt");
+    snapshot_file.CleanAndWrite(std::to_string(atomic_value_.load()));
   }
 
   void LoadSnapshot() override {
-    File snapshot_file = File::Open("/tmp/raftcpp/counter/snapshot.txt");
+    raftcpp::File snapshot_file = raftcpp::File::Open("/tmp/raftcpp/counter/snapshot.txt");
     std::string value = snapshot_file.ReadAll();
-    atomic_value_.store(static_cast<int64_t>(std::atoi(value)));
+    atomic_value_.store(static_cast<int64_t>(std::stoi(value)));
   }
 
-  RaftcppResponse OnApply(RaftcppRequest request) override {
+  raftcpp::RaftcppResponse OnApply(raftcpp::RaftcppRequest request) override {
     received_requests_num_.fetch_add(1);
 
     auto counter_request = dynamic_cast<CounterRequest>(request);
@@ -48,6 +53,10 @@ public:
     }
 
     return CounterResponse(Status::UNKNOWN_REQUEST);
+  }
+
+  int64_t GetValue() const {
+      return atomic_value_.load();
   }
 
 private:

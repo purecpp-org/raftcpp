@@ -57,3 +57,5 @@ ADD_EXECUTABLE(test_raft_node tests/raft_node_test.cpp)
 ADD_DEPENDENCIES(test_raft_node  node_lib doctest_ep)
 TARGET_LINK_LIBRARIES(test_raft_node node_lib )
 
+# counter examples
+ADD_EXECUTABLE(example_counter_server_main examples/counter/counter_server_main.cpp)

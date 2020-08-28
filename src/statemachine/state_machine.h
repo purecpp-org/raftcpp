@@ -1,5 +1,7 @@
 #pragma once
 
+#include "rpc/common.h"
+
 namespace raftcpp {
 
 class StateMachine {
