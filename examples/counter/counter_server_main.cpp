@@ -1,3 +1,5 @@
+#include <gflags/gflags.h>
+
 #include <thread>
 
 #include "common/type_def.h"
@@ -5,16 +7,14 @@
 #include "node/node.h"
 #include "rpc_server.h"
 
-#include <gflags/gflags.h>
-
 using namespace rest_rpc;
 using namespace rpc_service;
 
 using namespace examples;
 using namespace examples::counter;
 
-//DEFINE_string(raftcpp_conf, "", "The configurations of this raft group.");
-//DEFINE_string(this_addr, "", "This address of this instance listening on.");
+// DEFINE_string(raftcpp_conf, "", "The configurations of this raft group.");
+// DEFINE_string(this_addr, "", "This address of this instance listening on.");
 
 class CounterServiceImpl {
     public:
