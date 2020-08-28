@@ -3,11 +3,11 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#include "doctest.h"
-#include "../src/node/raft_node.h"
+#include "../src/node/node.h"
 #include "common/type_def.h"
+#include "doctest.h"
 
-//nanolog INFO (WARN) and doctest INFO (WARN) conflict
+// nanolog INFO (WARN) and doctest INFO (WARN) conflict
 #ifdef INFO
 #undef INFO
 #endif
@@ -17,7 +17,7 @@
 #endif
 
 class TestRaftNode {
-public:
+    public:
     static void SetUpTestCase() {
         std::cout << "TestRaftNode SetUpTestCase" << std::endl;
     }
@@ -53,8 +53,8 @@ void FollowerNode() {
     node.start();
 }
 
-TEST_CASE_FIXTURE (TestRaftNode, "TestErrStateParameter") {
-    //LeaderNode();   //Endless loop
-    //FollowerNode(); //Endless loop
+TEST_CASE_FIXTURE(TestRaftNode, "TestErrStateParameter") {
+    // LeaderNode();   //Endless loop
+    // FollowerNode(); //Endless loop
     REQUIRE_THROWS(TestErrStateParameter());
 }

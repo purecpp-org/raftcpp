@@ -32,7 +32,7 @@ INCLUDE_DIRECTORIES(
 
 
 # node library
-ADD_LIBRARY(node_lib src/node/raft_node.cc)
+ADD_LIBRARY(node_lib src/node/node.cc)
 ADD_DEPENDENCIES(node_lib asio_ep rest_rpc_ep)
 
 
@@ -45,7 +45,7 @@ else()
 	TARGET_LINK_LIBRARIES(test_memory_log_store )
 endif()
 
-ADD_EXECUTABLE(node_main src/node/node_main.cc src/node/raft_node.cc)
+ADD_EXECUTABLE(node_main src/node/node_main.cc src/node/node.cc)
 ADD_DEPENDENCIES(node_main node_lib)
 TARGET_LINK_LIBRARIES(node_main node_lib gflags)
 
@@ -57,3 +57,7 @@ ADD_EXECUTABLE(test_raft_node tests/raft_node_test.cpp)
 ADD_DEPENDENCIES(test_raft_node  node_lib doctest_ep)
 TARGET_LINK_LIBRARIES(test_raft_node node_lib )
 
+# counter examples
+ADD_EXECUTABLE(example_counter_server_main examples/counter/counter_server_main.cpp)
+#ADD_DEPENDENCIES(example_counter_server_main )
+TARGET_LINK_LIBRARIES(example_counter_server_main node_lib)
