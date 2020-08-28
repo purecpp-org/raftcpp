@@ -18,12 +18,12 @@ public:
   CounterServiceImpl(std::shared_ptr<raftcpp::node::RaftNode> node, std::shared_ptr<CounterStateMachine> &fsm)
     : node_(std::move(node)), fsm_(std::move(fsm)) {}
 
-  void incr(int delta) {
+  void Incr(rpc_conn conn, int delta) {
     IncrRequest request = IncrRequest(delta);
     node_->Apply(request);
   }
 
-  int64_t get() {
+  int64_t Get(rpc_conn conn) {
     // There is no need to gurantee the write-read consistency,
     // so we can get the value directly from this fsm instead of
     // apply it to all nodes.
@@ -41,11 +41,11 @@ int main(int argc, char *argv[]) {
   rpc_server server(10001, std::thread::hardware_concurrency());
 
   std::shared_ptr<raftcpp::node::RaftNode> node = std::make_shared<raftcpp::node::RaftNode>(
-          "127.0.0.1", 10001, raftcpp::RaftState::LEADER);
+          "127.0.0.1", 10002, raftcpp::RaftState::LEADER);
   std::shared_ptr<CounterStateMachine> fsm = std::make_shared<CounterStateMachine>();
   CounterServiceImpl service(node, fsm);
-  server.register_handler("incr", &CounterServiceImpl::incr, &service);
-  server.register_handler("get", &CounterServiceImpl::get, &service);
+  server.register_handler("incr", &CounterServiceImpl::Incr, &service);
+  server.register_handler("get", &CounterServiceImpl::Get, &service);
   server.run();
 
   return 0;
