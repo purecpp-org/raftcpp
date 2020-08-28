@@ -13,7 +13,7 @@ endif(MSVC)
 
 include_directories(SYSTEM ${GFLAGS_INCLUDE_DIR})
 ExternalProject_Add(
-    gflags_gflags
+    gflags_ep
     ${EXTERNAL_PROJECT_LOG_ARGS}      
     URL ${GFLAGS_URL}
     PREFIX          ${GFLAGS_PREFIX}

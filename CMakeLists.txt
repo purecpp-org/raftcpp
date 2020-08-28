@@ -59,5 +59,5 @@ TARGET_LINK_LIBRARIES(test_raft_node node_lib )
 
 # counter examples
 ADD_EXECUTABLE(example_counter_server_main examples/counter/counter_server_main.cpp)
-#ADD_DEPENDENCIES(example_counter_server_main )
-TARGET_LINK_LIBRARIES(example_counter_server_main node_lib)
+ADD_DEPENDENCIES(example_counter_server_main node_lib gflags_ep)
+TARGET_LINK_LIBRARIES(example_counter_server_main node_lib gflags)
