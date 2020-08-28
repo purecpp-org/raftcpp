@@ -8,21 +8,14 @@
 namespace raftcpp {
 
 class Config final {
-public:
-    static Config From(const std::string &config_str) {
-        return Config();
-    }
+    public:
+    static Config From(const std::string &config_str) { return Config(); }
 
-    Endpoint GetSelfEndpoint() const {
+    Endpoint GetSelfEndpoint() const {}
 
-    }
+    std::vector<Endpoint> GetAllEndpoints() const {}
 
-    std::vector<Endpoint> GetAllEndpoints() const {
-
-    }
-
-private:
-
+    private:
 };
 
-}
+}  // namespace raftcpp
