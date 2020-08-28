@@ -1,16 +1,16 @@
 #!/bin/bash
 
 set -e
-set -x
 
-if git rev-parse --verify HEAD >/dev/null 2>&1; then
+pull_request=$(echo "$GITHUB_CONTEXT" | jq -r '.event.pull_request')
+if [ "$pull_request" != null ]; then
+    echo "this is pull request, run git-clang-format"
     origin_commit=$(echo "$GITHUB_CONTEXT" | jq -r '.event.pull_request.base.sha')
     current_commit=$(echo "$GITHUB_CONTEXT" | jq -r '.event.pull_request.head.sha')
     echo "Running clang-format against parent commit $origin_commit, and $current_commit"
 else
-    base_commit=4b825dc642cb6eb9a060e54bf8d69288fbee4904
-    origin_commit=4b825dc642cb6eb9a060e54bf8d69288fbee4904
-    echo "Running clang-format against branch $base_commit"
+    echo "this is not pull request, it is already run git-clang-format"
+    exit 0
 fi
 
 output="$(./git-clang-format --binary clang-format --commit "$current_commit" "$origin_commit" --diff)"
