@@ -1,4 +1,4 @@
-#include "raft_node.h"
+#include "node.h"
 #include <gflags/gflags.h>
 
 using namespace raftcpp;

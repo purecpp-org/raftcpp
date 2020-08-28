@@ -1,0 +1,22 @@
+#pragma once
+
+namespace raftcpp {
+
+class StateMachine {
+public:
+
+    virtual bool ShouldDoSnapshot() {
+        return true;
+    }
+
+    virtual void SaveSnapshot() = 0;
+
+    virtual void LoadSnapshot() = 0;
+
+    virtual RaftcppResponse OnApply(RaftcppRequest request) = 0;
+
+private:
+
+};
+
+}
