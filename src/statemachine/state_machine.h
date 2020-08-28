@@ -15,7 +15,7 @@ public:
 
     virtual void LoadSnapshot() = 0;
 
-    virtual RaftcppResponse OnApply(RaftcppRequest request) = 0;
+    virtual RaftcppResponse OnApply(RaftcppRequest &request) = 0;
 
 private:
 

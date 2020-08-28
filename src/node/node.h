@@ -6,6 +6,7 @@
 #include "rpc_client.hpp"
 #include "rpc_server.h"
 
+#include "rpc/common.h"
 #include "common/type_def.h"
 
 
@@ -27,6 +28,10 @@ public:
     RaftNode(const std::string &address, const int &port, const RaftState &state);
 
     void start();
+
+    void Apply(raftcpp::RaftcppRequest request) {
+
+    }
 
 private:
     const std::string address_;

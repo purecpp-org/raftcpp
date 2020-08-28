@@ -20,7 +20,7 @@ public:
 
   void incr(int delta) {
     IncrRequest request = IncrRequest(delta);
-    node.apply(request);
+    node_->Apply(request);
   }
 
   int64_t get() {
