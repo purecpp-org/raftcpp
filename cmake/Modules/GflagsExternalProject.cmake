@@ -13,7 +13,7 @@ endif(MSVC)
 
 include_directories(SYSTEM ${GFLAGS_INCLUDE_DIR})
 ExternalProject_Add(
-    gflags_gflags
+    gflags_ep
     ${EXTERNAL_PROJECT_LOG_ARGS}      
     URL ${GFLAGS_URL}
     PREFIX          ${GFLAGS_PREFIX}
@@ -27,7 +27,7 @@ ExternalProject_Add(
 
 
 if(MSVC)
-  add_custom_command(TARGET gflags_gflags POST_BUILD
+  add_custom_command(TARGET gflags_ep POST_BUILD
     COMMAND if $<CONFIG:Debug>==1 (${CMAKE_COMMAND} -E copy ${GFLAGS_INSTALL_DIR}/lib/gflags_static_debug.lib ${GFLAGS_INSTALL_DIR}/lib/gflags_static.lib)
   )
 endif(MSVC)
@@ -35,7 +35,7 @@ endif(MSVC)
 add_library(gflags STATIC IMPORTED GLOBAL)
 
 set_property(TARGET gflags PROPERTY IMPORTED_LOCATION ${GFLAGS_LIBRARIES})
-add_dependencies(gflags gflags_gflags)
+add_dependencies(gflags gflags_ep)
 if(MSVC)
   set_target_properties(gflags
     PROPERTIES IMPORTED_LINK_INTERFACE_LIBRARIES
