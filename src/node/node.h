@@ -3,15 +3,13 @@
 #include <iostream>
 #include <string>
 
+#include "common/type_def.h"
+#include "rpc/common.h"
 #include "rpc_client.hpp"
 #include "rpc_server.h"
 
-#include "common/type_def.h"
-
-
 namespace raftcpp {
 namespace node {
-
 
 inline bool heartbeat(rpc_conn conn) {
     std::cout << "receive heartbeat" << std::endl;
@@ -23,12 +21,14 @@ inline void ShowUsage() {
 }
 
 class RaftNode {
-public:
+    public:
     RaftNode(const std::string &address, const int &port, const RaftState &state);
 
     void start();
 
-private:
+    void Apply(raftcpp::RaftcppRequest request) {}
+
+    private:
     const std::string address_;
     const int port_;
     const RaftState state_;
@@ -36,5 +36,5 @@ private:
     std::unique_ptr<rest_rpc::rpc_client> client;
 };
 
-}
-}
+}  // namespace node
+}  // namespace raftcpp
