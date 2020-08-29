@@ -7,12 +7,11 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
-
+  lint:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [ubuntu-latest]
 
     steps:
     - uses: actions/checkout@v2
@@ -22,6 +21,15 @@ jobs:
       env:
         GITHUB_CONTEXT: ${{ toJson(github) }}
       run: ./check-git-clang-format-output.sh
+
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@v2
     - name: build
       run: ./build.sh
     - name: run test

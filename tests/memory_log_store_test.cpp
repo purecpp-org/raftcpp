@@ -1,6 +1,8 @@
-#include "nanolog.hpp"
 #include "../src/memory_log_store.h"
+
 #include <iostream>
+
+#include "nanolog.hpp"
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
 
@@ -10,7 +12,7 @@ TEST_CASE("MemoryLogEntry-AppendLogEntry") {
     memory_log_store mem_log_store;
     REQUIRE(mem_log_store.append_entry({}));
 
-    log_entry entry{ 1, EntryType::APPEND_LOG };
+    log_entry entry{1, EntryType::APPEND_LOG};
     REQUIRE(mem_log_store.append_entry({}));
     REQUIRE(mem_log_store.append_entry(entry));
     REQUIRE(mem_log_store.append_entry({2}));
@@ -22,7 +24,7 @@ TEST_CASE("MemoryLogEntry-AppendLogEntry") {
         REQUIRE(en.type == entry.type);
     }
     {
-        auto[r, en] = mem_log_store.entry_at(10);
+        auto [r, en] = mem_log_store.entry_at(10);
         REQUIRE_FALSE(r);
     }
 }
@@ -33,7 +35,7 @@ TEST_CASE("MemoryLogEntry-AppendLogEntries") {
 
     std::vector<log_entry> entries;
     for (int i = 0; i < 100; i++) {
-        entries.push_back({ i, EntryType::APPEND_LOG });
+        entries.push_back({i, EntryType::APPEND_LOG});
     }
     REQUIRE_EQ(mem_log_store.append_entries(entries), 100);
     REQUIRE_EQ(mem_log_store.last_log_index(), 99);
@@ -50,7 +52,7 @@ TEST_CASE("MemoryLogEntry-TruncatePrefix") {
 
     std::vector<log_entry> entries;
     for (int i = 0; i < 100; i++) {
-        entries.push_back({ i, EntryType::APPEND_LOG });
+        entries.push_back({i, EntryType::APPEND_LOG});
     }
     REQUIRE_EQ(mem_log_store.append_entries(entries), 100);
     REQUIRE(mem_log_store.truncate_prefix(50));
@@ -61,4 +63,3 @@ TEST_CASE("MemoryLogEntry-TruncatePrefix") {
     REQUIRE_EQ(mem_log_store.term_at(99), 99);
     REQUIRE_EQ(mem_log_store.term_at(100), 0);
 }
-
