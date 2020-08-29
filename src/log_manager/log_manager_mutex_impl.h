@@ -1,7 +1,7 @@
 #pragma once
 
-#include <queue>
 #include <mutex>
+#include <queue>
 
 #include "log_manager/log_manager.h"
 
@@ -9,7 +9,7 @@ namespace raftcpp {
 
 template <typename LogEntryType>
 class LogManagerMutexImpl : public LogManagerInterface<LogEntryType> {
-public:
+    public:
     LogManagerMutexImpl() = default;
 
     ~LogManagerMutexImpl() = default;
@@ -26,10 +26,10 @@ public:
         queue_.push(log_entry);
     }
 
-private:
+    private:
     std::mutex queue_mutex_;
 
     std::queue<LogEntryType> queue_;
 };
 
-}
+}  // namespace raftcpp
