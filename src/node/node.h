@@ -37,8 +37,6 @@ class RaftNode {
 
     ~RaftNode();
 
-    void start();
-
     void Apply(raftcpp::RaftcppRequest request) {}
 
 private:

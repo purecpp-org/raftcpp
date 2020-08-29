@@ -14,7 +14,7 @@ RaftNode::RaftNode(const std::string &address, const int &port)
         HandleElectionTimer();
     });
 
-    timers_thread_ = std::make_unique<std::thread>([this](){
+    timers_thread_ = std::make_unique<std::thread>([this]() {
         timers_io_service_.run();
     });
 
@@ -29,7 +29,6 @@ RaftNode::~RaftNode() {
     timers_thread_->join();
 }
 
-void RaftNode::start() {};
 
 void RaftNode::HandleElectionTimer() {
     std::cout << "hellllooo" << std::endl;
