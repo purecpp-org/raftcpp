@@ -10,13 +10,11 @@ RaftNode::RaftNode(const std::string &address, const int &port)
       timers_io_service_(),
       // TODO(qwang): This should be random value.
       election_timer_(timers_io_service_, boost::asio::chrono::milliseconds(2000)) {
-    election_timer_.async_wait([this](const boost::system::error_code& e) {
-        HandleElectionTimer();
-    });
+    election_timer_.async_wait(
+        [this](const boost::system::error_code &e) { HandleElectionTimer(); });
 
-    timers_thread_ = std::make_unique<std::thread>([this]() {
-        timers_io_service_.run();
-    });
+    timers_thread_ =
+        std::make_unique<std::thread>([this]() { timers_io_service_.run(); });
 
     // Initial logging
     nanolog::initialize(nanolog::GuaranteedLogger(), "/tmp/raftcpp", "node.log", 10);
@@ -25,10 +23,7 @@ RaftNode::RaftNode(const std::string &address, const int &port)
     // Initial all connections and regiester fialures.
 }
 
-RaftNode::~RaftNode() {
-    timers_thread_->join();
-}
-
+RaftNode::~RaftNode() { timers_thread_->join(); }
 
 void RaftNode::HandleElectionTimer() {
     std::cout << "hellllooo" << std::endl;
@@ -36,9 +31,8 @@ void RaftNode::HandleElectionTimer() {
     LOG_INFO << "Election timer timeout.";
 
     election_timer_.expires_from_now(boost::asio::chrono::milliseconds(2000));
-    election_timer_.async_wait([this](const boost::system::error_code& e) {
-        this->HandleElectionTimer();
-    });
+    election_timer_.async_wait(
+        [this](const boost::system::error_code &e) { this->HandleElectionTimer(); });
 }
 
 }  // namespace raftcpp::node

@@ -39,7 +39,7 @@ class RaftNode {
 
     void Apply(raftcpp::RaftcppRequest request) {}
 
-private:
+    private:
     void HandleElectionTimer();
 
     private:
