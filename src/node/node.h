@@ -35,14 +35,22 @@ class RaftNode {
     public:
     RaftNode(const std::string &address, const int &port);
 
+    ~RaftNode();
+
     void start();
 
     void Apply(raftcpp::RaftcppRequest request) {}
 
+private:
+    void HandleElectionTimer();
+
     private:
-    // TODO(qwang): Should this be io context?
+    // TODO(qwang): This should be passed in.
     // The io service for timers.
-    asio::io_service io_service_;
+    asio::io_service timers_io_service_;
+
+    // The separated thread that runs all timers.
+    std::unique_ptr<std::thread> timers_thread_;
 
     // The timer that trigger a election request for this node.
     asio::steady_timer election_timer_;
