@@ -11,21 +11,8 @@ DEFINE_string(state_string, "follower", "What the initial state the node is");
 
 int main(int argc, char *argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-
-    RaftState state;
-
-    if (FLAGS_state_string == "leader") {
-        state = RaftState::LEADER;
-    } else if (FLAGS_state_string == "follower") {
-        state = RaftState::FOLLOWER;
-    } else {
-        raftcpp::node::ShowUsage();
-        exit(EXIT_FAILURE);
-    }
-
-    raftcpp::node::RaftNode node{FLAGS_address, FLAGS_port, state};
+    raftcpp::node::RaftNode node{FLAGS_address, FLAGS_port};
     gflags::ShutDownCommandLineFlags();
-    node.start();
 
     return 0;
 }
