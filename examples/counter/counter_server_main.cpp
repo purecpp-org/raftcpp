@@ -44,8 +44,7 @@ int main(int argc, char *argv[]) {
     rpc_server server(10001, std::thread::hardware_concurrency());
 
     std::shared_ptr<raftcpp::node::RaftNode> node =
-        std::make_shared<raftcpp::node::RaftNode>("127.0.0.1", 10002,
-                                                  raftcpp::RaftState::LEADER);
+        std::make_shared<raftcpp::node::RaftNode>("127.0.0.1", 10002);
     std::shared_ptr<CounterStateMachine> fsm = std::make_shared<CounterStateMachine>();
     CounterServiceImpl service(node, fsm);
     server.register_handler("incr", &CounterServiceImpl::Incr, &service);

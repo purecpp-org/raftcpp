@@ -1,42 +1,38 @@
 #include "node.h"
 
+// TODO(qwang): Refine this as a component logging.
+#include "nanolog.hpp"
+
 namespace raftcpp::node {
 
-RaftNode::RaftNode(const std::string &address, const int &port, const RaftState &state)
-    : address_{address}, port_{port}, state_{state} {
-    switch (state) {
-    case RaftState::LEADER:
-        server = std::make_unique<rest_rpc::rpc_service::rpc_server>(
-            port_, std::thread::hardware_concurrency());
-        server->register_handler("heartbeat", heartbeat);
-        break;
-    case RaftState::FOLLOWER:
-        client = std::make_unique<rest_rpc::rpc_client>(address_, port_);
-        {
-            bool r = client->connect();
-            if (!r) {
-                std::cout << "connect timeout" << std::endl;
-            }
-        }
-        break;
-    default:
-        throw std::runtime_error("error state parameter");
-    }
+RaftNode::RaftNode(const std::string &address, const int &port)
+    : endpoint_(address, port),
+      timers_io_service_(),
+      // TODO(qwang): This should be random value.
+      election_timer_(timers_io_service_, boost::asio::chrono::milliseconds(2000)) {
+    election_timer_.async_wait(
+        [this](const boost::system::error_code &e) { HandleElectionTimer(); });
+
+    timers_thread_ =
+        std::make_unique<std::thread>([this]() { timers_io_service_.run(); });
+
+    // Initial logging
+    nanolog::initialize(nanolog::GuaranteedLogger(), "/tmp/raftcpp", "node.log", 10);
+    nanolog::set_log_level(nanolog::LogLevel::DEBUG);
+
+    // Initial all connections and regiester fialures.
 }
 
-void RaftNode::start() {
-    if (state_ == RaftState::LEADER) {
-        server->run();
-    } else {
-        try {
-            bool result = client->call<bool>("heartbeat");
-            std::cout << "heartbeat result: " << std::boolalpha << result << std::endl;
-        } catch (const std::exception &e) {
-            std::cout << e.what() << std::endl;
-        }
-        while (1)
-            ;
-    }
-};
+RaftNode::~RaftNode() { timers_thread_->join(); }
+
+void RaftNode::HandleElectionTimer() {
+    std::cout << "hellllooo" << std::endl;
+    LOG_DEBUG << "Election timer timeout.";
+    LOG_INFO << "Election timer timeout.";
+
+    election_timer_.expires_from_now(boost::asio::chrono::milliseconds(2000));
+    election_timer_.async_wait(
+        [this](const boost::system::error_code &e) { this->HandleElectionTimer(); });
+}
 
 }  // namespace raftcpp::node
