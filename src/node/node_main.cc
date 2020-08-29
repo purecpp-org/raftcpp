@@ -13,7 +13,6 @@ int main(int argc, char *argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     raftcpp::node::RaftNode node{FLAGS_address, FLAGS_port};
     gflags::ShutDownCommandLineFlags();
-    node.start();
 
     return 0;
 }
