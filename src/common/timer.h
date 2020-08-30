@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <ctime>
 
+#include <functional>
+
 #include "common/range.h"
 
 namespace raftcpp {
@@ -19,12 +21,12 @@ namespace common {
  */
 class RandomTimer final {
     public:
-    explicit RandomTimer(asio::io_service &io_service, Range random_range,
+    explicit RandomTimer(asio::io_service &io_service, const Range &random_range,
                          std::function<void(const asio::error_code &e)> timeout_handler)
         : io_service_(io_service),
           timer_(io_service_),
           random_range_(random_range),
-          timeout_handler_(timeout_handler) {}
+          timeout_handler_(std::move(timeout_handler)) {}
 
     void Start() { ResetForTimer(); }
 
