@@ -16,5 +16,5 @@ Config Config::From(const std::string &config_str) {
     return config;
 }
 
-}
-}
+}  // namespace common
+}  // namespace raftcpp

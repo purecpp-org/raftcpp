@@ -25,5 +25,5 @@ private:
     std::vector<Endpoint> endpoints;
 };
 
-} // namespace common
-} // namespace raftcpp
+}  // namespace common
+}  // namespace raftcpp
