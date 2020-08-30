@@ -14,7 +14,7 @@ TEST_CASE("Timer-RandomTimer") {
 
     asio::io_service io_service;
     RandomTimer random_timer(io_service,
-                             /*random_range=*/{900, 1000},
+                             /*random_range=*/{990, 1000},
                              [&counter](const asio::error_code &e) { ++counter; });
     random_timer.Start();
     std::thread th([&io_service]() { io_service.run(); });
