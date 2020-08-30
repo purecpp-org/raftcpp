@@ -6,7 +6,7 @@ namespace raftcpp {
 namespace common {
 
 class Range final {
-    public:
+public:
     Range(uint64_t begin, uint64_t end)
         : begin_(begin), end_(end), cache_delta_(end_ - begin_) {
         // TODO(qwang): We should assert `begin <= end`;
@@ -20,7 +20,7 @@ class Range final {
 
     uint64_t GetDelta() const { return cache_delta_; }
 
-    private:
+private:
     uint64_t begin_;
 
     uint64_t end_;

@@ -27,14 +27,14 @@ inline bool heartbeat(rpc_conn conn) {
 }
 
 class RaftNode {
-    public:
+public:
     RaftNode(const std::string &address, const int &port);
 
     ~RaftNode();
 
     void Apply(raftcpp::RaftcppRequest request) {}
 
-    private:
+private:
     TimerManager timer_manager_;
 
     // The endpoint that this node listening on.

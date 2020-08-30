@@ -14,7 +14,7 @@ namespace node {
  * The manager class to manage all of the timers for node.
  */
 class TimerManager final {
-    public:
+public:
     TimerManager() {
         io_service_ = std::make_unique<asio::io_service>();
         election_timer_ = std::make_unique<common::RandomTimer>(
@@ -33,7 +33,7 @@ class TimerManager final {
         thread_->join();
     }
 
-    private:
+private:
     // A separated service that runs for all timers.
     std::unique_ptr<asio::io_service> io_service_ = nullptr;
 

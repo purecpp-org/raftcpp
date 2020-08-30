@@ -4,4 +4,4 @@ DerivePointerAlignment: false
 IndentCaseLabels: false
 PointerAlignment: Right
 IndentWidth: 4
-AccessModifierOffset: 0
+AccessModifierOffset: -4
