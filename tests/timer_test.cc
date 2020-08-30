@@ -19,7 +19,7 @@ TEST_CASE("Timer-RandomTimer") {
     random_timer.Start();
     std::thread th([&io_service]() { io_service.run(); });
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(5 * 1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(5 * 1000 + 50));
     // Note that stop a io_service is thread safe.
     io_service.stop();
     th.join();
