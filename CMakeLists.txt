@@ -53,6 +53,10 @@ ADD_EXECUTABLE(test_nanolog tests/nanolog_test.cpp)
 ADD_DEPENDENCIES(test_nanolog doctest_ep)
 TARGET_LINK_LIBRARIES(test_nanolog)
 
+ADD_EXECUTABLE(test_timer tests/timer_test.cc)
+ADD_DEPENDENCIES(test_timer doctest_ep)
+
+
 # counter examples
 ADD_EXECUTABLE(example_counter_server_main examples/counter/counter_server_main.cpp)
 ADD_DEPENDENCIES(example_counter_server_main node_lib gflags_ep)
