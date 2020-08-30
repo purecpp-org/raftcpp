@@ -59,6 +59,10 @@ ADD_DEPENDENCIES(test_timer doctest_ep)
 ADD_EXECUTABLE(test_range tests/range_test.cc)
 ADD_DEPENDENCIES(test_range doctest_ep)
 
+ADD_EXECUTABLE(test_config tests/config_test.cpp)
+ADD_DEPENDENCIES(test_config doctest_ep)
+TARGET_LINK_LIBRARIES(test_config)
+
 # counter examples
 ADD_EXECUTABLE(example_counter_server_main examples/counter/counter_server_main.cpp)
 ADD_DEPENDENCIES(example_counter_server_main node_lib gflags_ep)
