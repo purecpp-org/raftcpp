@@ -56,6 +56,8 @@ TARGET_LINK_LIBRARIES(test_nanolog)
 ADD_EXECUTABLE(test_timer tests/timer_test.cc)
 ADD_DEPENDENCIES(test_timer doctest_ep)
 
+ADD_EXECUTABLE(test_range tests/range_test.cc)
+ADD_DEPENDENCIES(test_range doctest_ep)
 
 # counter examples
 ADD_EXECUTABLE(example_counter_server_main examples/counter/counter_server_main.cpp)

@@ -2,16 +2,14 @@
 
 #include <asio/io_service.hpp>
 #include <asio/steady_timer.hpp>
-
-#include <ctime>
 #include <cstdlib>
+#include <ctime>
 
 #include "common/range.h"
 
 namespace raftcpp {
 
 namespace common {
-
 
 /**
  * A class that encapsulates a boost timer with random expired time.
@@ -20,25 +18,23 @@ namespace common {
  * it may cause that the io_service has no event and it will exit at once.
  */
 class RandomTimer final {
-public:
-    explicit RandomTimer(asio::io_service &io_service,
-                         Range random_range,
-                         std::function<void (const asio::error_code &e)> timeout_handler)
-            : io_service_(io_service),
-              timer_(io_service_),
-              random_range_(random_range),
-              timeout_handler_(timeout_handler) {}
+    public:
+    explicit RandomTimer(asio::io_service &io_service, Range random_range,
+                         std::function<void(const asio::error_code &e)> timeout_handler)
+        : io_service_(io_service),
+          timer_(io_service_),
+          random_range_(random_range),
+          timeout_handler_(timeout_handler) {}
 
-    void Start() {
-        ResetForTimer();
-    }
+    void Start() { ResetForTimer(); }
 
-private:
+    private:
     // TODO(qwang): This method should renamed a meaningful one.
     void ResetForTimer() {
         // TODO(qwang): Refine this in modern C++.
         srand(time(0));
-        const uint64_t timeout_in_ms = (rand() % random_range_.GetDelta()) + random_range_.GetBegin();
+        const uint64_t timeout_in_ms =
+            (rand() % random_range_.GetDelta()) + random_range_.GetBegin();
         timer_.expires_from_now(std::chrono::milliseconds(timeout_in_ms));
         timer_.async_wait([this](const asio::error_code &e) {
             timeout_handler_(e);
@@ -46,7 +42,7 @@ private:
         });
     }
 
-private:
+    private:
     // The io service that runs this timer.
     asio::io_service &io_service_;
 
@@ -57,8 +53,8 @@ private:
     Range random_range_;
 
     // The handler that will be triggered once the time's out.
-    std::function<void (const asio::error_code &e)> timeout_handler_;
+    std::function<void(const asio::error_code &e)> timeout_handler_;
 };
 
-} // namespace timer
-} // namespace raftcpp
+}  // namespace common
+}  // namespace raftcpp
