@@ -4,7 +4,6 @@
 #include <asio/steady_timer.hpp>
 #include <cstdlib>
 #include <ctime>
-
 #include <functional>
 
 #include "common/range.h"
