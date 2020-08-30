@@ -15,7 +15,7 @@
 #endif
 
 class TestNanoLog {
-    public:
+public:
     static void SetUpTestCase() { std::cout << "TestNanoLog SetUpTestCase" << std::endl; }
 
     static void TearDownTestCase() {

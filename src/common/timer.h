@@ -21,7 +21,7 @@ namespace common {
  * it may cause that the io_service has no event and it will exit at once.
  */
 class RandomTimer final {
-    public:
+public:
     explicit RandomTimer(asio::io_service &io_service, const Range &random_range,
                          std::function<void(const asio::error_code &e)> timeout_handler)
         : io_service_(io_service),
@@ -33,21 +33,11 @@ class RandomTimer final {
 
     void Start() { ResetForTimer(); }
 
-    private:
+private:
     // TODO(qwang): This method should renamed a meaningful one.
-    void ResetForTimer() {
-        // TODO(qwang): Use random library in modern standard library.
-        const uint64_t timeout_in_ms =
-            (rand() % random_range_.GetDelta()) + random_range_.GetBegin();
-        std::cout << "timeout_in_ms = " << timeout_in_ms << std::endl;
-        timer_.expires_from_now(std::chrono::milliseconds(timeout_in_ms));
-        timer_.async_wait([this](const asio::error_code &e) {
-            timeout_handler_(e);
-            this->ResetForTimer();
-        });
-    }
+    void ResetForTimer();
 
-    private:
+private:
     // The io service that runs this timer.
     asio::io_service &io_service_;
 

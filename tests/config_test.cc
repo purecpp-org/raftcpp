@@ -4,7 +4,7 @@
 #include "doctest.h"
 
 TEST_CASE("config-tset") {
-    using namespace raftcpp;
+    using namespace raftcpp::common;
 
     Config config = Config::From("");
     REQUIRE_EQ(config.GetAllEndpoints().size(), 0);
