@@ -53,7 +53,6 @@ else()
 endif()
 
 RAFTCPP_DEFINE_TEST(test_memory_log_store SRC_FILES tests/memory_log_store_test.cc LINKS ${link_libs})
-RAFTCPP_DEFINE_TEST(node_main SRC_FILES src/node/node_main.cc src/node/node.cc LINKS node_lib gflags)
 RAFTCPP_DEFINE_TEST(test_nanolog SRC_FILES tests/nanolog_test.cc )
 RAFTCPP_DEFINE_TEST(example_counter_server_main SRC_FILES examples/counter/counter_server_main.cc LINKS node_lib gflags)
 RAFTCPP_DEFINE_TEST(test_timer SRC_FILES tests/timer_test.cc LINKS common_lib)
