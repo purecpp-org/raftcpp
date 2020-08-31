@@ -5,19 +5,16 @@
 namespace raftcpp {
 namespace rpc {
 
+using RpcConn = rest_rpc::rpc_service::rpc_conn ;
+
 /**
  * The rpc service that communicates with other nodes.
  */
 class NodeService {
-public:
-    void RequestVote(rest_rpc::rpc_service::rpc_conn conn, ) {
-
-    }
-
-private:
+protected:
+    virtual void RequestVote(RpcConn conn, const std::string &node_id_binary) = 0;
 
 };
 
 } // namespace rpc
 } // namespace raftcpp
-
