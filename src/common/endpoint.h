@@ -5,7 +5,7 @@
 namespace raftcpp {
 
 class Endpoint {
-    public:
+public:
     explicit Endpoint(const std::string address) {
         // TODO(qwang):
     }
@@ -16,7 +16,7 @@ class Endpoint {
 
     uint16_t GetPort() const { return port_; }
 
-    private:
+private:
     std::string host_;
     uint16_t port_;
 };

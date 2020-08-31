@@ -6,7 +6,9 @@
 
 #include "common/endpoint.h"
 #include "common/id.h"
+#include "common/timer.h"
 #include "common/type_def.h"
+#include "node/timer_manager.h"
 #include "rpc/common.h"
 #include "rpc_client.hpp"
 #include "rpc_server.h"
@@ -15,9 +17,6 @@ namespace raftcpp {
 namespace node {
 
 /**
- * 这里需要注意的是， 我们的append_logs到底是pull还是push， 如果是pull的话，
- * 那么是否和leader发心跳给其他节点相冲突？ 难道心跳也是由follower发给leader吗？
- * 或者是follower发lease给leader。
  *
  * @param conn
  * @return
@@ -27,31 +26,16 @@ inline bool heartbeat(rpc_conn conn) {
     return true;
 }
 
-inline void ShowUsage() {
-    std::cerr << "Usage: <address> <port> <role> [leader follower]" << std::endl;
-}
-
 class RaftNode {
-    public:
+public:
     RaftNode(const std::string &address, const int &port);
 
     ~RaftNode();
 
     void Apply(raftcpp::RaftcppRequest request) {}
 
-    private:
-    void HandleElectionTimer();
-
-    private:
-    // TODO(qwang): This should be passed in.
-    // The io service for timers.
-    asio::io_service timers_io_service_;
-
-    // The separated thread that runs all timers.
-    std::unique_ptr<std::thread> timers_thread_;
-
-    // The timer that trigger a election request for this node.
-    asio::steady_timer election_timer_;
+private:
+    TimerManager timer_manager_;
 
     // The endpoint that this node listening on.
     const Endpoint endpoint_;

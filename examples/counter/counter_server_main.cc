@@ -17,7 +17,7 @@ using namespace examples::counter;
 // DEFINE_string(this_addr, "", "This address of this instance listening on.");
 
 class CounterServiceImpl {
-    public:
+public:
     // TODO(qwang): Are node and fsm uncopyable?
     CounterServiceImpl(std::shared_ptr<raftcpp::node::RaftNode> node,
                        std::shared_ptr<CounterStateMachine> &fsm)
@@ -35,7 +35,7 @@ class CounterServiceImpl {
         return fsm_->GetValue();
     }
 
-    private:
+private:
     std::shared_ptr<raftcpp::node::RaftNode> node_;
     std::shared_ptr<CounterStateMachine> fsm_;
 };

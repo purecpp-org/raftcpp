@@ -22,7 +22,7 @@ using Status = raftcpp::Status;
  * Now in this state machine, we do the snapshot for every 3 requests.
  */
 class CounterStateMachine : public raftcpp::StateMachine {
-    public:
+public:
     // We should do snapshot for every 3 requests.
     bool ShouldDoSnapshot() override { return received_requests_num_.load() % 3; }
 
@@ -57,7 +57,7 @@ class CounterStateMachine : public raftcpp::StateMachine {
 
     int64_t GetValue() const { return atomic_value_.load(); }
 
-    private:
+private:
     std::atomic<int64_t> atomic_value_;
 
     // the number of received requests to decided when we do snapshot.
