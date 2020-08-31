@@ -3,9 +3,15 @@
 
 #include <atomic>
 
+#include "common/file.h"
+#include "common/status.h"
+#include "counter_service_def.h"
+#include "statemachine/state_machine.h"
+
 namespace examples {
 namespace counter {
 
+using Status = raftcpp::Status;
 /**
  * The CounterStateMachine extends from raftcpp::StateMachine. It overrides
  * the snapshot interfaces that user can decide when and how do snapshot.
@@ -15,49 +21,50 @@ namespace counter {
  *
  * Now in this state machine, we do the snapshot for every 3 requests.
  */
-class CounterStateMachine: public raftcpp::StateMachine {
-public:
+class CounterStateMachine : public raftcpp::StateMachine {
+    public:
+    // We should do snapshot for every 3 requests.
+    bool ShouldDoSnapshot() override { return received_requests_num_.load() % 3; }
 
-  // We should do snapshot for every 3 requests.
-  bool ShouldDoSnapshot() override {
-    return received_requests_num_.get() % 3;
-  }
-
-  void SaveSnapshot() override {
-    File snapshot_file = File::Open("/tmp/raftcpp/counter/snapshot.txt");
-    snapshot_file.CleanAndWrite(std::to_string(atomic_value_.get()));
-  }
-
-  void LoadSnapshot() override {
-    File snapshot_file = File::Open("/tmp/raftcpp/counter/snapshot.txt");
-    std::string value = snapshot_file.ReadAll();
-    atomic_value_.store(static_cast<int64_t>(std::atoi(value)));
-  }
-
-  RaftcppResponse OnApply(RaftcppRequest request) override {
-    received_requests_num_.fetch_add(1);
-
-    auto counter_request = dynamic_cast<CounterRequest>(request);
-    if (counter_request.GetType() == CounterRequest::INCR) {
-      auto &incr_request = dynamic_cast<IncrRequest &>(counter_request);
-      atomic_value_.fetch_add(incr_request.GetDelta());
-      return IncrResponse(Status::OK);
-    } else if (counter_request.GetType() == CounterRequest::GET) {
-      auto &get_request = dynamic_cast<GetRequest &>(counter_request);
-      return GetResponse(atomic_value_.get());
+    void SaveSnapshot() override {
+        raftcpp::File snapshot_file =
+            raftcpp::File::Open("/tmp/raftcpp/counter/snapshot.txt");
+        snapshot_file.CleanAndWrite(std::to_string(atomic_value_.load()));
     }
 
-    return CounterResponse(Status::UNKNOWN_REQUEST);
-  }
+    void LoadSnapshot() override {
+        raftcpp::File snapshot_file =
+            raftcpp::File::Open("/tmp/raftcpp/counter/snapshot.txt");
+        std::string value = snapshot_file.ReadAll();
+        atomic_value_.store(static_cast<int64_t>(std::stoi(value)));
+    }
 
-private:
-  std::atomic<int64_t> atomic_value_;
+    raftcpp::RaftcppResponse OnApply(raftcpp::RaftcppRequest &request) override {
+        received_requests_num_.fetch_add(1);
 
-  // the number of received requests to decided when we do snapshot.
-  std::atomic<uint64_t> received_requests_num_;
+        auto &counter_request = dynamic_cast<CounterRequest &>(request);
+        if (counter_request.GetType() == CounterRequestType::INCR) {
+            auto &incr_request = dynamic_cast<IncrRequest &>(counter_request);
+            atomic_value_.fetch_add(incr_request.GetDelta());
+            return IncrResponse(Status::OK);
+        } else if (counter_request.GetType() == CounterRequestType::GET) {
+            auto &get_request = dynamic_cast<GetRequest &>(counter_request);
+            return GetResponse(atomic_value_.load());
+        }
+
+        return CounterResponse(Status::UNKNOWN_REQUEST);
+    }
+
+    int64_t GetValue() const { return atomic_value_.load(); }
+
+    private:
+    std::atomic<int64_t> atomic_value_;
+
+    // the number of received requests to decided when we do snapshot.
+    std::atomic<uint64_t> received_requests_num_;
 };
 
-}
-}
+}  // namespace counter
+}  // namespace examples
 
 #endif

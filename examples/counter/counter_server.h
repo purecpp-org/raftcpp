@@ -1,10 +1,6 @@
 #pragma once
 
 namespace examples {
-namespace counter {
+namespace counter {}
 
-
-}
-
-}
-
+}  // namespace examples

@@ -11,4 +11,4 @@ enum class RaftState {
     FOLLOWER = 2,
 };
 
-} // namespace raftcpp
+}  // namespace raftcpp

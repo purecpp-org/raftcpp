@@ -7,8 +7,22 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  lint:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
 
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: cpplint
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: ./check-git-clang-format-output.sh
+
+  build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
