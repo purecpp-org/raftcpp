@@ -7,7 +7,7 @@ namespace raftcpp::node {
 
 RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
                    const common::Config &config)
-    : timer_manager_(/*election_timer_timeout_handle=*/[this]() {
+    : timer_manager_(/*election_timer_timeout_handler=*/[this]() {
           for (const auto &rpc_client : rpc_clients_) {
               // TODO(qwang):
               // 1. Add a lock to protect rpc_clients.
