@@ -3,14 +3,14 @@
 namespace raftcpp {
 namespace node {
 
-TimerManager::TimerManager(const std::function<void()> &election_timer_timeout_handle) {
+TimerManager::TimerManager(const std::function<void()> &election_timer_timeout_handler) {
     io_service_ = std::make_unique<asio::io_service>();
     election_timer_ = std::make_unique<common::RandomTimer>(
         *io_service_,
         /*random_range*/ common::Range{200, 800},
-        [election_timer_timeout_handle](const asio::error_code &e) {
+        [election_timer_timeout_handler](const asio::error_code &e) {
             std::cout << "Election time's out, request election." << std::endl;
-            election_timer_timeout_handle();
+            election_timer_timeout_handler();
         });
 }
 

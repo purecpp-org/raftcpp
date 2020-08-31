@@ -43,8 +43,6 @@ ADD_DEPENDENCIES(node_lib asio_ep rest_rpc_ep common_lib)
 TARGET_LINK_LIBRARIES(node_lib common_lib)
 
 
-#RAFTCPP_DEFINE_TEST( test_memory_log_store  FILE ests/memory_log_store_test.cpp DEP rest_rpc_ep doctest_ep LINK pthread)
-
 # Test targets
 if(UNIX)
 	set(link_libs pthread)
@@ -52,7 +50,6 @@ else()
 	set(link_libs )
 endif()
 
-RAFTCPP_DEFINE_TEST(test_memory_log_store SRC_FILES tests/memory_log_store_test.cc LINKS ${link_libs})
 RAFTCPP_DEFINE_TEST(test_nanolog SRC_FILES tests/nanolog_test.cc )
 RAFTCPP_DEFINE_TEST(example_counter_server_main SRC_FILES examples/counter/counter_server_main.cc LINKS node_lib gflags)
 RAFTCPP_DEFINE_TEST(test_timer SRC_FILES tests/timer_test.cc LINKS common_lib)

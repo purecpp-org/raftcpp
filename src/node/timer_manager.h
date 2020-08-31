@@ -15,7 +15,7 @@ namespace node {
  */
 class TimerManager final {
 public:
-    explicit TimerManager(const std::function<void()> &election_timer_timeout_handle);
+    explicit TimerManager(const std::function<void()> &election_timer_timeout_handler);
 
     ~TimerManager();
 
