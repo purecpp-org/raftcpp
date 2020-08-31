@@ -3,12 +3,12 @@
 namespace raftcpp {
 
 class RaftcppRequest {
-    public:
+public:
     virtual ~RaftcppRequest() = default;
 };
 
 class RaftcppResponse {
-    public:
+public:
     virtual ~RaftcppResponse() = default;
 };
 
