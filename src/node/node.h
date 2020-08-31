@@ -26,14 +26,7 @@ public:
 
     void Apply(raftcpp::RaftcppRequest request) {}
 
-    void RequestVote(rpc::RpcConn conn, const std::string &node_id_binary) override {
-        const auto req_id = conn.lock()->request_id();
-        auto conn_sp = conn.lock();
-        if (conn_sp) {
-            // TODO(qwang): What does this `if` do?
-            conn_sp->pack_and_response(req_id, "OK");
-        }
-    }
+    void RequestVote(rpc::RpcConn conn, const std::string &endpoint_str) override;
 
 private:
     void ConnectToOtherNodes() {}
