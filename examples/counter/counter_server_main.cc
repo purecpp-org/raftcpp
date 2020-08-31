@@ -2,7 +2,7 @@
 
 #include <thread>
 
-#include "common/type_def.h"
+#include "common/config.h"
 #include "counter_state_machine.h"
 #include "node/node.h"
 #include "rpc_server.h"
@@ -13,7 +13,7 @@ using namespace rpc_service;
 using namespace examples;
 using namespace examples::counter;
 
-// DEFINE_string(raftcpp_conf, "", "The configurations of this raft group.");
+DEFINE_string(conf, "", "The configurations of this raft group.");
 // DEFINE_string(this_addr, "", "This address of this instance listening on.");
 
 class CounterServiceImpl {
@@ -41,11 +41,21 @@ private:
 };
 
 int main(int argc, char *argv[]) {
-    rpc_server server(10001, std::thread::hardware_concurrency());
+    std::string conf_str;
+    {
+        gflags::ParseCommandLineFlags(&argc, &argv, false);
+        conf_str = FLAGS_conf;
+        gflags::ShutDownCommandLineFlags();
+    }
+    const auto config = raftcpp::common::Config::From(conf_str);
 
-    std::shared_ptr<raftcpp::node::RaftNode> node =
-        std::make_shared<raftcpp::node::RaftNode>(server, "127.0.0.1", 10002);
-    std::shared_ptr<CounterStateMachine> fsm = std::make_shared<CounterStateMachine>();
+    // Initial a rpc server and listening on its port.
+    rpc_server server(config.GetThisEndpoint().GetPort(),
+                      std::thread::hardware_concurrency());
+
+    auto node = std::make_shared<raftcpp::node::RaftNode>(server, config);
+    auto fsm = std::make_shared<CounterStateMachine>();
+
     CounterServiceImpl service(node, fsm);
     server.register_handler("incr", &CounterServiceImpl::Incr, &service);
     server.register_handler("get", &CounterServiceImpl::Get, &service);

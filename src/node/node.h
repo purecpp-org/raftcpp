@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "common/config.h"
 #include "common/endpoint.h"
 #include "common/id.h"
 #include "common/timer.h"
@@ -11,26 +12,15 @@
 #include "node/timer_manager.h"
 #include "rpc/common.h"
 #include "rpc/services.h"
-
 #include "rpc_client.hpp"
 #include "rpc_server.h"
 
 namespace raftcpp {
 namespace node {
 
-/**
- *
- * @param conn
- * @return
- */
-inline bool heartbeat(rpc_conn conn) {
-    std::cout << "receive heartbeat" << std::endl;
-    return true;
-}
-
 class RaftNode : public rpc::NodeService {
 public:
-    RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server, const std::string &address, const int &port);
+    RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server, const common::Config &config);
 
     ~RaftNode();
 
@@ -46,15 +36,10 @@ public:
     }
 
 private:
-    void ConnectToOtherNodes() {
-
-    }
+    void ConnectToOtherNodes() {}
 
 private:
     TimerManager timer_manager_;
-
-    // The endpoint that this node listening on.
-    const Endpoint endpoint_;
 
     // Current state of this node. This initial value of this should be a FOLLOWER.
     RaftState curr_state_ = RaftState::FOLLOWER;
@@ -67,7 +52,10 @@ private:
 
     // The rpc clients to all other nodes.
     // NodeID instead
-    std::unordered_map<int, std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
+    //    std::unordered_map<int, std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
+    std::vector<std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
+
+    common::Config config_;
 };
 
 }  // namespace node

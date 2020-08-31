@@ -13,16 +13,21 @@ class Config final {
 public:
     static Config From(const std::string &config_str);
 
-    std::vector<Endpoint> GetAllEndpoints() const { return endpoints; }
+    std::vector<Endpoint> GetOtherEndpoints() const { return other_endpoints_; }
+
+    Endpoint GetThisEndpoint() const { return this_endpoint_; }
+
+    Config(const Config &c) = default;
 
 private:
     Config() = default;
 
-    Config(const Config &c) = default;
+    // Push to other endpoints.
+    void PushBack(const Endpoint &endpoint) { other_endpoints_.push_back(endpoint); }
 
-    void PushBack(const Endpoint &endpoint) { endpoints.push_back(endpoint); }
+    std::vector<Endpoint> other_endpoints_;
 
-    std::vector<Endpoint> endpoints;
+    Endpoint this_endpoint_;
 };
 
 }  // namespace common
