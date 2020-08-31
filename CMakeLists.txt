@@ -38,7 +38,7 @@ ADD_LIBRARY(common_lib
 ADD_DEPENDENCIES(common_lib asio_ep)
 
 # node library
-ADD_LIBRARY(node_lib src/node/node.cc)
+ADD_LIBRARY(node_lib src/node/node.cc src/node/timer_manager.cc)
 ADD_DEPENDENCIES(node_lib asio_ep rest_rpc_ep common_lib)
 TARGET_LINK_LIBRARIES(node_lib common_lib)
 

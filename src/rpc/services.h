@@ -12,7 +12,7 @@ using RpcConn = rest_rpc::rpc_service::rpc_conn;
  */
 class NodeService {
 protected:
-    virtual void RequestVote(RpcConn conn, const std::string &node_id_binary) = 0;
+    virtual void RequestVote(RpcConn conn, const std::string &endpoint_str) = 0;
 };
 
 }  // namespace rpc
