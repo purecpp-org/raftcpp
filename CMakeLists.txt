@@ -18,6 +18,7 @@ INCLUDE(DoctestExternalProject)
 INCLUDE(AsioExternalProject)
 INCLUDE(Rest_rpcExternalProject)
 INCLUDE(GflagsExternalProject)
+INCLUDE(CustomeFunctions)
 INCLUDE_DIRECTORIES(SYSTEM ${DOCTEST_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(SYSTEM thirdparty/logging)
 INCLUDE_DIRECTORIES(src/)
@@ -42,36 +43,19 @@ ADD_DEPENDENCIES(node_lib asio_ep rest_rpc_ep common_lib)
 TARGET_LINK_LIBRARIES(node_lib common_lib)
 
 
+#RAFTCPP_DEFINE_TEST( test_memory_log_store  FILE ests/memory_log_store_test.cpp DEP rest_rpc_ep doctest_ep LINK pthread)
+
 # Test targets
-ADD_EXECUTABLE(test_memory_log_store tests/memory_log_store_test.cc)
-ADD_DEPENDENCIES(test_memory_log_store rest_rpc_ep doctest_ep)
 if(UNIX)
-TARGET_LINK_LIBRARIES(test_memory_log_store pthread)
+	set(link_libs pthread)
 else()
-	TARGET_LINK_LIBRARIES(test_memory_log_store )
+	set(link_libs )
 endif()
 
-ADD_EXECUTABLE(node_main src/node/node_main.cc src/node/node.cc)
-ADD_DEPENDENCIES(node_main node_lib gflags_ep)
-TARGET_LINK_LIBRARIES(node_main node_lib gflags)
-
-ADD_EXECUTABLE(test_nanolog tests/nanolog_test.cc)
-ADD_DEPENDENCIES(test_nanolog doctest_ep)
-TARGET_LINK_LIBRARIES(test_nanolog)
-
-ADD_EXECUTABLE(test_timer tests/timer_test.cc)
-ADD_DEPENDENCIES(test_timer doctest_ep common_lib)
-TARGET_LINK_LIBRARIES(test_timer common_lib)
-
-ADD_EXECUTABLE(test_range tests/range_test.cc)
-ADD_DEPENDENCIES(test_range doctest_ep common_lib)
-TARGET_LINK_LIBRARIES(test_range common_lib)
-
-ADD_EXECUTABLE(test_config tests/config_test.cc)
-ADD_DEPENDENCIES(test_config doctest_ep common_lib)
-TARGET_LINK_LIBRARIES(test_config common_lib)
-
-# counter examples
-ADD_EXECUTABLE(example_counter_server_main examples/counter/counter_server_main.cc)
-ADD_DEPENDENCIES(example_counter_server_main node_lib gflags_ep)
-TARGET_LINK_LIBRARIES(example_counter_server_main node_lib gflags)
+RAFTCPP_DEFINE_TEST(test_memory_log_store SRC_FILES tests/memory_log_store_test.cc LINKS ${link_libs})
+RAFTCPP_DEFINE_TEST(node_main SRC_FILES src/node/node_main.cc src/node/node.cc LINKS node_lib gflags)
+RAFTCPP_DEFINE_TEST(test_nanolog SRC_FILES tests/nanolog_test.cc )
+RAFTCPP_DEFINE_TEST(example_counter_server_main SRC_FILES examples/counter/counter_server_main.cc LINKS node_lib gflags)
+RAFTCPP_DEFINE_TEST(test_timer SRC_FILES tests/timer_test.cc LINKS common_lib)
+RAFTCPP_DEFINE_TEST(test_range SRC_FILES tests/range_test.cc LINKS common_lib)
+RAFTCPP_DEFINE_TEST(test_config SRC_FILES tests/config_test.cc LINKS common_lib)
