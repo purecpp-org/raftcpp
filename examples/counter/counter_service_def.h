@@ -16,14 +16,14 @@ enum class CounterRequestType {
 };
 
 class CounterRequest : public raftcpp::RaftcppRequest {
-    public:
+public:
     ~CounterRequest() override {}
 
     CounterRequestType GetType() const { return CounterRequestType::GET; }
 };
 
 class IncrRequest : public CounterRequest {
-    public:
+public:
     IncrRequest(uint64_t delta) {}
 
     uint64_t GetDelta() const { return -1; }
@@ -32,19 +32,19 @@ class IncrRequest : public CounterRequest {
 class GetRequest : public CounterRequest {};
 
 class CounterResponse : public raftcpp::RaftcppResponse {
-    public:
+public:
     explicit CounterResponse(raftcpp::Status type) {}
 
     ~CounterResponse() override {}
 };
 
 class GetResponse : public CounterResponse {
-    public:
+public:
     explicit GetResponse(uint64_t value) : CounterResponse(raftcpp::Status::OK) {}
 };
 
 class IncrResponse : public CounterResponse {
-    public:
+public:
     explicit IncrResponse(raftcpp::Status status)
         : CounterResponse(raftcpp::Status::OK) {}
 };
