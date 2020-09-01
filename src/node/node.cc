@@ -17,7 +17,8 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
               auto request_vote_callback = [this](const boost::system::error_code & ec, string_view data) {
                   std::cout << "Received response of request_vote from node "
                             << data << ", error code=" << ec.message() << std::endl;
-                  timer_manager_.GetElectionTimerRef().Reset(RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
+//                  timer_manager_.GetElectionTimerRef().Reset(RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
+                  timer_manager_.GetElectionTimerRef().Stop();
               };
               rpc_client->async_call<0>("request_vote",
                                         request_vote_callback,

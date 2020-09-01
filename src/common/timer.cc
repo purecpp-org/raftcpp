@@ -16,8 +16,6 @@ void RandomTimer::ResetForTimer() {
 }
 
 void RepeatedTimer::Reset(const uint64_t timeout_ms) {
-    // TODO(qwang): Is this cancel necessary?
-    timer_.cancel();
     timer_.expires_from_now(std::chrono::milliseconds(timeout_ms));
     timer_.async_wait([this, timeout_ms] (const asio::error_code &e) {
         timeout_handler_(e);
