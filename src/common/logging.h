@@ -13,11 +13,6 @@ enum class LogLevel {
     FATAL,
 };
 
-#define DEBUG LogLevel::DEBUG
-#define INFO LogLevel::INFO
-#define WARNING LogLevel::WARNING
-#define FATAL LogLevel::FATAL
-
 class LogOutStream final {
 public:
     explicit LogOutStream(LogLevel log_level) : log_level_(std::move(log_level)) {}
@@ -40,5 +35,10 @@ private:
 };
 
 #define RAFTCPP_LOG(LOG_LEVEL) LogOutStream(LOG_LEVEL)
+
+#define DEBUG LogLevel::DEBUG
+#define INFO LogLevel::INFO
+#define WARNING LogLevel::WARNING
+#define FATAL LogLevel::FATAL
 
 }  // namespace raftcpp
