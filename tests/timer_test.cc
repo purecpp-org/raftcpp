@@ -33,8 +33,8 @@ TEST_CASE("Timer-ContinuousTimer") {
     uint64_t counter = 0;
 
     asio::io_service io_service;
-    ContinuousTimer continuous_timer(io_service, 1000,
-                             [&counter](const asio::error_code &e) { ++counter; });
+    ContinuousTimer continuous_timer(
+        io_service, 1000, [&counter](const asio::error_code &e) { ++counter; });
     continuous_timer.Start();
     std::thread th([&io_service]() { io_service.run(); });
 
