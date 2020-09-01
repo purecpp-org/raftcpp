@@ -1,6 +1,5 @@
 
 #include <asio/io_service.hpp>
-
 #include <iostream>
 #include <thread>
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -16,7 +15,6 @@
 #endif
 
 #include "common/logging.h"
-
 
 TEST_CASE("logging_test") {
     using namespace raftcpp::common;
