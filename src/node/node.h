@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <memory>
 
 #include "common/config.h"
 #include "common/endpoint.h"
@@ -49,6 +50,7 @@ private:
     std::vector<std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
 
     common::Config config_;
+
 };
 
 }  // namespace node

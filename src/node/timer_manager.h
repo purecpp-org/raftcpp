@@ -21,6 +21,10 @@ public:
 
     void Start();
 
+    common::RepeatedTimer &GetElectionTimerRef() {
+        return *election_timer_;
+    }
+
 private:
     // A separated service that runs for all timers.
     std::unique_ptr<asio::io_service> io_service_ = nullptr;
@@ -28,7 +32,7 @@ private:
     // The thread that runs all timers.
     std::unique_ptr<std::thread> thread_ = nullptr;
 
-    std::unique_ptr<common::RandomTimer> election_timer_ = nullptr;
+    std::unique_ptr<common::RepeatedTimer> election_timer_ = nullptr;
 };
 
 }  // namespace node

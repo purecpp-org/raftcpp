@@ -15,5 +15,10 @@ inline int64_t CurrentTimeMs() {
     return ms_since_epoch.count();
 }
 
+inline uint64_t RandomNumber(const uint64_t begin, const uint64_t end) {
+    srand(CurrentTimeMs());
+    return (rand() % (end - begin)) + begin;
+}
+
 }  // namespace common
 }  // namespace raftcpp

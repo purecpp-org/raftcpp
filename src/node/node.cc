@@ -1,5 +1,7 @@
 #include "node.h"
 
+#include "common/constants.h"
+
 // TODO(qwang): Refine this as a component logging.
 #include "nanolog.hpp"
 
@@ -11,11 +13,14 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
           for (const auto &rpc_client : rpc_clients_) {
               // TODO(qwang):
               // 1. Add a lock to protect rpc_clients.
-              // 2. Refine this call as a async call.
-              // 3. Use log instead.
-              auto result = rpc_client->call<std::string>(
-                  "request_vote", this->config_.GetThisEndpoint().ToString());
-              std::cout << "Received response: " << result << std::endl;
+              // 2. Use log instead.
+              auto request_vote_callback = [this](const boost::system::error_code & ec, string_view data) {
+                  std::cout << "Received response of request_vote : " << data << std::endl;
+                  timer_manager_.GetElectionTimerRef().Reset(RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
+              };
+              rpc_client->async_call<0>("request_vote",
+                                        request_vote_callback,
+                                        this->config_.GetThisEndpoint().ToString());
           }
       }),
       rpc_server_(rpc_server),

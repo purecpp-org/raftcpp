@@ -22,8 +22,8 @@ namespace common {
  */
 class RandomTimer final {
 public:
-    explicit RandomTimer(asio::io_service &io_service, const Range &random_range,
-                         std::function<void(const asio::error_code &e)> timeout_handler)
+    RandomTimer(asio::io_service &io_service, const Range &random_range,
+                std::function<void(const asio::error_code &e)> timeout_handler)
         : io_service_(io_service),
           timer_(io_service_),
           random_range_(random_range),
@@ -48,6 +48,29 @@ private:
     Range random_range_;
 
     // The handler that will be triggered once the time's out.
+    std::function<void(const asio::error_code &e)> timeout_handler_;
+};
+
+class RepeatedTimer final {
+public:
+    RepeatedTimer(asio::io_service &io_service,
+                  std::function<void(const asio::error_code &e)> timeout_handler)
+    : io_service_(io_service),
+    timer_(io_service_),
+    timeout_handler_(std::move(timeout_handler)) {}
+
+    void Start(const uint64_t timeout_ms) { Reset(timeout_ms); }
+
+    void Reset(const uint64_t timeout_ms);
+
+private:
+    // The io service that runs this timer.
+    asio::io_service &io_service_;
+
+    // The actual boost timer.
+    asio::steady_timer timer_;
+
+    // The handler that will be triggered once the time's up.
     std::function<void(const asio::error_code &e)> timeout_handler_;
 };
 
