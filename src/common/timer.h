@@ -76,5 +76,47 @@ private:
     std::function<void(const asio::error_code &e)> timeout_handler_;
 };
 
+class ContinuousTimer final {
+public:
+    explicit ContinuousTimer(asio::io_service &ios, size_t timeout_ms,
+                             std::function<void(const asio::error_code &e)> handler)
+        : timer_(ios), timeout_ms_(timeout_ms), timeout_handler_(std::move(handler)) {}
+
+    void Start() { RunTimer(); }
+
+    void Cancel() {
+        if (timeout_ms_ == 0) {
+            return;
+        }
+
+        asio::error_code ec;
+        timer_.cancel(ec);
+        timeout_ms_ = 0;
+    }
+
+private:
+    void RunTimer() {
+        if (timeout_ms_ == 0) {
+            return;
+        }
+
+        timer_.expires_from_now(std::chrono::milliseconds(timeout_ms_));
+        timer_.async_wait([this](const asio::error_code &e) {
+            timeout_handler_(e);
+            RunTimer();
+        });
+    }
+
+private:
+    // The actual boost timer.
+    asio::steady_timer timer_;
+
+    // The timeout time: ms.
+    size_t timeout_ms_;
+
+    // The handler that will be triggered once the time's up.
+    std::function<void(const asio::error_code &e)> timeout_handler_;
+};
+
 }  // namespace common
 }  // namespace raftcpp
