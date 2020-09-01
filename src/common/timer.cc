@@ -25,5 +25,9 @@ void RepeatedTimer::Reset(const uint64_t timeout_ms) {
     });
 }
 
+void RepeatedTimer::Stop() {
+    timer_.cancel();
+}
+
 }  // namespace common
 }  // namespace raftcpp

@@ -63,6 +63,8 @@ public:
 
     void Reset(const uint64_t timeout_ms);
 
+    void Stop();
+
 private:
     // The io service that runs this timer.
     asio::io_service &io_service_;

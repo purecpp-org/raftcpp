@@ -10,8 +10,12 @@ TimerManager::TimerManager(const std::function<void()> &election_timer_timeout_h
     election_timer_ = std::make_unique<common::RepeatedTimer>(
         *io_service_,
         [election_timer_timeout_handler](const asio::error_code &e) {
-            std::cout << "Election time's out, request election." << std::endl;
-            election_timer_timeout_handler();
+            if (e.value() == asio::error::operation_aborted) {
+                std::cout << "Election timer was canceled." << std::endl;
+            } else {
+                std::cout << "Election time's out, request election." << std::endl;
+                election_timer_timeout_handler();
+            }
         });
 }
 
