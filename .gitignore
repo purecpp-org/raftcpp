@@ -40,3 +40,6 @@ build
 
 # vscode
 .vs/
+
+# Macos
+.DS_Store
