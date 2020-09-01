@@ -15,13 +15,16 @@ namespace node {
  */
 class TimerManager final {
 public:
-    explicit TimerManager(const std::function<void()> &election_timer_timeout_handler);
+    explicit TimerManager(const std::function<void()> &election_timer_timeout_handler,
+                          const std::function<void()> &heartbeat_timer_timeout_handler);
 
     ~TimerManager();
 
     void Start();
 
     common::RepeatedTimer &GetElectionTimerRef() { return *election_timer_; }
+
+    common::RepeatedTimer &GetHeartbeatTimerRef() {return *heartbeat_timer_;}
 
 private:
     // A separated service that runs for all timers.
@@ -31,6 +34,8 @@ private:
     std::unique_ptr<std::thread> thread_ = nullptr;
 
     std::unique_ptr<common::RepeatedTimer> election_timer_ = nullptr;
+
+    std::unique_ptr<common::RepeatedTimer> heartbeat_timer_ = nullptr;
 };
 
 }  // namespace node
