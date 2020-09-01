@@ -13,19 +13,21 @@ TimerManager::TimerManager(const std::function<void()> &election_timer_timeout_h
             if (e.value() == asio::error::operation_aborted) {
                 //                std::cout << "Election timer was stopped." << std::endl;
             } else {
-                std::cout << "Election time's up, request election with error=" <<e.message() << std::endl;
+                std::cout << "Election time's up, request election with error="
+                          << e.message() << std::endl;
                 election_timer_timeout_handler();
             }
         });
 
     heartbeat_timer_ = std::make_unique<common::RepeatedTimer>(
-            *io_service_, [heartbeat_timer_timeout_handler] (const asio::error_code &e) {
-                if (e.value() == asio::error::operation_aborted) {
-                    //                std::cout << "Heartbeat timer was stopped." << std::endl;
-                } else {
-                    heartbeat_timer_timeout_handler();
-                }
-            });
+        *io_service_, [heartbeat_timer_timeout_handler](const asio::error_code &e) {
+            if (e.value() == asio::error::operation_aborted) {
+                //                std::cout << "Heartbeat timer was stopped." <<
+                //                std::endl;
+            } else {
+                heartbeat_timer_timeout_handler();
+            }
+        });
 }
 
 TimerManager::~TimerManager() {
