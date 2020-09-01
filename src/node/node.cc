@@ -47,6 +47,9 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
                 std::cout << "Failed to connect to the node " << endpoint.ToString()
                           << std::endl;
             }
+            rpc_client->enable_auto_heartbeat();
+            rpc_client->enable_auto_reconnect();
+            std::cout << "Succeeded to connect to the node " << endpoint.ToString() << std::endl;
             rpc_clients_.push_back(rpc_client);
         }
     }
