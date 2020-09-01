@@ -23,6 +23,13 @@ void RepeatedTimer::Reset(const uint64_t timeout_ms) {
     });
 }
 
+void RepeatedTimer::PostStop() {
+    // Aay thread safe issue?
+    io_service_.post([this]() {
+        timer_.cancel();
+    });
+}
+
 void RepeatedTimer::Stop() { timer_.cancel(); }
 
 }  // namespace common

@@ -12,7 +12,7 @@ TimerManager::TimerManager(const std::function<void()> &election_timer_timeout_h
             if (e.value() == asio::error::operation_aborted) {
                 //                std::cout << "Election timer was stopped." << std::endl;
             } else {
-                std::cout << "Election time's up, request election." << std::endl;
+                std::cout << "Election time's up, request election with error=" <<e.message() << std::endl;
                 election_timer_timeout_handler();
             }
         });

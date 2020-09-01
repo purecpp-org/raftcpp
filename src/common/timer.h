@@ -63,6 +63,8 @@ public:
 
     void Reset(const uint64_t timeout_ms);
 
+    void PostStop();
+
     void Stop();
 
 private:
