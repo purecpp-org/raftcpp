@@ -118,6 +118,5 @@ private:
     std::function<void(const asio::error_code &e)> timeout_handler_;
 };
 
-
 }  // namespace common
 }  // namespace raftcpp
