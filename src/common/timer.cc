@@ -17,15 +17,13 @@ void RandomTimer::ResetForTimer() {
 
 void RepeatedTimer::Reset(const uint64_t timeout_ms) {
     timer_.expires_from_now(std::chrono::milliseconds(timeout_ms));
-    timer_.async_wait([this, timeout_ms] (const asio::error_code &e) {
+    timer_.async_wait([this, timeout_ms](const asio::error_code &e) {
         timeout_handler_(e);
         this->Reset(timeout_ms);
     });
 }
 
-void RepeatedTimer::Stop() {
-    timer_.cancel();
-}
+void RepeatedTimer::Stop() { timer_.cancel(); }
 
 }  // namespace common
 }  // namespace raftcpp

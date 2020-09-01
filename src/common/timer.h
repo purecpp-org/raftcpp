@@ -55,9 +55,9 @@ class RepeatedTimer final {
 public:
     RepeatedTimer(asio::io_service &io_service,
                   std::function<void(const asio::error_code &e)> timeout_handler)
-    : io_service_(io_service),
-    timer_(io_service_),
-    timeout_handler_(std::move(timeout_handler)) {}
+        : io_service_(io_service),
+          timer_(io_service_),
+          timeout_handler_(std::move(timeout_handler)) {}
 
     void Start(const uint64_t timeout_ms) { Reset(timeout_ms); }
 

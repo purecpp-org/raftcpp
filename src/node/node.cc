@@ -14,14 +14,14 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
               // TODO(qwang):
               // 1. Add a lock to protect rpc_clients.
               // 2. Use log instead.
-              auto request_vote_callback = [this](const boost::system::error_code & ec, string_view data) {
-                  std::cout << "Received response of request_vote from node "
-                            << data << ", error code=" << ec.message() << std::endl;
-//                  timer_manager_.GetElectionTimerRef().Reset(RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
+              auto request_vote_callback = [this](const boost::system::error_code &ec,
+                                                  string_view data) {
+                  std::cout << "Received response of request_vote from node " << data
+                            << ", error code=" << ec.message() << std::endl;
+                  //                  timer_manager_.GetElectionTimerRef().Reset(RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
                   timer_manager_.GetElectionTimerRef().Stop();
               };
-              rpc_client->async_call<0>("request_vote",
-                                        request_vote_callback,
+              rpc_client->async_call<0>("request_vote", request_vote_callback,
                                         this->config_.GetThisEndpoint().ToString());
               // TODO(qwang): This should removed.
               timer_manager_.GetElectionTimerRef().Stop();
@@ -34,7 +34,8 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
     nanolog::set_log_level(nanolog::LogLevel::DEBUG);
 
     // Register RPC handles.
-    rpc_server_.register_handler("request_vote", &RaftNode::RequestVote, this);
+    rpc_server_.register_handler<rest_rpc::Async>("request_vote", &RaftNode::RequestVote,
+                                                  this);
 
     {
         // Initial the rpc clients connecting to other nodes.
@@ -49,7 +50,8 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
             }
             rpc_client->enable_auto_heartbeat();
             rpc_client->enable_auto_reconnect();
-            std::cout << "Succeeded to connect to the node " << endpoint.ToString() << std::endl;
+            std::cout << "Succeeded to connect to the node " << endpoint.ToString()
+                      << std::endl;
             rpc_clients_.push_back(rpc_client);
         }
     }
@@ -64,6 +66,7 @@ void RaftNode::RequestVote(rpc::RpcConn conn, const std::string &endpoint_str) {
     // TODO(qwang): Use log instead.
     std::cout << "Received a RequestVote from node " << endpoint_str << std::endl;
 
+    timer_manager_.GetElectionTimerRef().Stop();
     const auto req_id = conn.lock()->request_id();
     auto conn_sp = conn.lock();
     if (conn_sp) {

@@ -21,9 +21,7 @@ public:
 
     void Start();
 
-    common::RepeatedTimer &GetElectionTimerRef() {
-        return *election_timer_;
-    }
+    common::RepeatedTimer &GetElectionTimerRef() { return *election_timer_; }
 
 private:
     // A separated service that runs for all timers.
