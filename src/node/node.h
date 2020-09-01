@@ -27,7 +27,9 @@ public:
 
     void Apply(raftcpp::RaftcppRequest request) {}
 
-    void RequestVote(rpc::RpcConn conn, const std::string &endpoint_str) override;
+    void OnRequestVote(rpc::RpcConn conn, const std::string &endpoint_str) override;
+
+    void OnHeartbeat(rpc::RpcConn conn) override;
 
 private:
     void ConnectToOtherNodes() {}
