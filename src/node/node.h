@@ -19,7 +19,6 @@
 namespace raftcpp {
 namespace node {
 
-// TODO(qwang): 不应该Stop计时器，而是应该reset计时器
 class RaftNode : public rpc::NodeService {
 public:
     RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server, const common::Config &config);
