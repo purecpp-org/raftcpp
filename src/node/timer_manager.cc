@@ -7,8 +7,10 @@ namespace raftcpp {
 namespace node {
 
 TimerManager::TimerManager(const std::function<void()> &election_timer_timeout_handler,
-                           const std::function<void()> &heartbeat_timer_timeout_handler) {
+                           const std::function<void()> &heartbeat_timer_timeout_handler,
+                           const std::function<void()> &vote_timer_timeout_handler) {
     io_service_ = std::make_unique<asio::io_service>();
+
     election_timer_ = std::make_unique<common::RepeatedTimer>(
         *io_service_, [election_timer_timeout_handler](const asio::error_code &e) {
             if (e.value() != asio::error::operation_aborted) {
@@ -22,6 +24,13 @@ TimerManager::TimerManager(const std::function<void()> &election_timer_timeout_h
         *io_service_, [heartbeat_timer_timeout_handler](const asio::error_code &e) {
             if (e.value() != asio::error::operation_aborted) {
                 heartbeat_timer_timeout_handler();
+            }
+        });
+
+    vote_timer_ = std::make_unique<common::RepeatedTimer>(
+        *io_service_, [vote_timer_timeout_handler](const asio::error_code &e) {
+            if (e.value() != asio::error::operation_aborted) {
+                vote_timer_timeout_handler();
             }
         });
 }
