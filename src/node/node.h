@@ -45,7 +45,7 @@ public:
     void RequestHeartbeat();
 
 private:
-    void ConnectToOtherNodes() {}
+    void ConnectToOtherNodes();
 
 private:
     TimerManager timer_manager_;
