@@ -28,12 +28,11 @@ TimerManager::TimerManager(const std::function<void()> &election_timer_timeout_h
         });
 
     vote_timer_ = std::make_unique<common::RepeatedTimer>(
-            *io_service_, [vote_timer_timeout_handler](const asio::error_code &e) {
-                if (e.value() != asio::error::operation_aborted) {
-                    vote_timer_timeout_handler();
-                }
+        *io_service_, [vote_timer_timeout_handler](const asio::error_code &e) {
+            if (e.value() != asio::error::operation_aborted) {
+                vote_timer_timeout_handler();
             }
-            );
+        });
 }
 
 TimerManager::~TimerManager() {

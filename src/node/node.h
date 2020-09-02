@@ -66,19 +66,23 @@ private:
 
     common::Config config_;
 
-    // This set is used to cache the endpoints of the nodes which is responded for the pre vote request.
+    // This set is used to cache the endpoints of the nodes which is responded for the pre
+    // vote request.
     std::unordered_set<std::string> responded_pre_vote_nodes_;
 
-    // This set is used to cache the endpoints of the nodes which is reponded for the vote request.
+    // This set is used to cache the endpoints of the nodes which is reponded for the vote
+    // request.
     std::unordered_set<std::string> responded_vote_nodes_;
 
     // The mutex that protects all of the node state.
     std::mutex mutex_;
 
-    // The io service that is used to run some methods which is needed a separated service.
+    // The io service that is used to run some methods which is needed a separated
+    // service.
     asio::io_service io_service_;
 
-    // The work runs on the io_service_, to make sure the io_service_ doesn't stop once there is no any pending task.
+    // The work runs on the io_service_, to make sure the io_service_ doesn't stop once
+    // there is no any pending task.
     asio::io_service::work work_;
 
     // The thread that runs the io_service above.

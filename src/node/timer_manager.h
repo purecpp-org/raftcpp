@@ -27,7 +27,7 @@ public:
 
     common::RepeatedTimer &GetHeartbeatTimerRef() { return *heartbeat_timer_; }
 
-    common::RepeatedTimer &GetVoteTimerRef() {return *vote_timer_; }
+    common::RepeatedTimer &GetVoteTimerRef() { return *vote_timer_; }
 
 private:
     // A separated service that runs for all timers.
