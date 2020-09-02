@@ -12,6 +12,9 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
           /*heartbeat_timer_timeout_handler=*/[this]() { this->RequestHeartbeat(); },
           /*vote_timer_timeout_handler=*/[this]() { this->RequestVote(); }),
       rpc_server_(rpc_server),
+      io_service_(),
+      work_(io_service_),
+      io_service_thread_([this](){ io_service_.run(); }),
       config_(config) {
     {
         // Register RPC handles.
@@ -26,7 +29,10 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
     timer_manager_.Start();
 }
 
-RaftNode::~RaftNode() {}
+RaftNode::~RaftNode() {
+    io_service_.stop();
+    io_service_thread_.join();
+}
 
 void RaftNode::RequestPreVote() {
     std::lock_guard<std::mutex> guard {mutex_};
@@ -47,7 +53,7 @@ void RaftNode::RequestPreVote() {
 }
 
 void RaftNode::OnRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str) {
-    RAFTCPP_LOG(DEBUG) << "Received a RequestVote from node " << endpoint_str;
+    RAFTCPP_LOG(DEBUG) << "Received a RequestPreVote from node " << endpoint_str;
 
     std::lock_guard<std::mutex> guard {mutex_};
     if (curr_state_ == RaftState::FOLLOWER) {
@@ -81,15 +87,13 @@ void RaftNode::OnPreVote(const boost::system::error_code &ec, string_view data) 
         RAFTCPP_LOG(INFO) << "This node has became a candidate now.";
         timer_manager_.GetElectionTimerRef().Stop();
         timer_manager_.GetVoteTimerRef().Start(RaftcppConstants::DEFAULT_VOTE_TIMER_TIMEOUT_MS);
-
-        this->RequestVote();
+        io_service_.post([this](){ this->RequestVote(); });
     } else {
 
     }
 }
 
 void RaftNode::RequestVote() {
-    RAFTCPP_LOG(DEBUG) << "Before request vote.";
     std::lock_guard<std::mutex> guard {mutex_};
     RAFTCPP_LOG(DEBUG) << "Request vote.";
 
@@ -102,7 +106,7 @@ void RaftNode::RequestVote() {
     for (const auto &rpc_client : rpc_clients_) {
         auto request_vote_callback = [this] (
                 const boost::system::error_code &ec, string_view data) {
-            this->OnVote(ec, data);
+            io_service_.post([this, ec, data]() { this->OnVote(ec, data); });
         };
         rpc_client->async_call<0>("request_vote",
                                   std::move(request_vote_callback),
@@ -111,6 +115,7 @@ void RaftNode::RequestVote() {
 }
 
 void RaftNode::OnRequestVote(rpc::RpcConn conn, const std::string &endpoint_str) {
+    RAFTCPP_LOG(DEBUG) << "OnRequestVote";
     std::lock_guard<std::mutex> guard {mutex_};
     if (curr_state_ == RaftState::FOLLOWER) {
         timer_manager_.GetElectionTimerRef().Stop();
@@ -129,14 +134,15 @@ void RaftNode::OnRequestVote(rpc::RpcConn conn, const std::string &endpoint_str)
 void RaftNode::OnVote(const boost::system::error_code &ec, string_view data) {
     std::lock_guard<std::mutex> guard {mutex_};
     responded_vote_nodes_.insert(data.data());
-    if (this->config_.GreaterThanHalfNodesNum(responded_pre_vote_nodes_.size())
+    if (this->config_.GreaterThanHalfNodesNum(responded_vote_nodes_.size())
         && this->curr_state_ == RaftState::CANDIDATE) {
         // There are greater than a half of the nodes responded the pre vote request,
         // so stop the election timer and send the vote rpc request to all nodes.
         //
         // TODO(qwang): We should post these rpc methods to a separated io service.
         curr_state_ = RaftState::LEADER;
-        timer_manager_.GetElectionTimerRef().Stop();
+        RAFTCPP_LOG(INFO) << "This node has became a leader now";
+        timer_manager_.GetVoteTimerRef().Stop();
         timer_manager_.GetHeartbeatTimerRef().Start(RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS);
         this->RequestHeartbeat();
     } else {
@@ -147,7 +153,8 @@ void RaftNode::OnVote(const boost::system::error_code &ec, string_view data) {
 void RaftNode::RequestHeartbeat() {
     for (const auto &rpc_client : rpc_clients_) {
         RAFTCPP_LOG(DEBUG) << "Send a heartbeat to node.";
-        rpc_client->async_call<0>("heartbeat", /*callback=*/nullptr);
+        rpc_client->async_call<0>("request_heartbeat",
+                                  /*callback=*/[](const boost::system::error_code &ec, string_view data) {});
     }
 }
 

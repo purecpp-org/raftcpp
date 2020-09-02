@@ -74,6 +74,14 @@ private:
 
     // The mutex that protects all of the node state.
     std::mutex mutex_;
+
+    // The io service that is used to run some methods which is needed a separated service.
+    asio::io_service io_service_;
+
+    asio::io_service::work work_;
+
+    // The thread that runs the io_service above.
+    std::thread io_service_thread_;
 };
 
 }  // namespace node
