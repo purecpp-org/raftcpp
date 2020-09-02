@@ -27,12 +27,24 @@ public:
 
     void Apply(raftcpp::RaftcppRequest request) {}
 
+    void RequestPreVote();
+
+    void OnRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str) override;
+
+    void OnPreVote(const boost::system::error_code &ec, string_view data);
+
+    void RequestVote();
+
     void OnRequestVote(rpc::RpcConn conn, const std::string &endpoint_str) override;
 
-    void OnHeartbeat(rpc::RpcConn conn) override;
+    void OnVote(const boost::system::error_code &ec, string_view data);
+
+    void OnRequestHeartbeat(rpc::RpcConn conn) override;
+
+    void RequestHeartbeat();
 
 private:
-    void ConnectToOtherNodes() {}
+    void ConnectToOtherNodes();
 
 private:
     TimerManager timer_manager_;
@@ -52,6 +64,28 @@ private:
     std::vector<std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
 
     common::Config config_;
+
+    // This set is used to cache the endpoints of the nodes which is responded for the pre
+    // vote request.
+    std::unordered_set<std::string> responded_pre_vote_nodes_;
+
+    // This set is used to cache the endpoints of the nodes which is reponded for the vote
+    // request.
+    std::unordered_set<std::string> responded_vote_nodes_;
+
+    // The mutex that protects all of the node state.
+    std::mutex mutex_;
+
+    // The io service that is used to run some methods which is needed a separated
+    // service.
+    asio::io_service io_service_;
+
+    // The work runs on the io_service_, to make sure the io_service_ doesn't stop once
+    // there is no any pending task.
+    asio::io_service::work work_;
+
+    // The thread that runs the io_service above.
+    std::thread io_service_thread_;
 };
 
 }  // namespace node
