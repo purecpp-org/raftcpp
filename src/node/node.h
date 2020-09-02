@@ -19,6 +19,7 @@
 namespace raftcpp {
 namespace node {
 
+// TODO(qwang): 不应该Stop计时器，而是应该reset计时器
 class RaftNode : public rpc::NodeService {
 public:
     RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server, const common::Config &config);
@@ -27,9 +28,21 @@ public:
 
     void Apply(raftcpp::RaftcppRequest request) {}
 
+    void RequestPreVote();
+
+    void OnRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str) override;
+
+    void OnPreVote(const boost::system::error_code &ec, string_view data);
+
+    void RequestVote();
+
     void OnRequestVote(rpc::RpcConn conn, const std::string &endpoint_str) override;
 
-    void OnHeartbeat(rpc::RpcConn conn) override;
+    void OnVote(const boost::system::error_code &ec, string_view data);
+
+    void OnRequestHeartbeat(rpc::RpcConn conn) override;
+
+    void RequestHeartbeat();
 
 private:
     void ConnectToOtherNodes() {}
@@ -52,6 +65,15 @@ private:
     std::vector<std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
 
     common::Config config_;
+
+    // This set is used to cache the endpoints of the nodes which is responded for the pre vote request.
+    std::unordered_set<std::string> responded_pre_vote_nodes_;
+
+    // This set is used to cache the endpoints of the nodes which is reponded for the vote request.
+    std::unordered_set<std::string> responded_vote_nodes_;
+
+    // The mutex that protects all of the node state.
+    std::mutex mutex_;
 };
 
 }  // namespace node

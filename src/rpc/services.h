@@ -14,6 +14,8 @@ class NodeService {
 protected:
     virtual void OnHeartbeat(RpcConn conn) = 0;
 
+    virtual void OnRequestPreVote(RpcConn conn, const std::string &endpoint_str) = 0;
+
     virtual void OnRequestVote(RpcConn conn, const std::string &endpoint_str) = 0;
 };
 

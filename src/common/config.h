@@ -19,6 +19,14 @@ public:
 
     Config(const Config &c) = default;
 
+    size_t GetNodesNum() const {
+        return 1 + other_endpoints_.size();
+    }
+
+    bool GreaterThanHalfNodesNum(size_t num) const {
+        return num > GetNodesNum() / 2;
+    }
+
 private:
     Config() = default;
 
