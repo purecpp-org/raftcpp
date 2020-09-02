@@ -31,11 +31,14 @@ public:
           timer_(io_service_),
           timeout_handler_(std::move(timeout_handler)) {}
 
-    void Start(const uint64_t timeout_ms) { Reset(timeout_ms); }
+    void Start(const uint64_t timeout_ms);
+
+    void Stop();
 
     void Reset(const uint64_t timeout_ms);
 
-    void Stop();
+private:
+    void DoSetExpired(const uint64_t timeout_ms);
 
 private:
     // The io service that runs this timer.

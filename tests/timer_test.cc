@@ -4,8 +4,35 @@
 #include <asio/io_service.hpp>
 #include <iostream>
 #include <thread>
+
+#include "common/util.h"
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest.h>
+
+TEST_CASE("test_repeated_timer_reset") {
+    using namespace raftcpp::common;
+
+    asio::io_service io_service;
+    asio::io_service::work work{io_service};
+
+    uint64_t callback_invoked_time_ms = -1;
+    RepeatedTimer repeated_timer{io_service,
+                                 [&callback_invoked_time_ms](const asio::error_code &e) {
+                                     callback_invoked_time_ms = CurrentTimeMs();
+                                 }};
+    std::thread th{[&io_service]() { io_service.run(); }};
+
+    repeated_timer.Start(3 * 1000);
+    std::this_thread::sleep_for(std::chrono::milliseconds{500});
+
+    repeated_timer.Reset(6 * 1000);
+    auto resetting_time_ms = CurrentTimeMs();
+    REQUIRE_EQ(true, callback_invoked_time_ms > 0);
+    REQUIRE_EQ(true, (callback_invoked_time_ms - resetting_time_ms > 0));
+    io_service.stop();
+    io_service.poll();
+    th.detach();
+}
 
 TEST_CASE("Timer-ContinuousTimer") {
     using namespace raftcpp::common;

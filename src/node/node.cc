@@ -12,9 +12,9 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
           /*heartbeat_timer_timeout_handler=*/[this]() { this->RequestHeartbeat(); },
           /*vote_timer_timeout_handler=*/[this]() { this->RequestVote(); }),
       rpc_server_(rpc_server),
-      io_service_(),
-      work_(io_service_),
-      io_service_thread_([this]() { io_service_.run(); }),
+      //      io_service_(),
+      //      work_(io_service_),
+      //      io_service_thread_([this]() { io_service_.run(); }),
       config_(config) {
     {
         // Register RPC handles.
@@ -31,12 +31,12 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
 }
 
 RaftNode::~RaftNode() {
-    io_service_.stop();
-    io_service_thread_.join();
+    //    io_service_.stop();
+    //    io_service_thread_.join();
 }
 
 void RaftNode::RequestPreVote() {
-    std::lock_guard<std::mutex> guard{mutex_};
+    std::lock_guard<std::recursive_mutex> guard{mutex_};
     // Note that it's to clear the set.
     responded_pre_vote_nodes_.clear();
     // Pre vote for myself.
@@ -55,7 +55,7 @@ void RaftNode::RequestPreVote() {
 void RaftNode::OnRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str) {
     RAFTCPP_LOG(DEBUG) << "Received a RequestPreVote from node " << endpoint_str;
 
-    std::lock_guard<std::mutex> guard{mutex_};
+    std::lock_guard<std::recursive_mutex> guard{mutex_};
     if (curr_state_ == RaftState::FOLLOWER) {
         timer_manager_.GetElectionTimerRef().Reset(
             RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
@@ -75,7 +75,7 @@ void RaftNode::OnPreVote(const boost::system::error_code &ec, string_view data) 
     RAFTCPP_LOG(DEBUG) << "Received response of request_vote from node " << data
                        << ", error code=" << ec.message();
 
-    std::lock_guard<std::mutex> guard{mutex_};
+    std::lock_guard<std::recursive_mutex> guard{mutex_};
     responded_pre_vote_nodes_.insert(data.data());
     if (this->config_.GreaterThanHalfNodesNum(responded_pre_vote_nodes_.size()) &&
         this->curr_state_ == RaftState::FOLLOWER) {
@@ -88,13 +88,14 @@ void RaftNode::OnPreVote(const boost::system::error_code &ec, string_view data) 
         timer_manager_.GetElectionTimerRef().Stop();
         timer_manager_.GetVoteTimerRef().Start(
             RaftcppConstants::DEFAULT_VOTE_TIMER_TIMEOUT_MS);
-        io_service_.post([this]() { this->RequestVote(); });
+        //        io_service_.post([this]() { this->RequestVote(); });
+        this->RequestVote();
     } else {
     }
 }
 
 void RaftNode::RequestVote() {
-    std::lock_guard<std::mutex> guard{mutex_};
+    std::lock_guard<std::recursive_mutex> guard{mutex_};
     RAFTCPP_LOG(DEBUG) << "Request vote.";
 
     // Note that it's to clear the set.
@@ -106,7 +107,9 @@ void RaftNode::RequestVote() {
     for (const auto &rpc_client : rpc_clients_) {
         auto request_vote_callback = [this](const boost::system::error_code &ec,
                                             string_view data) {
-            io_service_.post([this, ec, data]() { this->OnVote(ec, data); });
+            //            io_service_.post([this, ec, data]() { this->OnVote(ec, data);
+            //            });
+            this->OnVote(ec, data);
         };
         rpc_client->async_call<0>("request_vote", std::move(request_vote_callback),
                                   this->config_.GetThisEndpoint().ToString());
@@ -115,7 +118,7 @@ void RaftNode::RequestVote() {
 
 void RaftNode::OnRequestVote(rpc::RpcConn conn, const std::string &endpoint_str) {
     RAFTCPP_LOG(DEBUG) << "OnRequestVote";
-    std::lock_guard<std::mutex> guard{mutex_};
+    std::lock_guard<std::recursive_mutex> guard{mutex_};
     if (curr_state_ == RaftState::FOLLOWER) {
         timer_manager_.GetElectionTimerRef().Stop();
         const auto req_id = conn.lock()->request_id();
@@ -131,7 +134,7 @@ void RaftNode::OnRequestVote(rpc::RpcConn conn, const std::string &endpoint_str)
 }
 
 void RaftNode::OnVote(const boost::system::error_code &ec, string_view data) {
-    std::lock_guard<std::mutex> guard{mutex_};
+    std::lock_guard<std::recursive_mutex> guard{mutex_};
     responded_vote_nodes_.insert(data.data());
     if (this->config_.GreaterThanHalfNodesNum(responded_vote_nodes_.size()) &&
         this->curr_state_ == RaftState::CANDIDATE) {
@@ -142,7 +145,7 @@ void RaftNode::OnVote(const boost::system::error_code &ec, string_view data) {
         curr_state_ = RaftState::LEADER;
         RAFTCPP_LOG(INFO) << "This node has became a leader now";
         timer_manager_.GetVoteTimerRef().Stop();
-        timer_manager_.GetHeartbeatTimerRef().Start(
+        timer_manager_.GetHeartbeatTimerRef().Reset(
             RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS);
         this->RequestHeartbeat();
     } else {
@@ -160,7 +163,7 @@ void RaftNode::RequestHeartbeat() {
 
 void RaftNode::OnRequestHeartbeat(rpc::RpcConn conn) {
     RAFTCPP_LOG(DEBUG) << "Received a heartbeat from leader.";
-    timer_manager_.GetElectionTimerRef().Reset(
+    timer_manager_.GetElectionTimerRef().Start(
         RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
 }
 

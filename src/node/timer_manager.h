@@ -33,6 +33,8 @@ private:
     // A separated service that runs for all timers.
     std::unique_ptr<asio::io_service> io_service_ = nullptr;
 
+    std::unique_ptr<asio::io_service::work> work_ = nullptr;
+
     // The thread that runs all timers.
     std::unique_ptr<std::thread> thread_ = nullptr;
 
