@@ -78,6 +78,7 @@ private:
     // The io service that is used to run some methods which is needed a separated service.
     asio::io_service io_service_;
 
+    // The work runs on the io_service_, to make sure the io_service_ doesn't stop once there is no any pending task.
     asio::io_service::work work_;
 
     // The thread that runs the io_service above.
