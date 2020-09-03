@@ -46,6 +46,8 @@ public:
 private:
     void ConnectToOtherNodes();
 
+    void InitRpcHandlers();
+
 private:
     TimerManager timer_manager_;
 
@@ -76,17 +78,6 @@ private:
     // The recursive mutex that protects all of the node state.
     std::recursive_mutex mutex_;
 
-    //    // The io service that is used to run some methods which is needed a separated
-    //    // service.
-    //    asio::io_service io_service_;
-    //
-    //    // The work runs on the io_service_, to make sure the io_service_ doesn't stop
-    //    once
-    //    // there is no any pending task.
-    //    asio::io_service::work work_;
-    //
-    //    // The thread that runs the io_service above.
-    //    std::thread io_service_thread_;
 };
 
 }  // namespace node

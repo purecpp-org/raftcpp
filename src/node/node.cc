@@ -12,27 +12,14 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
           /*heartbeat_timer_timeout_handler=*/[this]() { this->RequestHeartbeat(); },
           /*vote_timer_timeout_handler=*/[this]() { this->RequestVote(); }),
       rpc_server_(rpc_server),
-      //      io_service_(),
-      //      work_(io_service_),
-      //      io_service_thread_([this]() { io_service_.run(); }),
       config_(config) {
-    {
-        // Register RPC handles.
-        rpc_server_.register_handler<rest_rpc::Async>("request_pre_vote",
-                                                      &RaftNode::OnRequestPreVote, this);
-        rpc_server_.register_handler<rest_rpc::Async>("request_vote",
-                                                      &RaftNode::OnRequestVote, this);
-        rpc_server_.register_handler<rest_rpc::Async>(
-            "request_heartbeat", &RaftNode::OnRequestHeartbeat, this);
-    }
+    InitRpcHandlers();
     ConnectToOtherNodes();
     // Starting timer manager should be invoked after all rpc initialization.
     timer_manager_.Start();
 }
 
 RaftNode::~RaftNode() {
-    //    io_service_.stop();
-    //    io_service_thread_.join();
 }
 
 void RaftNode::RequestPreVote() {
@@ -46,7 +33,7 @@ void RaftNode::RequestPreVote() {
                                                 string_view data) {
             this->OnPreVote(ec, data);
         };
-        rpc_client->async_call<0>("request_pre_vote",
+        rpc_client->async_call<0>(RaftcppConstants::REQUEST_PRE_VOTE_RPC_NAME,
                                   std::move(request_pre_vote_callback),
                                   this->config_.GetThisEndpoint().ToString());
     }
@@ -111,7 +98,7 @@ void RaftNode::RequestVote() {
             //            });
             this->OnVote(ec, data);
         };
-        rpc_client->async_call<0>("request_vote", std::move(request_vote_callback),
+        rpc_client->async_call<0>(RaftcppConstants::REQUEST_VOTE_RPC_NAME, std::move(request_vote_callback),
                                   this->config_.GetThisEndpoint().ToString());
     }
 }
@@ -156,7 +143,7 @@ void RaftNode::RequestHeartbeat() {
     for (const auto &rpc_client : rpc_clients_) {
         RAFTCPP_LOG(DEBUG) << "Send a heartbeat to node.";
         rpc_client->async_call<0>(
-            "request_heartbeat",
+            RaftcppConstants::REQUEST_HEARTBEAT,
             /*callback=*/[](const boost::system::error_code &ec, string_view data) {});
     }
 }
@@ -181,6 +168,16 @@ void RaftNode::ConnectToOtherNodes() {
         RAFTCPP_LOG(DEBUG) << "Succeeded to connect to the node " << endpoint.ToString();
         rpc_clients_.push_back(rpc_client);
     }
+}
+
+void RaftNode::InitRpcHandlers() {
+        // Register RPC handles.
+        rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_PRE_VOTE_RPC_NAME,
+                                                      &RaftNode::OnRequestPreVote, this);
+        rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_VOTE_RPC_NAME,
+                                                      &RaftNode::OnRequestVote, this);
+        rpc_server_.register_handler<rest_rpc::Async>(
+                RaftcppConstants::REQUEST_HEARTBEAT, &RaftNode::OnRequestHeartbeat, this);
 }
 
 }  // namespace raftcpp::node
