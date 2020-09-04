@@ -33,7 +33,8 @@ INCLUDE_DIRECTORIES(
 # common library
 ADD_LIBRARY(common_lib
 		src/common/config.cc
-		src/common/timer.cc)
+		src/common/timer.cc
+		src/common/file.cc)
 ADD_DEPENDENCIES(common_lib asio_ep)
 
 # node library
@@ -70,6 +71,10 @@ TARGET_LINK_LIBRARIES(test_range common_lib)
 ADD_EXECUTABLE(test_config tests/config_test.cc)
 ADD_DEPENDENCIES(test_config doctest_ep common_lib)
 TARGET_LINK_LIBRARIES(test_config common_lib)
+
+ADD_EXECUTABLE(test_file tests/file_test.cc)
+ADD_DEPENDENCIES(test_file doctest_ep common_lib)
+TARGET_LINK_LIBRARIES(test_file common_lib)
 
 # counter examples
 ADD_EXECUTABLE(example_counter_server_main examples/counter/counter_server_main.cc)
