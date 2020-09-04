@@ -19,8 +19,7 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
     timer_manager_.Start();
 }
 
-RaftNode::~RaftNode() {
-}
+RaftNode::~RaftNode() {}
 
 void RaftNode::RequestPreVote() {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
@@ -98,7 +97,8 @@ void RaftNode::RequestVote() {
             //            });
             this->OnVote(ec, data);
         };
-        rpc_client->async_call<0>(RaftcppConstants::REQUEST_VOTE_RPC_NAME, std::move(request_vote_callback),
+        rpc_client->async_call<0>(RaftcppConstants::REQUEST_VOTE_RPC_NAME,
+                                  std::move(request_vote_callback),
                                   this->config_.GetThisEndpoint().ToString());
     }
 }
@@ -171,13 +171,13 @@ void RaftNode::ConnectToOtherNodes() {
 }
 
 void RaftNode::InitRpcHandlers() {
-        // Register RPC handles.
-        rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_PRE_VOTE_RPC_NAME,
-                                                      &RaftNode::OnRequestPreVote, this);
-        rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_VOTE_RPC_NAME,
-                                                      &RaftNode::OnRequestVote, this);
-        rpc_server_.register_handler<rest_rpc::Async>(
-                RaftcppConstants::REQUEST_HEARTBEAT, &RaftNode::OnRequestHeartbeat, this);
+    // Register RPC handles.
+    rpc_server_.register_handler<rest_rpc::Async>(
+        RaftcppConstants::REQUEST_PRE_VOTE_RPC_NAME, &RaftNode::OnRequestPreVote, this);
+    rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_VOTE_RPC_NAME,
+                                                  &RaftNode::OnRequestVote, this);
+    rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_HEARTBEAT,
+                                                  &RaftNode::OnRequestHeartbeat, this);
 }
 
 }  // namespace raftcpp::node

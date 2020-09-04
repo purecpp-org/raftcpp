@@ -77,7 +77,6 @@ private:
 
     // The recursive mutex that protects all of the node state.
     std::recursive_mutex mutex_;
-
 };
 
 }  // namespace node
