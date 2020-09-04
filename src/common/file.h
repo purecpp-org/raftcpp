@@ -8,8 +8,8 @@ namespace raftcpp {
 
 class File {
 public:
-    File(fstream file_id, std::string file_name) 
-	    : file_id_(std::move(file_id)), file_name_(file_name) {}
+    File(fstream file_id, std::string file_name)
+        : file_id_(std::move(file_id)), file_name_(file_name) {}
 
     static File Open(const std::string &file_name);
 

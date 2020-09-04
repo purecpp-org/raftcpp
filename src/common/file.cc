@@ -20,9 +20,10 @@ void File::CleanAndWrite(const std::string &context) {
 std::string File::ReadAll() {
     size_t file_len = 0;
     if (file_id_) {
+        
         file_id_.seekg(0, ios::end);
         file_len = file_id_.tellg();
-        file_id_.seekg(0, ios::beg); 
+        file_id_.seekg(0, ios::beg);
         std::string res;
         res.resize(file_len);
         file_id_.read(const_cast<char *>(res.c_str()), file_len);
