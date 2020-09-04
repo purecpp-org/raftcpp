@@ -6,11 +6,19 @@ namespace raftcpp {
 
 class Endpoint {
 public:
-    explicit Endpoint(const std::string address) {
-        // TODO(qwang):
+    Endpoint() = default;
+
+    explicit Endpoint(const std::string &address) {
+        const auto index = address.find(':');
+        host_ = address.substr(0, index);
+        // Note that stoi may throw an exception once the format is incorrect.
+        port_ = std::stoi(address.substr(index + 1, address.size()));
     }
 
-    Endpoint(const std::string &host, const uint16_t port) : host_(host), port_(port) {}
+    Endpoint(std::string host, const uint16_t port)
+        : host_(std::move(host)), port_(port) {}
+
+    std::string ToString() const { return host_ + ":" + std::to_string(port_); }
 
     std::string GetHost() const { return host_; }
 
