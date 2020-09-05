@@ -1,5 +1,6 @@
-#include <thread>
 #include <chrono>
+#include <thread>
+
 #include "log_manager/log_manager_mutex_impl.h"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN

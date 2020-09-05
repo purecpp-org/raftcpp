@@ -7,9 +7,7 @@ namespace common {
 
 void RepeatedTimer::Start(const uint64_t timeout_ms) { Reset(timeout_ms); }
 
-void RepeatedTimer::Stop() {
-    is_running_.store(false);
-}
+void RepeatedTimer::Stop() { is_running_.store(false); }
 
 void RepeatedTimer::Reset(const uint64_t timeout_ms) {
     is_running_.store(true);
