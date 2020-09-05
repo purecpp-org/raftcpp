@@ -1,7 +1,7 @@
 #pragma once
 
-#include <boost/lockfree/queue.hpp>
 #include <mutex>
+#include <condition_variable>
 #include <queue>
 
 #include "log_manager/log_manager.h"
@@ -23,25 +23,37 @@ public:
 
 private:
     std::mutex queue_mutex_;
-
-    boost::lockfree::queue<LogEntryType, boost::lockfree::fixed_sized<false>> queue_{128};
+    std::condition_variable queue_cv_;
+    std::queue<LogEntryType> queue_;
 };
 
 template <typename LogEntryType>
 LogEntryType LogManagerMutexImpl<LogEntryType>::Pop() {
-    LogEntryType log_entry_type;
-    queue_.pop(log_entry_type);
+    std::unique_lock<std::mutex> lock(queue_mutex_);
+    queue_cv_.wait(lock, [this] {
+        return !queue_.empty();
+    });
+    LogEntryType log_entry_type = queue_.front();
+    queue_.pop();
     return log_entry_type;
 }
 
 template <typename LogEntryType>
 bool LogManagerMutexImpl<LogEntryType>::Pop(LogEntryType &log_entry) {
-    return queue_.pop(log_entry);
+    std::unique_lock<std::mutex> lock(queue_mutex_);
+    if (!queue_.empty()) {
+	log_entry = queue_.front();
+	queue_.pop();
+	return true;
+    }
+    return false;
 }
 
 template <typename LogEntryType>
 void LogManagerMutexImpl<LogEntryType>::Push(const LogEntryType &log_entry) {
+    std::unique_lock<std::mutex> lock(queue_mutex_);
     queue_.push(log_entry);
+    queue_cv_.notify_all();
 }
 
 }  // namespace raftcpp
