@@ -1,8 +1,8 @@
 #pragma once
 
+#include <boost/lockfree/queue.hpp>
 #include <mutex>
 #include <queue>
-#include <boost/lockfree/queue.hpp>
 
 #include "log_manager/log_manager.h"
 
@@ -10,7 +10,7 @@ namespace raftcpp {
 
 template <typename LogEntryType>
 class LogManagerMutexImpl : public LogManagerInterface<LogEntryType> {
-    public:
+public:
     LogManagerMutexImpl() = default;
 
     ~LogManagerMutexImpl() = default;
@@ -21,7 +21,7 @@ class LogManagerMutexImpl : public LogManagerInterface<LogEntryType> {
 
     virtual void Push(const LogEntryType &log_entry) override;
 
-    private:
+private:
     std::mutex queue_mutex_;
 
     boost::lockfree::queue<LogEntryType, boost::lockfree::fixed_sized<false>> queue_{128};
@@ -41,7 +41,7 @@ bool LogManagerMutexImpl<LogEntryType>::Pop(LogEntryType &log_entry) {
 
 template <typename LogEntryType>
 void LogManagerMutexImpl<LogEntryType>::Push(const LogEntryType &log_entry) {
-	queue_.push(log_entry);
+    queue_.push(log_entry);
 }
 
 }  // namespace raftcpp

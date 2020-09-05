@@ -1,4 +1,3 @@
-#include <string>
 #include "log_manager/log_manager_mutex_impl.h"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -6,11 +5,10 @@
 
 struct LogEntryTest {
     LogEntryTest() : index_(0), term_(0) {}
-    LogEntryTest(int64_t index, int64_t term)
-        : index_(index), term_(term) {}
+    LogEntryTest(int64_t index, int64_t term) : index_(index), term_(term) {}
     LogEntryTest(const LogEntryTest &entry) {
         index_ = entry.index_;
-	term_ = entry.term_;
+        term_ = entry.term_;
     }
 
     int64_t index_;
