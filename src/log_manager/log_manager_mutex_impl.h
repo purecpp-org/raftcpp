@@ -1,7 +1,7 @@
 #pragma once
 
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
 #include <queue>
 
 #include "log_manager/log_manager.h"
@@ -30,9 +30,7 @@ private:
 template <typename LogEntryType>
 LogEntryType LogManagerMutexImpl<LogEntryType>::Pop() {
     std::unique_lock<std::mutex> lock(queue_mutex_);
-    queue_cv_.wait(lock, [this] {
-        return !queue_.empty();
-    });
+    queue_cv_.wait(lock, [this] { return !queue_.empty(); });
     LogEntryType log_entry_type = queue_.front();
     queue_.pop();
     return log_entry_type;
