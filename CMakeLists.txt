@@ -19,6 +19,7 @@ INCLUDE(AsioExternalProject)
 INCLUDE(Rest_rpcExternalProject)
 INCLUDE(GflagsExternalProject)
 INCLUDE(CustomeFunctions)
+INCLUDE(SpdlogExternalProject)
 INCLUDE_DIRECTORIES(SYSTEM ${DOCTEST_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(SYSTEM thirdparty/logging)
 INCLUDE_DIRECTORIES(src/)
@@ -29,14 +30,16 @@ INCLUDE_DIRECTORIES(
 		SYSTEM ${MSGPACK_INCLUDE_DIR}
 		SYSTEM ${MSGPACK_INCLUDE_DIR}
 		SYSTEM ${GFLAGS_INCLUDE_DIR}
+		SYSTEM ${SPDLOG_INCLUDE_DIR}
 )
 
 # common library
 ADD_LIBRARY(common_lib
 		src/common/config.cc
 		src/common/timer.cc
-		src/common/file.cc)
-ADD_DEPENDENCIES(common_lib asio_ep)
+		src/common/file.cc
+		src/common/logging.cc)
+ADD_DEPENDENCIES(common_lib asio_ep spdlog_ep)
 
 # node library
 ADD_LIBRARY(node_lib src/node/node.cc src/node/timer_manager.cc)
