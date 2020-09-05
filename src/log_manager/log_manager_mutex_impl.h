@@ -40,7 +40,7 @@ template <typename LogEntryType>
 bool LogManagerMutexImpl<LogEntryType>::Pop(LogEntryType &log_entry) {
     std::unique_lock<std::mutex> lock(queue_mutex_);
     if (!queue_.empty()) {
-	log_entry = queue_.front();
+        log_entry = queue_.front();
 	queue_.pop();
 	return true;
     }
