@@ -34,7 +34,8 @@ INCLUDE_DIRECTORIES(
 # common library
 ADD_LIBRARY(common_lib
 		src/common/config.cc
-		src/common/timer.cc)
+		src/common/timer.cc
+		src/common/file.cc)
 ADD_DEPENDENCIES(common_lib asio_ep)
 
 # node library
@@ -55,3 +56,4 @@ RAFTCPP_DEFINE_TEST(test_timer SRC_FILES tests/timer_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_range SRC_FILES tests/range_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_config SRC_FILES tests/config_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_logging SRC_FILES tests/logging_test.cc LINKS common_lib)
+RAFTCPP_DEFINE_TEST(test_file SRC_FILES tests/file_test.cc LINKS common_lib)
