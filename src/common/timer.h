@@ -47,9 +47,7 @@ private:
     // The actual boost timer.
     asio::steady_timer timer_;
 
-    std::shared_mutex shared_mutex_;
-
-    bool is_running_ = false;
+    std::atomic<bool> is_running_{false};
 
     // The handler that will be triggered once the time's up.
     std::function<void(const asio::error_code &e)> timeout_handler_;

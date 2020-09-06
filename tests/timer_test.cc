@@ -29,9 +29,10 @@ TEST_CASE("test_repeated_timer_reset") {
     auto resetting_time_ms = CurrentTimeMs();
     REQUIRE_EQ(true, callback_invoked_time_ms > 0);
     REQUIRE_EQ(true, (callback_invoked_time_ms - resetting_time_ms > 0));
+
+    repeated_timer.Stop();
     io_service.stop();
-    io_service.poll();
-    th.detach();
+    th.join();
 }
 
 TEST_CASE("Timer-ContinuousTimer") {
