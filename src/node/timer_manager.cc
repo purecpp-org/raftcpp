@@ -14,7 +14,7 @@ TimerManager::TimerManager(const std::function<void()> &election_timer_timeout_h
     election_timer_ = std::make_unique<common::RepeatedTimer>(
         *io_service_, [election_timer_timeout_handler](const asio::error_code &e) {
             if (e.value() != asio::error::operation_aborted) {
-                RAFTCPP_LOG(DEBUG)
+                RAFTCPP_LOG(RLL_DEBUG)
                     << "Election time's up, request election with error=" << e.message();
                 election_timer_timeout_handler();
             }

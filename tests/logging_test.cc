@@ -6,11 +6,11 @@
 #include <doctest.h>
 
 TEST_CASE("TestLogLevel") {
-    raftcpp::RaftcppLog::StartRaftcppLog("log/test.log", raftcpp::RaftcppLogLevel::INFO,
+    raftcpp::RaftcppLog::StartRaftcppLog("log/test.log", raftcpp::RaftcppLogLevel::RLL_INFO,
                                          10, 3);
-    RAFTCPP_LOG(DEBUG) << "this debug message won't show up " << 456;
-    RAFTCPP_LOG(WARNING) << "Hello " << 123;
-    RAFTCPP_LOG(INFO) << "world " << 456 << " 789";
+    RAFTCPP_LOG(RLL_DEBUG) << "this debug message won't show up " << 456;
+    RAFTCPP_LOG(RLL_WARNING) << "Hello " << 123;
+    RAFTCPP_LOG(RLL_INFO) << "world " << 456 << " 789";
     RAFTCPP_CHECK(true) << "This is a RAFTCPP_CHECK"
                         << " message but it won't show up";
     raftcpp::RaftcppLog::ShutDownRaftcppLog();

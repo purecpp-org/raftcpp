@@ -3,15 +3,15 @@
 namespace raftcpp {
 static spdlog::level::level_enum GetMappedSeverity(RaftcppLogLevel severity) {
     switch (severity) {
-    case RaftcppLogLevel::DEBUG:
+    case RaftcppLogLevel::RLL_DEBUG:
         return spdlog::level::debug;
-    case RaftcppLogLevel::INFO:
+    case RaftcppLogLevel::RLL_INFO:
         return spdlog::level::info;
-    case RaftcppLogLevel::WARNING:
+    case RaftcppLogLevel::RLL_WARNING:
         return spdlog::level::warn;
-    case RaftcppLogLevel::ERR:
+    case RaftcppLogLevel::RLL_ERROR:
         return spdlog::level::err;
-    case RaftcppLogLevel::FATAL:
+    case RaftcppLogLevel::RLL_FATAL:
         return spdlog::level::critical;
     default:
         return spdlog::level::critical;
@@ -61,6 +61,6 @@ bool RaftcppLog::IsLevelEnabled(RaftcppLogLevel log_level) {
 void RaftcppLog::ShutDownRaftcppLog() { spdlog::shutdown(); }
 
 std::shared_ptr<spdlog::logger> RaftcppLog::logging_provider = nullptr;
-RaftcppLogLevel RaftcppLog::severity_threshold_ = RaftcppLogLevel::RAFTCPP_NOLEVEL;
+RaftcppLogLevel RaftcppLog::severity_threshold_ = RaftcppLogLevel::RLL_NOLEVEL;
 
 }  // namespace raftcpp
