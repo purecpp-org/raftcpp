@@ -8,8 +8,7 @@
 set(SPDLOG_VERSION "1.8.0")
 
 set(SPDLOG_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/external/spdlog-install")
-set(SPDLOG_INCLUDE_DIR "${SPDLOG_PREFIX}/spdlog")
-
+set(SPDLOG_INSTALL_DIR ${SPDLOG_PREFIX}/spdlog)
 set(SPDLOG_URL_MD5 "cbd179161d1ed185bd9f3f242c424fd7")
 
 ExternalProject_Add(spdlog_ep
