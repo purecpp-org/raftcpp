@@ -63,7 +63,7 @@ void RaftNode::OnRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_s
 
 void RaftNode::OnPreVote(const boost::system::error_code &ec, string_view data) {
     RAFTCPP_LOG(RLL_DEBUG) << "Received response of request_vote from node " << data
-                       << ", error code=" << ec.message();
+                           << ", error code=" << ec.message();
 
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     responded_pre_vote_nodes_.insert(data.data());
@@ -165,11 +165,13 @@ void RaftNode::ConnectToOtherNodes() {
                                                                  endpoint.GetPort());
         bool connected = rpc_client->connect();
         if (!connected) {
-            RAFTCPP_LOG(RLL_DEBUG) << "Failed to connect to the node " << endpoint.ToString();
+            RAFTCPP_LOG(RLL_DEBUG)
+                << "Failed to connect to the node " << endpoint.ToString();
         }
         rpc_client->enable_auto_heartbeat();
         rpc_client->enable_auto_reconnect();
-        RAFTCPP_LOG(RLL_DEBUG) << "Succeeded to connect to the node " << endpoint.ToString();
+        RAFTCPP_LOG(RLL_DEBUG) << "Succeeded to connect to the node "
+                               << endpoint.ToString();
         rpc_clients_.push_back(rpc_client);
     }
 }

@@ -8,7 +8,14 @@
 #include "spdlog/spdlog.h"
 
 namespace raftcpp {
-enum class RaftcppLogLevel { RLL_DEBUG, RLL_INFO, RLL_WARNING, RLL_ERROR, RLL_FATAL, RLL_NOLEVEL };
+enum class RaftcppLogLevel {
+    RLL_DEBUG,
+    RLL_INFO,
+    RLL_WARNING,
+    RLL_ERROR,
+    RLL_FATAL,
+    RLL_NOLEVEL
+};
 class RaftcppLogBase {
 public:
     virtual ~RaftcppLogBase(){};
@@ -69,10 +76,10 @@ public:
 #define RAFTCPP_LOG_ENABLED(level) \
     raftcpp::RaftcppLog::IsLevelEnabled(raftcpp::RaftcppLogLevel::level)
 #define RAFTCPP_IGNORE_EXPR(expr) ((void)(expr))
-#define RAFTCPP_CHECK(condition)                                                         \
-    (condition)                                                                          \
-        ? RAFTCPP_IGNORE_EXPR(0)                                                         \
-        : ::raftcpp::Voidify() &                                                         \
-              ::raftcpp::RaftcppLog(__FILE__, __LINE__, raftcpp::RaftcppLogLevel::RLL_FATAL) \
-                  << " Check failed: " #condition " "
+#define RAFTCPP_CHECK(condition)                                                 \
+    (condition) ? RAFTCPP_IGNORE_EXPR(0)                                         \
+                : ::raftcpp::Voidify() &                                         \
+                      ::raftcpp::RaftcppLog(__FILE__, __LINE__,                  \
+                                            raftcpp::RaftcppLogLevel::RLL_FATAL) \
+                          << " Check failed: " #condition " "
 }  // namespace raftcpp
