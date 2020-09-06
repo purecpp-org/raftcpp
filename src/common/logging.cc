@@ -26,7 +26,6 @@ RaftcppLog::RaftcppLog(const char *file_name, int line_number, RaftcppLogLevel s
 
 RaftcppLog::~RaftcppLog() {
     try {
-        std::cout<<"xigou...."<<std::endl;
         if (is_enabled_) {
             logging_provider->log(GetMappedSeverity(log_level_), "in {} line:{} {}",
                                   filename_, line_number_, ss_.str());
