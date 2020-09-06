@@ -7,7 +7,7 @@ namespace raftcpp {
  */
 template <typename LogEntryType>
 class LogManagerInterface {
-    public:
+public:
     virtual ~LogManagerInterface() {}
 
     /**

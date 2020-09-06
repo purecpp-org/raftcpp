@@ -5,7 +5,7 @@
 namespace raftcpp {
 
 class StateMachine {
-    public:
+public:
     virtual bool ShouldDoSnapshot() { return true; }
 
     virtual void SaveSnapshot() = 0;
@@ -14,7 +14,7 @@ class StateMachine {
 
     virtual RaftcppResponse OnApply(RaftcppRequest &request) = 0;
 
-    private:
+private:
 };
 
 }  // namespace raftcpp
