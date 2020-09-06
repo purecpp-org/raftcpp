@@ -20,7 +20,9 @@ TEST_CASE("test_repeated_timer_reset") {
                                  [&callback_invoked_time_ms](const asio::error_code &e) {
                                      callback_invoked_time_ms = CurrentTimeMs();
                                  }};
-    std::thread th{[&io_service]() { io_service.run(); }};
+    std::thread th{[&io_service]() {
+        io_service.run();
+    }};
 
     repeated_timer.Start(3 * 1000);
     std::this_thread::sleep_for(std::chrono::milliseconds{500});
@@ -29,9 +31,10 @@ TEST_CASE("test_repeated_timer_reset") {
     auto resetting_time_ms = CurrentTimeMs();
     REQUIRE_EQ(true, callback_invoked_time_ms > 0);
     REQUIRE_EQ(true, (callback_invoked_time_ms - resetting_time_ms > 0));
+
+    repeated_timer.Stop();
     io_service.stop();
-    io_service.poll();
-    th.detach();
+    th.join();
 }
 
 TEST_CASE("Timer-ContinuousTimer") {
