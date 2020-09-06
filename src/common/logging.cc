@@ -9,7 +9,7 @@ static spdlog::level::level_enum GetMappedSeverity(RaftcppLogLevel severity) {
         return spdlog::level::info;
     case RaftcppLogLevel::WARNING:
         return spdlog::level::warn;
-    case RaftcppLogLevel::ERROR:
+    case RaftcppLogLevel::ERR:
         return spdlog::level::err;
     case RaftcppLogLevel::FATAL:
         return spdlog::level::critical;

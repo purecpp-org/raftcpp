@@ -8,7 +8,7 @@
 #include "spdlog/spdlog.h"
 
 namespace raftcpp {
-enum class RaftcppLogLevel { DEBUG, INFO, WARNING, ERROR, FATAL, RAFTCPP_NOLEVEL };
+enum class RaftcppLogLevel { DEBUG, INFO, WARNING, ERR, FATAL, RAFTCPP_NOLEVEL };
 class RaftcppLogBase {
 public:
     virtual ~RaftcppLogBase(){};
