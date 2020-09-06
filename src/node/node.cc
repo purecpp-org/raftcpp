@@ -13,6 +13,10 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
           /*vote_timer_timeout_handler=*/[this]() { this->RequestVote(); }),
       rpc_server_(rpc_server),
       config_(config) {
+    std::string log_name = "node-" + config_.GetThisEndpoint().ToString() + ".log";
+    replace(log_name.begin(), log_name.end(), '.', '-');
+    replace(log_name.begin(), log_name.end(), ':', '-');
+    raftcpp::RaftcppLog::StartRaftcppLog(log_name, RaftcppLogLevel::DEBUG, 10, 3);
     InitRpcHandlers();
     ConnectToOtherNodes();
     // Starting timer manager should be invoked after all rpc initialization.

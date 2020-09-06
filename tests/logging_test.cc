@@ -1,26 +1,39 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+
 #include <doctest.h>
-
-// nanolog INFO (WARN) and doctest INFO (WARN) conflict
-#ifdef INFO
-#undef INFO
-#endif
-
-#ifdef WARN
-#undef WARN
-#endif
-
 #include "common/logging.h"
 
-TEST_CASE("logging_test") {
-    using namespace raftcpp;
-//    RAFTCPP_LOG(INFO) << "Hello " << 123;
-    raftcpp::RaftcppLog::StartRaftcppLog("log/test.log",raftcpp::RaftcppLogLevel::RAFTCPP_INFO,10,3);
-    RAFTCPP_LOG2(RAFTCPP_DEBUG) << "this debug message won't show up " << 456;
-    RAFTCPP_LOG2(RAFTCPP_WARN) << "Hello " << 123;
-    RAFTCPP_LOG2(RAFTCPP_INFO) << "world " << 456 << " 789";
+TEST_CASE("TestLogLevel") {
+    raftcpp::RaftcppLog::StartRaftcppLog("log/test.log", raftcpp::RaftcppLogLevel::INFO,
+                                         10, 3);
+    RAFTCPP_LOG(DEBUG) << "this debug message won't show up " << 456;
+    RAFTCPP_LOG(WARNING) << "Hello " << 123;
+    RAFTCPP_LOG(INFO) << "world " << 456 << " 789";
     RAFTCPP_CHECK(true) << "This is a RAFTCPP_CHECK"
-                                 << " message but it won't show up";
+                        << " message but it won't show up";
     raftcpp::RaftcppLog::ShutDownRaftcppLog();
+    std::fstream file("log/test.log");
+    REQUIRE(file);
+
+    std::string line;
+    uint8_t debug_count = 0;
+    uint8_t info_count = 0;
+    uint8_t warn_count = 0;
+    while (getline(file, line)) {
+        std::cout << "line:" << line << std::endl;
+        if (line.find("debug") != std::string::npos) {
+            debug_count++;
+        } else if (line.find("info") != std::string::npos) {
+            info_count++;
+        } else if (line.find("warning") != std::string::npos) {
+            warn_count++;
+        }
+    }
+
+    REQUIRE_EQ(debug_count, 0);
+    REQUIRE_EQ(info_count, 1);
+    REQUIRE_EQ(warn_count, 1);
+    file.close();
+    std::remove("log/test.log");
 }
