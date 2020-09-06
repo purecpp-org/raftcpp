@@ -1,8 +1,9 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#include <doctest.h>
 #include "common/logging.h"
+
+#include <doctest.h>
 
 TEST_CASE("TestLogLevel") {
     raftcpp::RaftcppLog::StartRaftcppLog("log/test.log", raftcpp::RaftcppLogLevel::INFO,
