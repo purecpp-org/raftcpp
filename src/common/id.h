@@ -8,7 +8,7 @@ public:
         node_id_ = "";
         node_id_.resize(6);
         unsigned int ipint = ip2uint(endpoint_id.GetHost());
-        short port = endpoint_id.GetPort();
+        uint16_t port = endpoint_id.GetPort();
         memcpy(node_id_.data(), &ipint, 4);
         memcpy(node_id_.data() + 4, &port, 2);
     }
