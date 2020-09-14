@@ -16,6 +16,12 @@ public:
         memcpy(node_id + len, &port, 2);
         node_id_.assign(node_id, 6);
     }
+    NodeID(const NodeID &nid) { node_id_ = nid.node_id_; }
+    NodeID &operator=(const NodeID &o) {
+        if (this == &o) return *this;
+        node_id_ = o.node_id_;
+        return *this;
+    }
     std::string ToBinary() const { return node_id_; }
     std::string ToHex() const {
         std::string result;
