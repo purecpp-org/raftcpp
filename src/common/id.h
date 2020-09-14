@@ -6,15 +6,11 @@ class NodeID {
 public:
     NodeID(const Endpoint &endpoint_id) {
         node_id_ = "";
-        char node_id[6];
-        memset(node_id, 0, sizeof(node_id));
-        int ipint = ip2uint(endpoint_id.GetHost());
+        node_id_.resize(6);
+        unsigned int ipint = ip2uint(endpoint_id.GetHost());
         short port = endpoint_id.GetPort();
-        int len = 0;
-        memcpy(node_id, &ipint, 4);
-        len += 4;
-        memcpy(node_id + len, &port, 2);
-        node_id_.assign(node_id, 6);
+        memcpy(node_id_.data(), &ipint, 4);
+        memcpy(node_id_.data() + 4, &port, 2);
     }
     NodeID(const NodeID &nid) { node_id_ = nid.node_id_; }
     NodeID &operator=(const NodeID &o) {
