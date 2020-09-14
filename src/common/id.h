@@ -4,12 +4,12 @@ namespace raftcpp {
 
 class NodeID {
 public:
-    NodeID(const Endpoint &endpoint_id) : endpoint_id_(endpoint_id) {
+    NodeID(const Endpoint &endpoint_id) {
         node_id_ = "";
         char node_id[6];
         memset(node_id, 0, sizeof(node_id));
-        int ipint = ip2uint(endpoint_id_.GetHost());
-        short port = endpoint_id_.GetPort();
+        int ipint = ip2uint(endpoint_id.GetHost());
+        short port = endpoint_id.GetPort();
         int len = 0;
         memcpy(node_id, &ipint, 4);
         len += 4;
@@ -64,7 +64,6 @@ private:
 
         return result;
     }
-    Endpoint endpoint_id_;
     std::string node_id_;
 };
 
