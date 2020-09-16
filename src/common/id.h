@@ -2,28 +2,21 @@
 #include "common/endpoint.h"
 namespace raftcpp {
 
-class NodeID {
+class BaseID {
 public:
-    NodeID(const Endpoint &endpoint_id) {
-        node_id_ = "";
-        node_id_.resize(6);
-        unsigned int ipint = ip2uint(endpoint_id.GetHost());
-        uint16_t port = endpoint_id.GetPort();
-        memcpy(node_id_.data(), &ipint, 4);
-        memcpy(node_id_.data() + 4, &port, 2);
-    }
-    NodeID(const NodeID &nid) { node_id_ = nid.node_id_; }
-    NodeID &operator=(const NodeID &o) {
-        if (this == &o) return *this;
-        node_id_ = o.node_id_;
-        return *this;
-    }
-    std::string ToBinary() const { return node_id_; }
+    BaseID() { data_ = ""; }
+
+    bool operator==(const BaseID &rhs) const { return (this->ToHex() == rhs.ToHex()); }
+
+    bool operator!=(const BaseID &rhs) const { return (this->ToHex() != rhs.ToHex()); }
+
+    std::string ToBinary() const { return data_; }
+
     std::string ToHex() const {
         std::string result;
-        result.resize(12);
-        for (size_t i = 0; i < node_id_.size(); i++) {
-            uint8_t cTemp = node_id_[i];
+        result.resize(data_.length() * 2);
+        for (size_t i = 0; i < data_.size(); i++) {
+            uint8_t cTemp = data_[i];
             for (size_t j = 0; j < 2; j++) {
                 uint8_t cCur = (cTemp & 0x0f);
                 if (cCur < 10) {
@@ -36,6 +29,28 @@ public:
             }
         }
         return result;
+    }
+
+protected:
+    std::string data_;
+};
+
+class NodeID : public BaseID {
+public:
+    NodeID() {}
+    NodeID(const Endpoint &endpoint_id) {
+        data_ = "";
+        data_.resize(sizeof(uint32_t) + sizeof(uint16_t));
+        uint32_t inet = ip2uint(endpoint_id.GetHost());
+        uint16_t port = endpoint_id.GetPort();
+        memcpy(data_.data(), &inet, sizeof(uint32_t));
+        memcpy(data_.data() + sizeof(uint32_t), &port, sizeof(uint16_t));
+    }
+    NodeID(const NodeID &nid) { data_ = nid.data_; }
+    NodeID &operator=(const NodeID &o) {
+        if (this == &o) return *this;
+        data_ = o.data_;
+        return *this;
     }
 
 private:
@@ -55,9 +70,9 @@ private:
 
         return v;
     }
-    unsigned int ip2uint(const std::string &ip) {
+    uint32_t ip2uint(const std::string &ip) {
         std::vector<std::string> v{explode(ip, '.')};
-        unsigned int result = 0;
+        uint32_t result = 0;
         for (auto i = 1; i <= v.size(); i++)
             if (i < 4)
                 result += (stoi(v[i - 1])) << (8 * (4 - i));
@@ -66,16 +81,32 @@ private:
 
         return result;
     }
-    std::string node_id_;
 };
 
-inline bool operator==(const NodeID &lhs, const NodeID &rhs) {
-    return lhs.ToHex() == rhs.ToHex();
-}
-inline bool operator!=(const NodeID &lhs, const NodeID &rhs) {
-    return lhs.ToHex() != rhs.ToHex();
-}
+class TermID : public BaseID {
+public:
+    TermID() { term_ = 0; }
+    TermID(int32_t term) : term_(term) {
+        data_ = "";
+        data_.resize(sizeof(int32_t));
+        memcpy(data_.data(), &term_, sizeof(int32_t));
+    }
+    TermID(const TermID &tid) { data_ = tid.data_; }
+    TermID &operator=(const TermID &o) {
+        if (this == &o) return *this;
+        data_ = o.data_;
+        return *this;
+    }
+    int32_t getTerm() { return term_; }
+    void setTerm(int32_t term) {
+        term_ = term;
+        data_ = "";
+        data_.resize(sizeof(int32_t));
+        memcpy(data_.data(), &term_, sizeof(int32_t));
+    }
 
-class TermID {};
+private:
+    int32_t term_;
+};
 
 }  // namespace raftcpp
