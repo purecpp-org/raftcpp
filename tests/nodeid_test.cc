@@ -17,3 +17,16 @@ TEST_CASE("TestNodeid") {
     raftcpp::NodeID id3(ep3);
     REQUIRE_NE(id2, id3);
 }
+
+TEST_CASE("TestTermid") {
+    raftcpp::TermID id(1);
+    raftcpp::TermID id2(1);
+    REQUIRE_EQ(id, id2);
+
+    raftcpp::TermID id3(3);
+    REQUIRE_NE(id2, id3);
+    REQUIRE_EQ(3, id3.getTerm());
+
+    id2.setTerm(3);
+    REQUIRE_EQ(id2, id3);
+}
