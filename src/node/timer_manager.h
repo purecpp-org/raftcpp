@@ -5,6 +5,7 @@
 #include <memory>
 #include <thread>
 
+#include "common/randomer.h"
 #include "common/timer.h"
 
 namespace raftcpp {
@@ -43,6 +44,8 @@ private:
     std::unique_ptr<common::RepeatedTimer> vote_timer_ = nullptr;
 
     std::unique_ptr<common::RepeatedTimer> heartbeat_timer_ = nullptr;
+
+    Randomer randomer_;
 };
 
 }  // namespace node

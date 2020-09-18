@@ -42,7 +42,7 @@ TimerManager::~TimerManager() {
 
 void TimerManager::Start() {
     // Note that the `Start()` should be invoked before `io_service->run()`.
-    election_timer_->Start(common::RandomNumber(1000, 2000));
+    election_timer_->Start(randomer_.TakeOne(1000, 2000));
     thread_ = std::make_unique<std::thread>([this]() { io_service_->run(); });
 }
 

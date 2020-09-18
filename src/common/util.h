@@ -15,6 +15,13 @@ inline int64_t CurrentTimeMs() {
     return ms_since_epoch.count();
 }
 
+inline int64_t CurrentTimeUs() {
+    std::chrono::microseconds us_since_epoch =
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now().time_since_epoch());
+    return us_since_epoch.count();
+}
+
 inline uint64_t RandomNumber(const uint64_t begin, const uint64_t end) {
     srand(CurrentTimeMs());
     return (rand() % (end - begin)) + begin;
