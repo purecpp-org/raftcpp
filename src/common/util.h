@@ -1,7 +1,6 @@
 #pragma once
 
 #include <chrono>
-#include <random>
 
 namespace raftcpp {
 namespace common {
@@ -18,15 +17,14 @@ inline int64_t CurrentTimeMs() {
 
 inline int64_t CurrentTimeUs() {
     std::chrono::microseconds us_since_epoch =
-        std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::steady_clock::now().time_since_epoch());
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::steady_clock::now().time_since_epoch());
     return us_since_epoch.count();
 }
 
 inline uint64_t RandomNumber(const uint64_t begin, const uint64_t end) {
-    std::default_random_engine e(CurrentTimeUs());
-    std::uniform_int_distribution<uint64_t> u(begin, end);
-    return u(e);
+    srand(CurrentTimeMs());
+    return (rand() % (end - begin)) + begin;
 }
 
 }  // namespace common
