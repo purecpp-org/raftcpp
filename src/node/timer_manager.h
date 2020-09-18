@@ -5,8 +5,8 @@
 #include <memory>
 #include <thread>
 
-#include "common/timer.h"
 #include "common/randomer.h"
+#include "common/timer.h"
 
 namespace raftcpp {
 namespace node {

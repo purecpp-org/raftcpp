@@ -17,8 +17,8 @@ inline int64_t CurrentTimeMs() {
 
 inline int64_t CurrentTimeUs() {
     std::chrono::microseconds us_since_epoch =
-            std::chrono::duration_cast<std::chrono::microseconds>(
-                    std::chrono::steady_clock::now().time_since_epoch());
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now().time_since_epoch());
     return us_since_epoch.count();
 }
 
