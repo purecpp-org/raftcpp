@@ -50,7 +50,7 @@ public:
 };
 
 struct CounterService {
-    int Incr(rpc_conn, int delta) {}
+    void Incr(rpc_conn, int delta) {}
 };
 
 }  // namespace counter
