@@ -230,8 +230,8 @@ void RaftNode::OnRequestHeartbeat(rpc::RpcConn conn, int32_t termid) {
         RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
     if (termid > curr_term_id_.getTerm()) {
         curr_term_id_.setTerm(termid);
-        timer_manager_.GetElectionTimerRef().Reset(
-            RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
+        if(curr_state_ == RaftState::LEADER)
+            curr_state_ = RaftState::FOLLOWER;
     }
 }
 
