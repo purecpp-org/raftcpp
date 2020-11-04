@@ -30,18 +30,18 @@ public:
     void RequestPreVote();
 
     void OnRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                          int32_t termid) override;
+                          int32_t term_id) override;
 
     void OnPreVote(const boost::system::error_code &ec, string_view data);
 
     void RequestVote();
 
     void OnRequestVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                       int32_t termid) override;
+                       int32_t term_id) override;
 
     void OnVote(const boost::system::error_code &ec, string_view data);
 
-    void OnRequestHeartbeat(rpc::RpcConn conn, int32_t termid) override;
+    void OnRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) override;
 
     void RequestHeartbeat();
 
@@ -49,6 +49,8 @@ private:
     void ConnectToOtherNodes();
 
     void InitRpcHandlers();
+
+    void StepBack(int32_t term_id);
 
 private:
     TimerManager timer_manager_;
