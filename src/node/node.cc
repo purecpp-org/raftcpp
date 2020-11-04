@@ -29,6 +29,7 @@ void RaftNode::RequestPreVote() {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     // Note that it's to clear the set.
     responded_pre_vote_nodes_.clear();
+    curr_term_id_.setTerm(curr_term_id_.getTerm() + 1);
     // Pre vote for myself.
     responded_pre_vote_nodes_.insert(this->config_.GetThisEndpoint().ToString());
     for (const auto &rpc_client : rpc_clients_) {
@@ -38,33 +39,45 @@ void RaftNode::RequestPreVote() {
         };
         rpc_client->async_call<0>(RaftcppConstants::REQUEST_PRE_VOTE_RPC_NAME,
                                   std::move(request_pre_vote_callback),
-                                  this->config_.GetThisEndpoint().ToString());
+                                  this->config_.GetThisEndpoint().ToString(),
+                                  curr_term_id_.getTerm());
     }
 }
 
-void RaftNode::OnRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str) {
-    RAFTCPP_LOG(RLL_DEBUG) << "Received a RequestPreVote from node " << endpoint_str;
+void RaftNode::OnRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str,
+                                int32_t term_id) {
+    RAFTCPP_LOG(RLL_DEBUG) << "Received a RequestPreVote from node " << endpoint_str
+                           << " term_id=" << term_id;
 
     std::lock_guard<std::recursive_mutex> guard{mutex_};
+    const auto req_id = conn.lock()->request_id();
+    auto conn_sp = conn.lock();
     if (curr_state_ == RaftState::FOLLOWER) {
-        timer_manager_.GetElectionTimerRef().Reset(
-            RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
-        const auto req_id = conn.lock()->request_id();
-        auto conn_sp = conn.lock();
-        if (conn_sp) {
-            conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
+        if (term_id > curr_term_id_.getTerm()) {
+            curr_term_id_.setTerm(term_id);
+            timer_manager_.GetElectionTimerRef().Reset(
+                RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
+            if (conn_sp) {
+                conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
+            }
         }
-    } else if (curr_state_ == RaftState::CANDIDATE) {
+    } else if (curr_state_ == RaftState::CANDIDATE || curr_state_ == RaftState::LEADER) {
         // TODO(qwang): step down
-    } else if (curr_state_ == RaftState::LEADER) {
-        // TODO(qwang):
+        if (term_id > curr_term_id_.getTerm()) {
+            RAFTCPP_LOG(RLL_DEBUG)
+                << "OnRequestPreVote Received a RequestPreVote,now  step down";
+            StepBack(term_id);
+            if (conn_sp) {
+                conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
+            }
+        }
     }
 }
 
 void RaftNode::OnPreVote(const boost::system::error_code &ec, string_view data) {
     RAFTCPP_LOG(RLL_DEBUG) << "Received response of request_vote from node " << data
                            << ", error code=" << ec.message();
-
+    if (ec.message() == "Transport endpoint is not connected") return;
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     responded_pre_vote_nodes_.insert(data.data());
     if (this->config_.GreaterThanHalfNodesNum(responded_pre_vote_nodes_.size()) &&
@@ -75,6 +88,7 @@ void RaftNode::OnPreVote(const boost::system::error_code &ec, string_view data) 
         // TODO(qwang): We should post these rpc methods to a separated io service.
         curr_state_ = RaftState::CANDIDATE;
         RAFTCPP_LOG(RLL_INFO) << "This node has became a candidate now.";
+        curr_term_id_.setTerm(curr_term_id_.getTerm() + 1);
         timer_manager_.GetElectionTimerRef().Stop();
         timer_manager_.GetVoteTimerRef().Start(
             RaftcppConstants::DEFAULT_VOTE_TIMER_TIMEOUT_MS);
@@ -101,30 +115,40 @@ void RaftNode::RequestVote() {
             //            });
             this->OnVote(ec, data);
         };
-        rpc_client->async_call<0>(RaftcppConstants::REQUEST_VOTE_RPC_NAME,
-                                  std::move(request_vote_callback),
-                                  this->config_.GetThisEndpoint().ToString());
+        rpc_client->async_call<0>(
+            RaftcppConstants::REQUEST_VOTE_RPC_NAME, std::move(request_vote_callback),
+            this->config_.GetThisEndpoint().ToString(), curr_term_id_.getTerm());
     }
 }
 
-void RaftNode::OnRequestVote(rpc::RpcConn conn, const std::string &endpoint_str) {
+void RaftNode::OnRequestVote(rpc::RpcConn conn, const std::string &endpoint_str,
+                             int32_t term_id) {
     RAFTCPP_LOG(RLL_DEBUG) << "OnRequestVote";
     std::lock_guard<std::recursive_mutex> guard{mutex_};
+    const auto req_id = conn.lock()->request_id();
+    auto conn_sp = conn.lock();
     if (curr_state_ == RaftState::FOLLOWER) {
-        timer_manager_.GetElectionTimerRef().Stop();
-        const auto req_id = conn.lock()->request_id();
-        auto conn_sp = conn.lock();
-        if (conn_sp) {
-            conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
+        if (term_id > curr_term_id_.getTerm()) {
+            curr_term_id_.setTerm(term_id);
+            timer_manager_.GetElectionTimerRef().Reset(
+                RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
+            if (conn_sp) {
+                conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
+            }
         }
-    } else if (curr_state_ == RaftState::CANDIDATE) {
+    } else if (curr_state_ == RaftState::CANDIDATE || curr_state_ == RaftState::LEADER) {
         // TODO(qwang):
-    } else if (curr_state_ == RaftState::LEADER) {
-        // TODO(qwang):
+        if (term_id > curr_term_id_.getTerm()) {
+            StepBack(term_id);
+            if (conn_sp) {
+                conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
+            }
+        }
     }
 }
 
 void RaftNode::OnVote(const boost::system::error_code &ec, string_view data) {
+    if (ec.message() == "Transport endpoint is not connected") return;
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     responded_vote_nodes_.insert(data.data());
     if (this->config_.GreaterThanHalfNodesNum(responded_vote_nodes_.size()) &&
@@ -136,6 +160,7 @@ void RaftNode::OnVote(const boost::system::error_code &ec, string_view data) {
         curr_state_ = RaftState::LEADER;
         RAFTCPP_LOG(RLL_INFO) << "This node has became a leader now";
         timer_manager_.GetVoteTimerRef().Stop();
+        timer_manager_.GetElectionTimerRef().Stop();
         timer_manager_.GetHeartbeatTimerRef().Reset(
             RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS);
         this->RequestHeartbeat();
@@ -148,14 +173,20 @@ void RaftNode::RequestHeartbeat() {
         RAFTCPP_LOG(RLL_DEBUG) << "Send a heartbeat to node.";
         rpc_client->async_call<0>(
             RaftcppConstants::REQUEST_HEARTBEAT,
-            /*callback=*/[](const boost::system::error_code &ec, string_view data) {});
+            /*callback=*/[](const boost::system::error_code &ec, string_view data) {},
+            curr_term_id_.getTerm());
     }
 }
 
-void RaftNode::OnRequestHeartbeat(rpc::RpcConn conn) {
+void RaftNode::OnRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) {
     RAFTCPP_LOG(RLL_DEBUG) << "Received a heartbeat from leader.";
     timer_manager_.GetElectionTimerRef().Start(
         RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
+    if (term_id > curr_term_id_.getTerm()) {
+        curr_term_id_.setTerm(term_id);
+        timer_manager_.GetVoteTimerRef().Stop();
+        timer_manager_.GetHeartbeatTimerRef().Stop();
+    }
 }
 
 void RaftNode::ConnectToOtherNodes() {
@@ -184,6 +215,15 @@ void RaftNode::InitRpcHandlers() {
                                                   &RaftNode::OnRequestVote, this);
     rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_HEARTBEAT,
                                                   &RaftNode::OnRequestHeartbeat, this);
+}
+
+void RaftNode::StepBack(int32_t term_id) {
+    timer_manager_.GetHeartbeatTimerRef().Stop();
+    timer_manager_.GetVoteTimerRef().Stop();
+    timer_manager_.GetElectionTimerRef().Reset(
+        RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
+    curr_state_ = RaftState::FOLLOWER;
+    curr_term_id_.setTerm(term_id);
 }
 
 }  // namespace raftcpp::node
