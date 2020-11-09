@@ -37,3 +37,9 @@ cmake-build-debug/
 
 # build
 build
+
+# vscode
+.vs/
+
+# Macos
+.DS_Store
