@@ -8,6 +8,7 @@
 #include "common/config.h"
 #include "common/endpoint.h"
 #include "common/id.h"
+#include "common/logging.h"
 #include "common/timer.h"
 #include "common/type_def.h"
 #include "node/timer_manager.h"
@@ -15,14 +16,15 @@
 #include "rpc/services.h"
 #include "rpc_client.hpp"
 #include "rpc_server.h"
-#include "common/logging.h"
 
 namespace raftcpp {
 namespace node {
 
 class RaftNode : public rpc::NodeService {
 public:
-    RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server, const common::Config &config,const raftcpp::RaftcppLogLevel severity=raftcpp::RaftcppLogLevel::RLL_DEBUG);
+    RaftNode(
+        rest_rpc::rpc_service::rpc_server &rpc_server, const common::Config &config,
+        const raftcpp::RaftcppLogLevel severity = raftcpp::RaftcppLogLevel::RLL_DEBUG);
 
     ~RaftNode();
 
@@ -48,7 +50,7 @@ public:
 
     void OnHeartbeat(const boost::system::error_code &ec, string_view data);
 
-    RaftState GetCurrState() const { return curr_state_;}
+    RaftState GetCurrState() const { return curr_state_; }
 
 private:
     void ConnectToOtherNodes();
@@ -87,7 +89,7 @@ private:
     // The recursive mutex that protects all of the node state.
     std::recursive_mutex mutex_;
 
-    //Accept the heartbeat reset election time to be random,
+    // Accept the heartbeat reset election time to be random,
     // otherwise the all followers will be timed out at one time.
     Randomer randomer_;
 };
