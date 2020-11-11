@@ -62,3 +62,4 @@ RAFTCPP_DEFINE_TEST(test_logging SRC_FILES tests/logging_test.cc LINKS common_li
 RAFTCPP_DEFINE_TEST(test_file SRC_FILES tests/file_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_log_manager SRC_FILES tests/log_manager_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_nodeid SRC_FILES tests/nodeid_test.cc LINKS common_lib)
+RAFTCPP_DEFINE_TEST(test_node_elect SRC_FILES tests/node_elect_test.cc LINKS common_lib node_lib)
