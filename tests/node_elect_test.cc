@@ -59,24 +59,21 @@ TEST_CASE("TestNodeElect") {
     std::shared_ptr<raftcpp::node::RaftNode> node1 = nullptr;
     std::shared_ptr<raftcpp::node::RaftNode> node2 = nullptr;
     std::shared_ptr<raftcpp::node::RaftNode> node3 = nullptr;
+
     rpc_server *server1 = new rpc_server(10001, std::thread::hardware_concurrency());
-    ;
     rpc_server *server2 = new rpc_server(10002, std::thread::hardware_concurrency());
-    ;
     rpc_server *server3 = new rpc_server(10003, std::thread::hardware_concurrency());
-    ;
 
     std::thread t1(node_run, std::ref(node1),
                    "127.0.0.1:10001,127.0.0.1:10002,127.0.0.1:10003", std::ref(server1));
-
     std::this_thread::sleep_for(std::chrono::seconds(1));
+
     std::thread t2(node_run, std::ref(node2),
                    "127.0.0.1:10002,127.0.0.1:10001,127.0.0.1:10003", std::ref(server2));
-
     std::this_thread::sleep_for(std::chrono::seconds(1));
+
     std::thread t3(node_run, std::ref(node3),
                    "127.0.0.1:10003,127.0.0.1:10001,127.0.0.1:10002", std::ref(server3));
-
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     while (true) {
@@ -183,11 +180,32 @@ TEST_CASE("TestNodeElect") {
     REQUIRE_EQ(nodeStateLeader.size(), 1);
     REQUIRE_EQ(nodeStateFollower.size(), 1);
 
-    if (server1) delete server1;
-    if (server2) delete server2;
-    if (server3) delete server3;
-
-    if (t1.joinable()) t1.detach();
-    if (t2.joinable()) t2.detach();
-    if (t3.joinable()) t3.detach();
+    if (server1) {
+        delete server1;
+        server1 = nullptr;
+        node1.reset();
+    }
+    if (server2) {
+        delete server2;
+        server2 = nullptr;
+        node2.reset();
+    }
+    if (server3) {
+        delete server3;
+        server3 = nullptr;
+        node3.reset();
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    if (t1.joinable()) {
+        t1.detach();
+        t1.std::thread::~thread();
+    }
+    if (t2.joinable()) {
+        t2.detach();
+        t2.std::thread::~thread();
+    }
+    if (t3.joinable()) {
+        t3.detach();
+        t3.std::thread::~thread();
+    }
 }
