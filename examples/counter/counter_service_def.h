@@ -2,7 +2,7 @@
 
 #include "common/status.h"
 #include "rpc/common.h"
-#include "rpc_server.h"
+#include "rest_rpc/rpc_server.h"
 
 using namespace rest_rpc;
 using namespace rpc_service;

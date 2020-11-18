@@ -12,10 +12,10 @@
 #include "common/timer.h"
 #include "common/type_def.h"
 #include "node/timer_manager.h"
+#include "rest_rpc/rpc_client.hpp"
+#include "rest_rpc/rpc_server.h"
 #include "rpc/common.h"
 #include "rpc/services.h"
-#include "rpc_client.hpp"
-#include "rpc_server.h"
 
 namespace raftcpp {
 namespace node {
