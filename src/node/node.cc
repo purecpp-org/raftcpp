@@ -211,7 +211,6 @@ void RaftNode::RequestHeartbeat() {
 }
 
 void RaftNode::OnRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) {
-    std::lock_guard<std::recursive_mutex> guard{mutex_};
     if (curr_state_ == RaftState::FOLLOWER || curr_state_ == RaftState::CANDIDATE) {
         RAFTCPP_LOG(RLL_DEBUG) << "OnRequestHeartbeat node "
                                << this->config_.GetThisEndpoint().ToString()
@@ -241,6 +240,7 @@ void RaftNode::OnRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) {
                 << "OnRequestHeartbeat node "
                 << this->config_.GetThisEndpoint().ToString()
                 << "received a heartbeat from leader and send response";
+            std::lock_guard<std::recursive_mutex> guard{mutex_};
             const auto req_id = conn.lock()->request_id();
             auto conn_sp = conn.lock();
             if (conn_sp) {
