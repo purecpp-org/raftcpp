@@ -65,8 +65,9 @@ void RaftNode::OnRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_s
     if (curr_state_ == RaftState::FOLLOWER) {
         if (term_id > curr_term_id_.getTerm()) {
             curr_term_id_.setTerm(term_id);
-            timer_manager_.GetElectionTimerRef().Reset(2000 +
-                                                       randomer_.TakeOne(1000, 2000));
+            timer_manager_.GetElectionTimerRef().Reset(
+                RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS +
+                randomer_.TakeOne(1000, 2000));
             if (conn_sp) {
                 conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
             }
@@ -216,7 +217,9 @@ void RaftNode::OnRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) {
                                << "received a heartbeat from leader."
                                << " curr_term_id_:" << curr_term_id_.getTerm()
                                << " receive term_id:" << term_id << " update term_id";
-        timer_manager_.GetElectionTimerRef().Start(2000 + randomer_.TakeOne(1000, 2000));
+        timer_manager_.GetElectionTimerRef().Start(
+            RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS +
+            randomer_.TakeOne(1000, 2000));
         curr_term_id_.setTerm(term_id);
     } else {
         if (term_id >= curr_term_id_.getTerm()) {
@@ -229,8 +232,9 @@ void RaftNode::OnRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) {
             timer_manager_.GetVoteTimerRef().Stop();
             timer_manager_.GetHeartbeatTimerRef().Stop();
             curr_state_ = RaftState::FOLLOWER;
-            timer_manager_.GetElectionTimerRef().Start(2000 +
-                                                       randomer_.TakeOne(1000, 2000));
+            timer_manager_.GetElectionTimerRef().Start(
+                RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS +
+                randomer_.TakeOne(1000, 2000));
         } else {
             RAFTCPP_LOG(RLL_DEBUG)
                 << "OnRequestHeartbeat node "
@@ -256,7 +260,9 @@ void RaftNode::OnHeartbeat(const boost::system::error_code &ec, string_view data
     if (term_id > curr_term_id_.getTerm()) {
         curr_state_ = RaftState::FOLLOWER;
         timer_manager_.GetVoteTimerRef().Stop();
-        timer_manager_.GetElectionTimerRef().Start(2000 + randomer_.TakeOne(1000, 2000));
+        timer_manager_.GetElectionTimerRef().Start(
+            RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS +
+            randomer_.TakeOne(1000, 2000));
         timer_manager_.GetHeartbeatTimerRef().Stop();
     }
 }
