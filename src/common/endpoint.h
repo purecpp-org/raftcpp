@@ -51,9 +51,29 @@ public:
         }
     }
 
+    friend std::ostream &operator<<(std::ostream &out, const Endpoint &e) {
+        out << e.host_ + ":" + std::to_string(e.port_);
+        return out;
+    }
+
+    friend std::istream &operator>>(std::istream &in, Endpoint &e) {
+        in >> e.host_ >> e.port_;
+        return in;
+    }
+
 private:
     std::string host_;
     uint16_t port_;
 };
 
 }  // namespace raftcpp
+
+namespace std {
+template <>
+struct hash<raftcpp::Endpoint> {
+    std::size_t operator()(const raftcpp::Endpoint &e) const noexcept {
+        return std::hash<std::string>()(e.GetHost()) ^
+               (std::hash<uint16_t>()(e.GetPort()) << 1u);
+    }
+};
+}  // namespace std
