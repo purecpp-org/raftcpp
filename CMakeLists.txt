@@ -56,6 +56,10 @@ else()
 	set(link_libs )
 endif()
 
+if(WIN32)
+	ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN)
+endif()
+
 RAFTCPP_DEFINE_TEST(example_counter_server_main SRC_FILES examples/counter/counter_server_main.cc LINKS node_lib gflags)
 RAFTCPP_DEFINE_TEST(test_timer SRC_FILES tests/timer_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_range SRC_FILES tests/range_test.cc LINKS common_lib)
@@ -64,3 +68,4 @@ RAFTCPP_DEFINE_TEST(test_logging SRC_FILES tests/logging_test.cc LINKS common_li
 RAFTCPP_DEFINE_TEST(test_file SRC_FILES tests/file_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_log_manager SRC_FILES tests/log_manager_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_nodeid SRC_FILES tests/nodeid_test.cc LINKS common_lib)
+RAFTCPP_DEFINE_TEST(test_node_elect SRC_FILES tests/node_elect_test.cc LINKS common_lib node_lib)

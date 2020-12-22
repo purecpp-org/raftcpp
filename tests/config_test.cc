@@ -1,6 +1,8 @@
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "../src/common/config.h"
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <unordered_map>
+
 #include "doctest.h"
 
 TEST_CASE("config-tset") {
@@ -71,4 +73,18 @@ TEST_CASE("endpoint-test") {
     REQUIRE_EQ(v[2], e1);
     REQUIRE_EQ(v[3], e4);
     REQUIRE_EQ(v[4], e3);
+
+    std::unordered_map<Endpoint, std::string> m = {{{"127.0.0.1", 1001}, "first"},
+                                                   {{"127.0.0.1", 1002}, "second"}};
+    std::string key1 = "127.0.0.1:1001";
+    std::string key2 = "127.0.0.1:1002";
+    for (const auto &element : m) {
+        std::stringstream buffer;
+        buffer << element.first;
+        if (element.second == "first") {
+            REQUIRE_EQ(buffer.str(), key1);
+        } else if (element.second == "first") {
+            REQUIRE_EQ(buffer.str(), key2);
+        }
+    }
 }
