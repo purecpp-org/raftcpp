@@ -5,7 +5,7 @@
 #include "common/config.h"
 #include "counter_state_machine.h"
 #include "node/node.h"
-#include "rpc_server.h"
+#include "rest_rpc/rpc_server.h"
 
 using namespace rest_rpc;
 using namespace rpc_service;
