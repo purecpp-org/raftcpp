@@ -1,6 +1,7 @@
 #pragma once
 
 #include <condition_variable>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
