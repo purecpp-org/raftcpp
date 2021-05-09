@@ -169,7 +169,9 @@ TEST_CASE("LogManager write entry") {
 
 TEST_CASE("LogManager load entry") {
     LogManagerMutexImpl<raftcpp::LogEntry> log_manager("raftcpp_data");
-    log_manager.init();
+
+    REQUIRE_EQ(0, log_manager.init());
+    REQUIRE_EQ(0, log_manager.init());
     // get entries count
     REQUIRE_EQ(20, log_manager.get_count());
     // truncate entries

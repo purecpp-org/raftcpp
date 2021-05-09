@@ -68,7 +68,8 @@ public:
     LogManagerMutexImpl() = default;
 
     ~LogManagerMutexImpl() { fd_.close(); }
-    LogManagerMutexImpl(const std::string &path) : path_(path), is_open_(false) {}
+    LogManagerMutexImpl(const std::string &path)
+        : path_(path), is_open_(false), is_init_(false) {}
 
     virtual LogEntryType Pop() override;
 
@@ -77,6 +78,7 @@ public:
     virtual void Push(const LogEntryType &log_entry) override;
 
     int init() {
+        if (is_init_) return 0;
         if (!std::filesystem::exists(path_)) {
             std::filesystem::create_directory(path_);
         }
@@ -115,13 +117,14 @@ public:
                 }
                 if (sum != header.data_checksum) {
                     // TODO: abort()?
-                    ;
+                    std::cout << "check sum invalid." << std::endl;
                 }
                 offset_and_term_.push_back(std::make_pair(entry_off, header.term));
                 entry_off += ENTRY_HEAD_SIZE + header.data_len;
                 delete[] dataBuf;
             }
         }
+        is_init_ = true;
         return 0;
     }
 
@@ -202,7 +205,7 @@ public:
         }
         if (sum != header.data_checksum) {
             // TODO: abort()?
-            std::cout << "check sun invalid." << std::endl;
+            std::cout << "check sum invalid." << std::endl;
         }
 
         entry.term_ = header.term;
@@ -252,6 +255,7 @@ private:
     std::mutex file_mutex_;
     std::string path_;
     bool is_open_;
+    bool is_init_;
     std::fstream fd_;
     std::vector<std::pair<int64_t /*offset*/, int32_t /*term*/>> offset_and_term_;
 };
