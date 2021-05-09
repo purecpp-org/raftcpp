@@ -1,5 +1,5 @@
 if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang"))
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -pthread -std=c++17")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -pthread -std=c++17 -D_FORCE_INLINES")
     # The major alternative compiler to GCC/Clang is Microsoft's Visual C++ compiler, only available on Windows.
 elseif (MSVC)
 
