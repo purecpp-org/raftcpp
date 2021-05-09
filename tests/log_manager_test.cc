@@ -68,18 +68,17 @@ TEST_CASE("LogManager write entry") {
     log_manager.init();
 
     // append entry
-    for (int i = 0; i < 10; i++)
-    {
+    for (int i = 0; i < 10; i++) {
         LogEntry entry;
         entry.term_ = 1;
         entry.index_ = i + 1;
-        entry.data_ = "hello, raftcpp: "+ std::to_string(i+1);
+        entry.data_ = "hello, raftcpp: " + std::to_string(i + 1);
         REQUIRE_EQ(0, log_manager.append_entry(entry));
     }
     // get entries count
     REQUIRE_EQ(10, log_manager.get_count());
 
-    //read entry
+    // read entry
     for (int i = 0; i < 10; i++) {
         int64_t term = log_manager.get_term(i + 1);
         REQUIRE_EQ(term, 1);
@@ -88,19 +87,18 @@ TEST_CASE("LogManager write entry") {
         REQUIRE_EQ(entry.term_, 1);
         REQUIRE_EQ(entry.index_, i + 1);
 
-        char data_buf[128]="";
+        char data_buf[128] = "";
         snprintf(data_buf, sizeof(data_buf), "hello, raftcpp: %d", i + 1);
         REQUIRE_EQ(data_buf, entry.data_);
     }
 
     // batch append entries
     std::vector<LogEntry> logentries;
-    for (int i = 10; i < 20; i++)
-    {
+    for (int i = 10; i < 20; i++) {
         LogEntry entry;
         entry.term_ = 1;
         entry.index_ = i + 1;
-        entry.data_ = "hello, raftcpp: "+ std::to_string(i+1);
+        entry.data_ = "hello, raftcpp: " + std::to_string(i + 1);
         logentries.push_back(entry);
     }
 
@@ -109,7 +107,7 @@ TEST_CASE("LogManager write entry") {
     // get entries count
     REQUIRE_EQ(20, log_manager.get_count());
 
-    //read entry
+    // read entry
     for (int i = 0; i < 20; i++) {
         int64_t term = log_manager.get_term(i + 1);
         REQUIRE_EQ(term, 1);
@@ -118,7 +116,7 @@ TEST_CASE("LogManager write entry") {
         REQUIRE_EQ(entry.term_, 1);
         REQUIRE_EQ(entry.index_, i + 1);
 
-        char data_buf[128]="";
+        char data_buf[128] = "";
         snprintf(data_buf, sizeof(data_buf), "hello, raftcpp: %d", i + 1);
         REQUIRE_EQ(data_buf, entry.data_);
     }
@@ -132,38 +130,36 @@ TEST_CASE("LogManager write entry") {
     // truncate entries
     REQUIRE_EQ(0, log_manager.truncate(10));
     REQUIRE_EQ(10, log_manager.get_count());
-    for (int i = 0; i < 10; i++)
-    {
-        int64_t term = log_manager.get_term(i+1);
+    for (int i = 0; i < 10; i++) {
+        int64_t term = log_manager.get_term(i + 1);
         REQUIRE_EQ(term, 1);
 
-        LogEntry entry = log_manager.get_LogEntry(i+1);
+        LogEntry entry = log_manager.get_LogEntry(i + 1);
         REQUIRE_EQ(entry.term_, 1);
-        REQUIRE_EQ(entry.index_, i+1);
+        REQUIRE_EQ(entry.index_, i + 1);
     }
 
-    //read
+    // read
     std::vector<LogEntry> LogEntries;
-    for (int i = 10; i < 20; i++)
-    {
+    for (int i = 10; i < 20; i++) {
         LogEntry entry;
         entry.term_ = 1;
         entry.index_ = i + 1;
-        entry.data_ = "HELLO, RAFTCPP: "+ std::to_string(i+1);
+        entry.data_ = "HELLO, RAFTCPP: " + std::to_string(i + 1);
         LogEntries.push_back(entry);
     }
     REQUIRE_EQ(0, log_manager.append_entries(LogEntries));
 
     for (int i = 0; i < 20; i++) {
-        int64_t term = log_manager.get_term(i+1);
+        int64_t term = log_manager.get_term(i + 1);
         REQUIRE_EQ(term, 1);
 
-        LogEntry entry = log_manager.get_LogEntry(i+1);
+        LogEntry entry = log_manager.get_LogEntry(i + 1);
         REQUIRE_EQ(entry.term_, 1);
-        REQUIRE_EQ(entry.index_, i+1);
+        REQUIRE_EQ(entry.index_, i + 1);
 
-        char data_buf[128]="";
-        if(i<10)
+        char data_buf[128] = "";
+        if (i < 10)
             snprintf(data_buf, sizeof(data_buf), "hello, raftcpp: %d", i + 1);
         else
             snprintf(data_buf, sizeof(data_buf), "HELLO, RAFTCPP: %d", i + 1);
@@ -184,10 +180,10 @@ TEST_CASE("LogManager load entry") {
     entry.term_ = 1;
     entry.index_ = 20;
     entry.data_ = "HELLO, RAFTCPP: 20";
-    REQUIRE_EQ(0,log_manager.append_entry(entry));
+    REQUIRE_EQ(0, log_manager.append_entry(entry));
 
     entry.term_ = 1;
     entry.index_ = 22;
     entry.data_ = "HELLO, RAFTCPP: 22";
-    REQUIRE_EQ(-1,log_manager.append_entry(entry));
+    REQUIRE_EQ(-1, log_manager.append_entry(entry));
 }
