@@ -67,7 +67,12 @@ class LogManagerMutexImpl : public LogManagerInterface<LogEntryType> {
 public:
     LogManagerMutexImpl() = default;
 
-    ~LogManagerMutexImpl() { fd_.close(); }
+    ~LogManagerMutexImpl() {
+        if (is_open_) {
+            fd_.sync();
+            fd_.close();
+        }
+    }
     LogManagerMutexImpl(const std::string &path)
         : path_(path), is_open_(false), is_init_(false) {}
 
@@ -93,6 +98,7 @@ public:
             is_open_ = true;
         } else
             return -1;
+        fd_.seekg(0, std::ios::end);
         int64_t file_size = fd_.tellg();
         if (file_size > 0) {
             fd_.seekg(0, std::ios::beg);  // move to file header
@@ -226,7 +232,7 @@ public:
         if (index > offset_and_term_.size() || index < 0) return -1;
         return offset_and_term_[index - 1].first;
     }
-    int64_t get_count() { return offset_and_term_.size(); }
+    int64_t get_count() const { return offset_and_term_.size(); }
     // truncate data to last_index_kept
     int truncate(const int64_t last_index_kept) {
         std::unique_lock<std::mutex> lock(file_mutex_);
@@ -244,8 +250,6 @@ public:
         }
         return 0;
     }
-
-    bool is_open() const { return is_open_; }
 
 private:
     std::mutex queue_mutex_;
