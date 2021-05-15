@@ -53,7 +53,7 @@ void RaftNode::RequestPreVote() {
 }
 
 void RaftNode::HandleRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                                int32_t term_id) {
+                                    int32_t term_id) {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     if (this->config_.GetThisEndpoint().ToString() == endpoint_str) return;
     RAFTCPP_LOG(RLL_DEBUG) << "HandleRequestPreVote this node "
@@ -141,7 +141,7 @@ void RaftNode::RequestVote() {
 }
 
 void RaftNode::HandleRequestVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                             int32_t term_id) {
+                                 int32_t term_id) {
     RAFTCPP_LOG(RLL_DEBUG) << "Node " << this->config_.GetThisEndpoint().ToString()
                            << " response vote";
     std::lock_guard<std::recursive_mutex> guard{mutex_};
@@ -289,10 +289,12 @@ void RaftNode::ConnectToOtherNodes() {
 void RaftNode::InitRpcHandlers() {
     // Register RPC handles.
     rpc_server_.register_handler<rest_rpc::Async>(
-        RaftcppConstants::REQUEST_PRE_VOTE_RPC_NAME, &RaftNode::HandleRequestPreVote, this);
+        RaftcppConstants::REQUEST_PRE_VOTE_RPC_NAME, &RaftNode::HandleRequestPreVote,
+        this);
     rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_VOTE_RPC_NAME,
                                                   &RaftNode::HandleRequestVote, this);
-    rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_HEARTBEAT, &RaftNode::HandleRequestHeartbeat, this);
+    rpc_server_.register_handler<rest_rpc::Async>(
+        RaftcppConstants::REQUEST_HEARTBEAT, &RaftNode::HandleRequestHeartbeat, this);
 }
 
 void RaftNode::StepBack(int32_t term_id) {
