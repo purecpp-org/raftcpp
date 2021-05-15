@@ -12,7 +12,9 @@ public:
 
     virtual void LoadSnapshot() = 0;
 
-    virtual RaftcppResponse OnApply(RaftcppRequest &request) = 0;
+//    virtual RaftcppResponse OnApply(RaftcppRequest &request) = 0;
+
+    virtual RaftcppResponse OnApply(const std::string &serialized) = 0;
 
 private:
 };

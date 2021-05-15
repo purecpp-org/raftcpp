@@ -39,16 +39,18 @@ public:
         atomic_value_.store(static_cast<int64_t>(std::stoi(value)));
     }
 
-    raftcpp::RaftcppResponse OnApply(raftcpp::RaftcppRequest &request) override {
+    raftcpp::RaftcppResponse OnApply(const std::string &serialized) override {
         received_requests_num_.fetch_add(1);
 
-        auto &counter_request = dynamic_cast<CounterRequest &>(request);
-        if (counter_request.GetType() == CounterRequestType::INCR) {
-            auto &incr_request = dynamic_cast<IncrRequest &>(counter_request);
-            atomic_value_.fetch_add(incr_request.GetDelta());
+        /// serialized to Request.
+        auto counter_request = CounterRequest::Deserialize1(serialized);
+        if (counter_request->GetType() == CounterRequestType::INCR) {
+            counter_request.get();
+            auto *incr_request = dynamic_cast<IncrRequest *>(counter_request.get());
+            atomic_value_.fetch_add(incr_request->GetDelta());
             return IncrResponse(Status::OK);
-        } else if (counter_request.GetType() == CounterRequestType::GET) {
-            auto &get_request = dynamic_cast<GetRequest &>(counter_request);
+        } else if (counter_request->GetType() == CounterRequestType::GET) {
+            auto *get_request = dynamic_cast<GetRequest *>(counter_request.get());
             return GetResponse(atomic_value_.load());
         }
 

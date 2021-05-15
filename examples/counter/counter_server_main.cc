@@ -24,6 +24,7 @@ public:
         : node_(std::move(node)), fsm_(std::move(fsm)) {}
 
     void Incr(rpc_conn conn, int delta) {
+        // CHECK is leader.
         RAFTCPP_LOG(RLL_INFO) << "=============Incring: " << delta;
         // Does this should be enabled from this?
         std::shared_ptr<IncrRequest> request = std::make_shared<IncrRequest>(delta);
@@ -60,8 +61,8 @@ int main(int argc, char *argv[]) {
     rpc_server server(config.GetThisEndpoint().GetPort(),
                       std::thread::hardware_concurrency());
 
-    auto node = std::make_shared<raftcpp::node::RaftNode>(server, config);
     auto fsm = std::make_shared<CounterStateMachine>();
+    auto node = std::make_shared<raftcpp::node::RaftNode>(fsm, server, config);
 
     CounterServiceImpl service(node, fsm);
     server.register_handler("incr", &CounterServiceImpl::Incr, &service);
