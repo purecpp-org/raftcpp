@@ -277,7 +277,6 @@ void RaftNode::ConnectToOtherNodes() {
             RAFTCPP_LOG(RLL_DEBUG)
                 << "Failed to connect to the node " << endpoint.ToString();
         }
-        rpc_client->enable_auto_heartbeat();
         rpc_client->enable_auto_reconnect();
         RAFTCPP_LOG(RLL_DEBUG) << "This node " << config_.GetThisEndpoint().ToString()
                                << " succeeded to connect to the node "
