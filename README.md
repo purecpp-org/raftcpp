@@ -1,6 +1,6 @@
 # raftcpp
-An implementation of Raft consensus algorithm in modern C++.  
-[Note that this project is now WORKING IN PROGRESS.]
+A Raft implementation to help build your Raft service in 1 minute.
+[Note that this project is now WORKING IN PROGRESS. We are going to release 0.1.0 soon.]
 
 ## Main dependencies
 - asio
