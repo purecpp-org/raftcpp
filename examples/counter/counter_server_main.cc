@@ -24,7 +24,9 @@ public:
         : node_(std::move(node)), fsm_(std::move(fsm)) {}
 
     void Incr(rpc_conn conn, int delta) {
-        IncrRequest request = IncrRequest(delta);
+        RAFTCPP_LOG(RLL_INFO) << "=============Incring: " << delta;
+        // Does this should be enabled from this?
+        std::shared_ptr<IncrRequest> request = std::make_shared<IncrRequest>(delta);
         node_->Apply(request);
     }
 
@@ -46,6 +48,11 @@ int main(int argc, char *argv[]) {
         gflags::ParseCommandLineFlags(&argc, &argv, false);
         conf_str = FLAGS_conf;
         gflags::ShutDownCommandLineFlags();
+    }
+//    RAFTCPP_CHECK(!conf_str.empty()) << "Failed to start counter server with empty config string.";
+    if (conf_str.empty()) {
+        RAFTCPP_LOG(RLL_INFO) << "Failed to start counter server with empty config string.";
+        return -1;
     }
     const auto config = raftcpp::common::Config::From(conf_str);
 

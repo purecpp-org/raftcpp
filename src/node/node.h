@@ -28,7 +28,7 @@ public:
 
     ~RaftNode();
 
-    void Apply(raftcpp::RaftcppRequest request) {}
+    void Apply(std::shared_ptr<raftcpp::RaftcppRequest> request);
 
     void RequestPreVote();
 

@@ -25,6 +25,10 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
 
 RaftNode::~RaftNode() {}
 
+void RaftNode::Apply(std::shared_ptr<raftcpp::RaftcppRequest> request) {
+    // TODO(qwang)
+}
+
 void RaftNode::RequestPreVote() {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     RAFTCPP_LOG(RLL_DEBUG) << "Node " << this->config_.GetThisEndpoint().ToString()
@@ -274,7 +278,7 @@ void RaftNode::ConnectToOtherNodes() {
                                                                  endpoint.GetPort());
         bool connected = rpc_client->connect();
         if (!connected) {
-            RAFTCPP_LOG(RLL_DEBUG)
+            RAFTCPP_LOG(RLL_INFO)
                 << "Failed to connect to the node " << endpoint.ToString();
         }
         rpc_client->enable_auto_reconnect();
