@@ -24,6 +24,7 @@ public:
         : node_(std::move(node)), fsm_(std::move(fsm)) {}
 
     void Incr(rpc_conn conn, int delta) {
+        RAFTCPP_LOG(RLL_INFO) << "=============Incring: " << delta;
         IncrRequest request = IncrRequest(delta);
         node_->Apply(request);
     }
@@ -47,7 +48,11 @@ int main(int argc, char *argv[]) {
         conf_str = FLAGS_conf;
         gflags::ShutDownCommandLineFlags();
     }
-    RAFTCPP_CHECK(!conf_str.empty()) << "Failed to start counter server with empty config string.";
+//    RAFTCPP_CHECK(!conf_str.empty()) << "Failed to start counter server with empty config string.";
+    if (conf_str.empty()) {
+        RAFTCPP_LOG(RLL_INFO) << "Failed to start counter server with empty config string.";
+        return -1;
+    }
     const auto config = raftcpp::common::Config::From(conf_str);
 
     // Initial a rpc server and listening on its port.

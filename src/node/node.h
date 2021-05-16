@@ -28,7 +28,7 @@ public:
 
     ~RaftNode();
 
-    void Apply(raftcpp::RaftcppRequest request) {}
+    void Apply(raftcpp::RaftcppRequest request);
 
     void RequestPreVote();
 

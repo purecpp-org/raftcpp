@@ -58,6 +58,7 @@ if(WIN32)
 	ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN)
 endif()
 
+RAFTCPP_DEFINE_TEST(example_counter_client_main SRC_FILES examples/counter/counter_client_main.cc LINKS common_lib gflags)
 RAFTCPP_DEFINE_TEST(example_counter_server_main SRC_FILES examples/counter/counter_server_main.cc LINKS node_lib gflags)
 RAFTCPP_DEFINE_TEST(test_timer SRC_FILES tests/timer_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_range SRC_FILES tests/range_test.cc LINKS common_lib)
