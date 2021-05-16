@@ -47,6 +47,7 @@ int main(int argc, char *argv[]) {
         conf_str = FLAGS_conf;
         gflags::ShutDownCommandLineFlags();
     }
+    RAFTCPP_CHECK(!conf_str.empty()) << "Failed to start counter server with empty config string.";
     const auto config = raftcpp::common::Config::From(conf_str);
 
     // Initial a rpc server and listening on its port.
