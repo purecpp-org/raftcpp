@@ -25,8 +25,8 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
 
 RaftNode::~RaftNode() {}
 
-void RaftNode::Apply(raftcpp::RaftcppRequest request) {
-
+void RaftNode::Apply(std::shared_ptr<raftcpp::RaftcppRequest> request) {
+    // TODO(qwang)
 }
 
 void RaftNode::RequestPreVote() {

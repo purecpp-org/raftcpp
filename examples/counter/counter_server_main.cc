@@ -25,7 +25,8 @@ public:
 
     void Incr(rpc_conn conn, int delta) {
         RAFTCPP_LOG(RLL_INFO) << "=============Incring: " << delta;
-        IncrRequest request = IncrRequest(delta);
+        // Does this should be enabled from this?
+        std::shared_ptr<IncrRequest> request = std::make_shared<IncrRequest>(delta);
         node_->Apply(request);
     }
 
