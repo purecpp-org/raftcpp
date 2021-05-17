@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "===========================RUNNING test test_logging_check==============================="
-./test_logging_check &
+./logging_check_test &
 wait $!
 status=$?
 if [ $status != 0 ];then
