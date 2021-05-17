@@ -3,6 +3,7 @@
 #include "common/status.h"
 #include "rest_rpc/rpc_server.h"
 #include "rpc/common.h"
+#include "rest_rpc/codec.h"
 
 using namespace rest_rpc;
 using namespace rpc_service;
@@ -20,16 +21,39 @@ public:
     ~CounterRequest() override {}
 
     CounterRequestType GetType() const { return CounterRequestType::GET; }
+
+    virtual std::string Serialize() = 0;
+
+    virtual void Deserialize(const std::string &s) = 0;
 };
 
 class IncrRequest : public CounterRequest {
 public:
-    IncrRequest(uint64_t delta) {}
+    explicit IncrRequest(uint64_t delta):delta_(delta) {}
 
-    uint64_t GetDelta() const { return -1; }
+    uint64_t GetDelta() const { return delta_; }
+
+    std::string Serialize() override {
+        msgpack_codec codec;
+        auto s_buf = codec.pack(this->delta_);
+        return std::string(s_buf.data(), s_buf.size());
+    }
+
+    virtual void Deserialize(const std::string &s) override {
+        msgpack_codec codec;
+        this->delta_ = codec.unpack<uint64_t>(s.data(), s.size());
+    }
+
+private:
+    uint64_t delta_ = 0;
 };
 
-class GetRequest : public CounterRequest {};
+class GetRequest : public CounterRequest {
+    std::string Serialize() override {
+        // TODO(qwang):
+        return "";
+    }
+};
 
 class CounterResponse : public raftcpp::RaftcppResponse {
 public:

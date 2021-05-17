@@ -28,23 +28,23 @@ public:
 
     ~RaftNode();
 
-    void Apply(raftcpp::RaftcppRequest request) {}
+    void Apply(std::shared_ptr<raftcpp::RaftcppRequest> request);
 
     void RequestPreVote();
 
-    void OnRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                          int32_t term_id) override;
+    void HandleRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str,
+                              int32_t term_id) override;
 
     void OnPreVote(const boost::system::error_code &ec, string_view data);
 
     void RequestVote();
 
-    void OnRequestVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                       int32_t term_id) override;
+    void HandleRequestVote(rpc::RpcConn conn, const std::string &endpoint_str,
+                           int32_t term_id) override;
 
     void OnVote(const boost::system::error_code &ec, string_view data);
 
-    void OnRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) override;
+    void HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) override;
 
     void RequestHeartbeat();
 

@@ -25,6 +25,10 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
 
 RaftNode::~RaftNode() {}
 
+void RaftNode::Apply(std::shared_ptr<raftcpp::RaftcppRequest> request) {
+    // TODO(qwang)
+}
+
 void RaftNode::RequestPreVote() {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     RAFTCPP_LOG(RLL_DEBUG) << "Node " << this->config_.GetThisEndpoint().ToString()
@@ -52,11 +56,11 @@ void RaftNode::RequestPreVote() {
     }
 }
 
-void RaftNode::OnRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                                int32_t term_id) {
+void RaftNode::HandleRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str,
+                                    int32_t term_id) {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     if (this->config_.GetThisEndpoint().ToString() == endpoint_str) return;
-    RAFTCPP_LOG(RLL_DEBUG) << "OnRequestPreVote this node "
+    RAFTCPP_LOG(RLL_DEBUG) << "HandleRequestPreVote this node "
                            << this->config_.GetThisEndpoint().ToString()
                            << " Received a RequestPreVote from node " << endpoint_str
                            << " term_id=" << term_id;
@@ -76,7 +80,7 @@ void RaftNode::OnRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_s
         // TODO(qwang): step down
         if (term_id > curr_term_id_.getTerm()) {
             RAFTCPP_LOG(RLL_DEBUG)
-                << "OnRequestPreVote Received a RequestPreVote,now  step down";
+                << "HandleRequestPreVote Received a RequestPreVote,now  step down";
             StepBack(term_id);
             if (conn_sp) {
                 conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
@@ -140,8 +144,8 @@ void RaftNode::RequestVote() {
     }
 }
 
-void RaftNode::OnRequestVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                             int32_t term_id) {
+void RaftNode::HandleRequestVote(rpc::RpcConn conn, const std::string &endpoint_str,
+                                 int32_t term_id) {
     RAFTCPP_LOG(RLL_DEBUG) << "Node " << this->config_.GetThisEndpoint().ToString()
                            << " response vote";
     std::lock_guard<std::recursive_mutex> guard{mutex_};
@@ -210,10 +214,10 @@ void RaftNode::RequestHeartbeat() {
     }
 }
 
-void RaftNode::OnRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) {
+void RaftNode::HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     if (curr_state_ == RaftState::FOLLOWER || curr_state_ == RaftState::CANDIDATE) {
-        RAFTCPP_LOG(RLL_DEBUG) << "OnRequestHeartbeat node "
+        RAFTCPP_LOG(RLL_DEBUG) << "HandleRequestHeartbeat node "
                                << this->config_.GetThisEndpoint().ToString()
                                << "received a heartbeat from leader."
                                << " curr_term_id_:" << curr_term_id_.getTerm()
@@ -224,7 +228,7 @@ void RaftNode::OnRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) {
         curr_term_id_.setTerm(term_id);
     } else {
         if (term_id >= curr_term_id_.getTerm()) {
-            RAFTCPP_LOG(RLL_DEBUG) << "OnRequestHeartbeat node "
+            RAFTCPP_LOG(RLL_DEBUG) << "HandleRequestHeartbeat node "
                                    << this->config_.GetThisEndpoint().ToString()
                                    << "received a heartbeat from leader."
                                    << " curr_term_id_:" << curr_term_id_.getTerm()
@@ -238,7 +242,7 @@ void RaftNode::OnRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) {
                 randomer_.TakeOne(1000, 2000));
         } else {
             RAFTCPP_LOG(RLL_DEBUG)
-                << "OnRequestHeartbeat node "
+                << "HandleRequestHeartbeat node "
                 << this->config_.GetThisEndpoint().ToString()
                 << "received a heartbeat from leader and send response";
             const auto req_id = conn.lock()->request_id();
@@ -274,10 +278,9 @@ void RaftNode::ConnectToOtherNodes() {
                                                                  endpoint.GetPort());
         bool connected = rpc_client->connect();
         if (!connected) {
-            RAFTCPP_LOG(RLL_DEBUG)
+            RAFTCPP_LOG(RLL_INFO)
                 << "Failed to connect to the node " << endpoint.ToString();
         }
-        rpc_client->enable_auto_heartbeat();
         rpc_client->enable_auto_reconnect();
         RAFTCPP_LOG(RLL_DEBUG) << "This node " << config_.GetThisEndpoint().ToString()
                                << " succeeded to connect to the node "
@@ -289,11 +292,12 @@ void RaftNode::ConnectToOtherNodes() {
 void RaftNode::InitRpcHandlers() {
     // Register RPC handles.
     rpc_server_.register_handler<rest_rpc::Async>(
-        RaftcppConstants::REQUEST_PRE_VOTE_RPC_NAME, &RaftNode::OnRequestPreVote, this);
+        RaftcppConstants::REQUEST_PRE_VOTE_RPC_NAME, &RaftNode::HandleRequestPreVote,
+        this);
     rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_VOTE_RPC_NAME,
-                                                  &RaftNode::OnRequestVote, this);
-    rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_HEARTBEAT,
-                                                  &RaftNode::OnRequestHeartbeat, this);
+                                                  &RaftNode::HandleRequestVote, this);
+    rpc_server_.register_handler<rest_rpc::Async>(
+        RaftcppConstants::REQUEST_HEARTBEAT, &RaftNode::HandleRequestHeartbeat, this);
 }
 
 void RaftNode::StepBack(int32_t term_id) {
