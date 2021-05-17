@@ -63,7 +63,7 @@ protected:
 
 class Voidify {
 public:
-    Voidify() {}
+    Voidify() { std::abort(); }
 
     void operator&(RaftcppLogBase &) {}
 };
