@@ -19,7 +19,8 @@ public:
         : node_(std::move(node)), fsm_(std::move(fsm)) {}
 
     void Incr(rpc_conn conn, int delta) {
-        examples::counter::IncrRequest request = examples::counter::IncrRequest(delta);
+        std::shared_ptr<examples::counter::IncrRequest> request =
+            std::make_shared<examples::counter::IncrRequest>(delta);
         node_->Apply(request);
     }
 
