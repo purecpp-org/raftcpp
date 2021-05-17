@@ -22,9 +22,9 @@ public:
 
     CounterRequestType GetType() const { return CounterRequestType::GET; }
 
-    virtual std::string Serialize() = 0;
+    virtual std::string Serialize() override = 0;
 
-    virtual void Deserialize(const std::string &s) = 0;
+    virtual void Deserialize(const std::string &s) override = 0;
 };
 
 class IncrRequest : public CounterRequest {
