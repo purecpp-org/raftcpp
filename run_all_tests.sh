@@ -14,4 +14,4 @@ for file in `ls`; do
     fi
 done
 
-./run_logging_check_test.sh
+../run_logging_check_test.sh
