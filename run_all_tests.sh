@@ -13,3 +13,5 @@ for file in `ls`; do
         echo ""
     fi
 done
+
+./run_logging_check_test.sh
