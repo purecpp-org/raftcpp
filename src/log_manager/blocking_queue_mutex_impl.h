@@ -4,16 +4,16 @@
 #include <mutex>
 #include <queue>
 
-#include "log_manager/log_manager.h"
+#include "log_manager/blocking_queue_interface.h"
 
 namespace raftcpp {
 
 template <typename LogEntryType>
-class LogManagerMutexImpl : public LogManagerInterface<LogEntryType> {
+class BlockingQUeueMutexImpl : public BlockingQueueInterface<LogEntryType> {
 public:
-    LogManagerMutexImpl() = default;
+    BlockingQUeueMutexImpl() = default;
 
-    ~LogManagerMutexImpl() = default;
+    ~BlockingQUeueMutexImpl() = default;
 
     virtual LogEntryType Pop() override;
 
@@ -28,7 +28,7 @@ private:
 };
 
 template <typename LogEntryType>
-LogEntryType LogManagerMutexImpl<LogEntryType>::Pop() {
+LogEntryType BlockingQUeueMutexImpl<LogEntryType>::Pop() {
     std::unique_lock<std::mutex> lock(queue_mutex_);
     queue_cv_.wait(lock, [this] { return !queue_.empty(); });
     LogEntryType log_entry_type = queue_.front();
@@ -37,7 +37,7 @@ LogEntryType LogManagerMutexImpl<LogEntryType>::Pop() {
 }
 
 template <typename LogEntryType>
-bool LogManagerMutexImpl<LogEntryType>::Pop(LogEntryType &log_entry) {
+bool BlockingQUeueMutexImpl<LogEntryType>::Pop(LogEntryType &log_entry) {
     std::unique_lock<std::mutex> lock(queue_mutex_);
     if (!queue_.empty()) {
         log_entry = queue_.front();
@@ -48,7 +48,7 @@ bool LogManagerMutexImpl<LogEntryType>::Pop(LogEntryType &log_entry) {
 }
 
 template <typename LogEntryType>
-void LogManagerMutexImpl<LogEntryType>::Push(const LogEntryType &log_entry) {
+void BlockingQUeueMutexImpl<LogEntryType>::Push(const LogEntryType &log_entry) {
     std::unique_lock<std::mutex> lock(queue_mutex_);
     queue_.push(log_entry);
     queue_cv_.notify_all();
