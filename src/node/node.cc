@@ -112,7 +112,6 @@ void RaftNode::OnPreVote(const boost::system::error_code &ec, string_view data) 
         timer_manager_.GetElectionTimerRef().Stop();
         timer_manager_.GetVoteTimerRef().Start(
             RaftcppConstants::DEFAULT_VOTE_TIMER_TIMEOUT_MS);
-        //        io_service_.post([this]() { this->RequestVote(); });
         this->RequestVote();
     } else {
     }
@@ -134,8 +133,6 @@ void RaftNode::RequestVote() {
     for (const auto &rpc_client : rpc_clients_) {
         auto request_vote_callback = [this](const boost::system::error_code &ec,
                                             string_view data) {
-            //            io_service_.post([this, ec, data]() { this->OnVote(ec, data);
-            //            });
             this->OnVote(ec, data);
         };
         rpc_client->async_call<0>(
@@ -201,12 +198,6 @@ void RaftNode::OnVote(const boost::system::error_code &ec, string_view data) {
 void RaftNode::RequestHeartbeat() {
     for (const auto &rpc_client : rpc_clients_) {
         RAFTCPP_LOG(RLL_DEBUG) << "Send a heartbeat to node.";
-        auto request_heartbeat_callback = [this](const boost::system::error_code &ec,
-                                                 int32_t term_id) {
-            //            io_service_.post([this, ec, data]() { this->OnVote(ec, data);
-            //            });
-            this->OnHeartbeat(ec, std::to_string(term_id));
-        };
         rpc_client->async_call<0>(
             RaftcppConstants::REQUEST_HEARTBEAT,
             /*callback=*/[](const boost::system::error_code &ec, string_view data) {},
