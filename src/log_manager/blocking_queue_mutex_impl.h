@@ -9,11 +9,11 @@
 namespace raftcpp {
 
 template <typename LogEntryType>
-class BlockingQUeueMutexImpl : public BlockingQueueInterface<LogEntryType> {
+class BlockingQueueMutexImpl : public BlockingQueueInterface<LogEntryType> {
 public:
-    BlockingQUeueMutexImpl() = default;
+    BlockingQueueMutexImpl() = default;
 
-    ~BlockingQUeueMutexImpl() = default;
+    ~BlockingQueueMutexImpl() = default;
 
     virtual LogEntryType Pop() override;
 
@@ -28,7 +28,7 @@ private:
 };
 
 template <typename LogEntryType>
-LogEntryType BlockingQUeueMutexImpl<LogEntryType>::Pop() {
+LogEntryType BlockingQueueMutexImpl<LogEntryType>::Pop() {
     std::unique_lock<std::mutex> lock(queue_mutex_);
     queue_cv_.wait(lock, [this] { return !queue_.empty(); });
     LogEntryType log_entry_type = queue_.front();
@@ -37,7 +37,7 @@ LogEntryType BlockingQUeueMutexImpl<LogEntryType>::Pop() {
 }
 
 template <typename LogEntryType>
-bool BlockingQUeueMutexImpl<LogEntryType>::Pop(LogEntryType &log_entry) {
+bool BlockingQueueMutexImpl<LogEntryType>::Pop(LogEntryType &log_entry) {
     std::unique_lock<std::mutex> lock(queue_mutex_);
     if (!queue_.empty()) {
         log_entry = queue_.front();
@@ -48,7 +48,7 @@ bool BlockingQUeueMutexImpl<LogEntryType>::Pop(LogEntryType &log_entry) {
 }
 
 template <typename LogEntryType>
-void BlockingQUeueMutexImpl<LogEntryType>::Push(const LogEntryType &log_entry) {
+void BlockingQueueMutexImpl<LogEntryType>::Push(const LogEntryType &log_entry) {
     std::unique_lock<std::mutex> lock(queue_mutex_);
     queue_.push(log_entry);
     queue_cv_.notify_all();
