@@ -1,7 +1,7 @@
 #include <chrono>
 #include <thread>
 
-#include "log_manager/log_manager_mutex_impl.h"
+#include "log_manager/blocking_queue_mutex_impl.h"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest.h>
@@ -21,7 +21,7 @@ struct LogEntryTest {
 };
 
 bool g_flag = false;
-void thread_func(LogManagerMutexImpl<LogEntryTest> &log_manager) {
+void thread_func(BlockingQueueMutexImpl<LogEntryTest> &log_manager) {
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     g_flag = true;
     LogEntryTest log_entry{123, 456};
@@ -31,7 +31,7 @@ void thread_func(LogManagerMutexImpl<LogEntryTest> &log_manager) {
 TEST_CASE("LogManagerTest") {
     using namespace raftcpp;
 
-    LogManagerMutexImpl<LogEntryTest> log_manager;
+    BlockingQueueMutexImpl<LogEntryTest> log_manager;
     LogEntryTest log_entry{123, 456};
     log_manager.Push(log_entry);
     LogEntryTest res = log_manager.Pop();
@@ -42,7 +42,7 @@ TEST_CASE("LogManagerTest") {
 TEST_CASE("LogManagerEmptyTest, NonBlocking") {
     using namespace raftcpp;
 
-    LogManagerMutexImpl<LogEntryTest> log_manager;
+    BlockingQueueMutexImpl<LogEntryTest> log_manager;
     LogEntryTest log_entry;
     bool res = log_manager.Pop(log_entry);
     REQUIRE_EQ(res, false);
@@ -51,7 +51,7 @@ TEST_CASE("LogManagerEmptyTest, NonBlocking") {
 TEST_CASE("LogManagerTest, Blocking") {
     using namespace raftcpp;
 
-    LogManagerMutexImpl<LogEntryTest> log_manager;
+    BlockingQueueMutexImpl<LogEntryTest> log_manager;
     REQUIRE_EQ(g_flag, false);
     std::thread th(thread_func, std::ref(log_manager));
     LogEntryTest res;
