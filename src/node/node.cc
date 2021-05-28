@@ -12,7 +12,8 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
           /*heartbeat_timer_timeout_handler=*/[this]() { this->RequestHeartbeat(); },
           /*vote_timer_timeout_handler=*/[this]() { this->RequestVote(); }),
       rpc_server_(rpc_server),
-      config_(config) {
+      config_(config),
+      this_node_id_(config.GetThisEndpoint()) {
     std::string log_name = "node-" + config_.GetThisEndpoint().ToString() + ".log";
     replace(log_name.begin(), log_name.end(), '.', '-');
     replace(log_name.begin(), log_name.end(), ':', '-');
@@ -41,7 +42,8 @@ void RaftNode::RequestPreVote() {
     curr_term_id_.setTerm(curr_term_id_.getTerm() + 1);
     // Pre vote for myself.
     responded_pre_vote_nodes_.insert(this->config_.GetThisEndpoint().ToString());
-    for (const auto &rpc_client : rpc_clients_) {
+    for (auto &item : rpc_clients_) {
+        auto &rpc_client = item.second;
         RAFTCPP_LOG(RLL_DEBUG) << "RequestPreVote Node "
                                << this->config_.GetThisEndpoint().ToString()
                                << "request_vote_callback client" << rpc_client.get();
@@ -130,12 +132,12 @@ void RaftNode::RequestVote() {
     responded_vote_nodes_.clear();
     // Vote for myself.
     responded_vote_nodes_.insert(this->config_.GetThisEndpoint().ToString());
-    for (const auto &rpc_client : rpc_clients_) {
+    for (auto &item: rpc_clients_) {
         auto request_vote_callback = [this](const boost::system::error_code &ec,
                                             string_view data) {
             this->OnVote(ec, data);
         };
-        rpc_client->async_call<0>(
+        item.second->async_call<0>(
             RaftcppConstants::REQUEST_VOTE_RPC_NAME, std::move(request_vote_callback),
             this->config_.GetThisEndpoint().ToString(), curr_term_id_.getTerm());
     }
@@ -196,9 +198,9 @@ void RaftNode::OnVote(const boost::system::error_code &ec, string_view data) {
 }
 
 void RaftNode::RequestHeartbeat() {
-    for (const auto &rpc_client : rpc_clients_) {
+    for (auto &item : rpc_clients_) {
         RAFTCPP_LOG(RLL_DEBUG) << "Send a heartbeat to node.";
-        rpc_client->async_call<0>(
+        item.second->async_call<0>(
             RaftcppConstants::REQUEST_HEARTBEAT,
             /*callback=*/[](const boost::system::error_code &ec, string_view data) {},
             curr_term_id_.getTerm());
@@ -273,10 +275,11 @@ void RaftNode::ConnectToOtherNodes() {
                 << "Failed to connect to the node " << endpoint.ToString();
         }
         rpc_client->enable_auto_reconnect();
-        RAFTCPP_LOG(RLL_DEBUG) << "This node " << config_.GetThisEndpoint().ToString()
+        rpc_clients_.insert(std::make_pair(NodeID(endpoint), rpc_client));
+        RAFTCPP_LOG(RLL_INFO) << "This node " << config_.GetThisEndpoint().ToString()
                                << " succeeded to connect to the node "
                                << endpoint.ToString();
-        rpc_clients_.push_back(rpc_client);
+
     }
 }
 

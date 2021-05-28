@@ -72,9 +72,7 @@ private:
     rest_rpc::rpc_service::rpc_server &rpc_server_;
 
     // The rpc clients to all other nodes.
-    // NodeID instead
-    //    std::unordered_map<int, std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
-    std::vector<std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
+    std::unordered_map<NodeID, std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
 
     common::Config config_;
 
@@ -92,6 +90,9 @@ private:
     // Accept the heartbeat reset election time to be random,
     // otherwise the all followers will be timed out at one time.
     Randomer randomer_;
+
+    // The ID of this node.
+    NodeID this_node_id_;
 };
 
 }  // namespace node
