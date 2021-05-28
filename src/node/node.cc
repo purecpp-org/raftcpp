@@ -132,11 +132,9 @@ void RaftNode::RequestVote() {
     responded_vote_nodes_.clear();
     // Vote for myself.
     responded_vote_nodes_.insert(this->config_.GetThisEndpoint().ToString());
-    for (auto &item: rpc_clients_) {
+    for (auto &item : rpc_clients_) {
         auto request_vote_callback = [this](const boost::system::error_code &ec,
-                                            string_view data) {
-            this->OnVote(ec, data);
-        };
+                                            string_view data) { this->OnVote(ec, data); };
         item.second->async_call<0>(
             RaftcppConstants::REQUEST_VOTE_RPC_NAME, std::move(request_vote_callback),
             this->config_.GetThisEndpoint().ToString(), curr_term_id_.getTerm());
@@ -277,9 +275,8 @@ void RaftNode::ConnectToOtherNodes() {
         rpc_client->enable_auto_reconnect();
         rpc_clients_[NodeID(endpoint).ToHex()] = rpc_client;
         RAFTCPP_LOG(RLL_INFO) << "This node " << config_.GetThisEndpoint().ToString()
-                               << " succeeded to connect to the node "
-                               << endpoint.ToString();
-
+                              << " succeeded to connect to the node "
+                              << endpoint.ToString();
     }
 }
 

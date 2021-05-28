@@ -48,7 +48,7 @@ public:
         memcpy(data_.data() + sizeof(uint32_t), &port, sizeof(uint16_t));
     }
 
-    explicit NodeID(const NodeID &nid)  : BaseID(nid) { data_ = nid.data_; }
+    explicit NodeID(const NodeID &nid) : BaseID(nid) { data_ = nid.data_; }
 
     NodeID &operator=(const NodeID &o) {
         if (this == &o) return *this;
@@ -96,7 +96,7 @@ public:
         memcpy(data_.data(), &term_, sizeof(int32_t));
     }
 
-    TermID(const TermID &tid)  : BaseID(tid) { data_ = tid.data_; }
+    TermID(const TermID &tid) : BaseID(tid) { data_ = tid.data_; }
 
     TermID &operator=(const TermID &o) {
         if (this == &o) return *this;
