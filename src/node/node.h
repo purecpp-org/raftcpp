@@ -72,7 +72,7 @@ private:
     rest_rpc::rpc_service::rpc_server &rpc_server_;
 
     // The rpc clients to all other nodes.
-    std::unordered_map<NodeID, std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
+    std::unordered_map<std::string, std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
 
     common::Config config_;
 
