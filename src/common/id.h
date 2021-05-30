@@ -96,10 +96,14 @@ public:
         memcpy(data_.data(), &term_, sizeof(int32_t));
     }
 
-    TermID(const TermID &tid) : BaseID(tid) { data_ = tid.data_; }
+    TermID(const TermID &tid) : BaseID(tid) {
+        term_ = tid.term_;
+        data_ = tid.data_;
+    }
 
     TermID &operator=(const TermID &o) {
         if (this == &o) return *this;
+        term_ = o.term_;
         data_ = o.data_;
         return *this;
     }
@@ -118,3 +122,19 @@ private:
 };
 
 }  // namespace raftcpp
+
+namespace std {
+template <>
+struct hash<raftcpp::NodeID> {
+    std::size_t operator()(const raftcpp::NodeID &n) const noexcept {
+        return std::hash<std::string>()(n.ToBinary());
+    }
+};
+
+template <>
+struct hash<raftcpp::TermID> {
+    std::size_t operator()(const raftcpp::TermID &t) const noexcept {
+        return std::hash<std::int32_t>()(t.getTerm());
+    }
+};
+}  // namespace std
