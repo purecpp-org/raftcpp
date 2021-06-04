@@ -61,3 +61,22 @@ TEST_CASE("LogManagerTest, Blocking") {
     REQUIRE_EQ(res.term_, 456);
     th.join();
 }
+
+TEST_CASE("MostFront Test") {
+    using namespace raftcpp;
+
+    BlockingQueueMutexImpl<LogEntryTest> log_manager;
+    LogEntryTest log_entry0{1, 5};
+    LogEntryTest log_entry1{2, 6};
+    LogEntryTest log_entry2{3, 7};
+    LogEntryTest log_entry3{4, 8};
+    log_manager.Push(log_entry0);
+    log_manager.Push(log_entry1);
+    log_manager.Push(log_entry2);
+    log_manager.Push(log_entry3);
+    std::vector<LogEntryTest> v = log_manager.MostFront(3);
+    REQUIRE_EQ(v.size(), 3);
+    REQUIRE_EQ(v[0].index_, log_entry0.index_);
+    REQUIRE_EQ(v[1].index_, log_entry1.index_);
+    REQUIRE_EQ(v[2].index_, log_entry2.index_);
+}
