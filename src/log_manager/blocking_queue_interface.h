@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 
 namespace raftcpp {
 
@@ -26,6 +27,11 @@ public:
      * Push the log to this log manager.
      */
     virtual void Push(const LogEntryType &log_entry) = 0;
+
+    /**
+     * Get the most front items from the queue.
+     */
+    virtual std::vector<LogEntryType> MostFront(int mostFrontNumber) = 0;
 };
 
 }  // namespace raftcpp
