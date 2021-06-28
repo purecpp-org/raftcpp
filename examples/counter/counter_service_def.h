@@ -26,7 +26,6 @@ public:
 
     static std::shared_ptr<CounterRequest> Deserialize1(const std::string &s);
 
-//    virtual void Deserialize(const std::string &s) override = 0;
 };
 
 class IncrRequest : public CounterRequest {
