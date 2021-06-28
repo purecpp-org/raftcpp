@@ -1,5 +1,9 @@
 #pragma once
+
+#include <msgpack.hpp>
+
 #include "common/endpoint.h"
+
 namespace raftcpp {
 
 class BaseID {
@@ -48,12 +52,18 @@ public:
         memcpy(data_.data() + sizeof(uint32_t), &port, sizeof(uint16_t));
     }
 
-    explicit NodeID(const NodeID &nid) : BaseID(nid) { data_ = nid.data_; }
+    NodeID(const NodeID &nid) : BaseID(nid) { data_ = nid.data_; }
 
     NodeID &operator=(const NodeID &o) {
         if (this == &o) return *this;
         data_ = o.data_;
         return *this;
+    }
+
+    static NodeID FromBinary(const std::string &binary) {
+        NodeID ret;
+        ret.data_ = binary;
+        return ret;
     }
 
 private:
@@ -116,6 +126,8 @@ public:
         data_.resize(sizeof(int32_t));
         memcpy(data_.data(), &term_, sizeof(int32_t));
     }
+
+    MSGPACK_DEFINE(term_);
 
 private:
     int32_t term_;

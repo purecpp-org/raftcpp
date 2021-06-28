@@ -24,19 +24,23 @@ public:
 
     virtual std::string Serialize() override = 0;
 
-    virtual void Deserialize(const std::string &s) override = 0;
+    static std::shared_ptr<CounterRequest> Deserialize1(const std::string &s);
+
 };
 
 class IncrRequest : public CounterRequest {
 public:
     explicit IncrRequest(uint64_t delta):delta_(delta) {}
 
+    IncrRequest() = default;
+
     uint64_t GetDelta() const { return delta_; }
 
     std::string Serialize() override {
         msgpack_codec codec;
         auto s_buf = codec.pack(this->delta_);
-        return std::string(s_buf.data(), s_buf.size());
+        /// TODO: NOTE: 0 -> Incr request
+        return "0" + std::string(s_buf.data(), s_buf.size());
     }
 
     virtual void Deserialize(const std::string &s) override {
@@ -49,9 +53,16 @@ private:
 };
 
 class GetRequest : public CounterRequest {
+public:
+    explicit GetRequest() {}
+
     std::string Serialize() override {
         // TODO(qwang):
         return "";
+    }
+
+    virtual void Deserialize(const std::string &s) override {
+        // TODO
     }
 };
 
@@ -72,6 +83,18 @@ public:
     explicit IncrResponse(raftcpp::Status status)
         : CounterResponse(raftcpp::Status::OK) {}
 };
+
+std::shared_ptr<CounterRequest> CounterRequest::Deserialize1(const std::string &s) {
+    if (std::string("0") == s.substr(0, 1)) {
+        auto ret = std::make_shared<IncrRequest>();
+        ret->Deserialize(s.substr(1, s.length() - 1));
+        return ret;
+    } else if (std::string("1") == s.substr(0, 1)) {
+        auto ret = std::make_shared<GetRequest>();
+        ret->Deserialize(s.substr(1, s.length() - 1));
+        return ret;
+    }
+}
 
 struct CounterService {
     void Incr(rpc_conn, int delta) {}

@@ -5,7 +5,8 @@
 
 namespace raftcpp::node {
 
-RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
+RaftNode::RaftNode(std::shared_ptr<StateMachine> state_machine,
+                   rest_rpc::rpc_service::rpc_server &rpc_server,
                    const common::Config &config, RaftcppLogLevel severity)
     : timer_manager_(
           /*election_timer_timeout_handler=*/[this]() { this->RequestPreVote(); },
@@ -13,7 +14,13 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
           /*vote_timer_timeout_handler=*/[this]() { this->RequestVote(); }),
       rpc_server_(rpc_server),
       config_(config),
-      this_node_id_(config.GetThisEndpoint()) {
+      this_node_id_(config.GetThisEndpoint()),
+      leader_log_manager_(std::make_unique<LeaderLogManager>()),
+      non_leader_log_manager_(std::make_unique<NonLeaderLogManager>([this]() {
+          std::lock_guard<std::recursive_mutex> guard{mutex_};
+          return curr_state_ == RaftState::LEADER;
+      })),
+      state_machine_(std::move(state_machine)) {
     std::string log_name = "node-" + config_.GetThisEndpoint().ToString() + ".log";
     replace(log_name.begin(), log_name.end(), '.', '-');
     replace(log_name.begin(), log_name.end(), ':', '-');
@@ -26,7 +33,13 @@ RaftNode::RaftNode(rest_rpc::rpc_service::rpc_server &rpc_server,
 
 RaftNode::~RaftNode() {}
 
-void RaftNode::Apply(std::shared_ptr<raftcpp::RaftcppRequest> request) {
+void RaftNode::Apply(const std::shared_ptr<raftcpp::RaftcppRequest> &request) {
+    std::lock_guard<std::recursive_mutex> guard{mutex_};
+    RAFTCPP_CHECK(request != nullptr);
+    RAFTCPP_CHECK(curr_state_ == RaftState::LEADER);
+    // This is leader code path.
+    leader_log_manager_->Push(curr_term_id_, request);
+    //    AsyncAppendLogsToFollowers(entry);
     // TODO(qwang)
 }
 
@@ -289,6 +302,8 @@ void RaftNode::InitRpcHandlers() {
                                                   &RaftNode::HandleRequestVote, this);
     rpc_server_.register_handler<rest_rpc::Async>(
         RaftcppConstants::REQUEST_HEARTBEAT, &RaftNode::HandleRequestHeartbeat, this);
+    rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_PULL_LOGS,
+                                                  &RaftNode::HandleRequestPullLogs, this);
 }
 
 void RaftNode::StepBack(int32_t term_id) {
@@ -298,6 +313,47 @@ void RaftNode::StepBack(int32_t term_id) {
         RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
     curr_state_ = RaftState::FOLLOWER;
     curr_term_id_.setTerm(term_id);
+}
+
+// void RaftNode::AsyncAppendLogsToFollowers(const LogEntry &log_entry) {
+//    for(auto &item : rpc_clients_) {
+//        item.second->async_call<0>(
+//            RaftcppConstants::REQUEST_PULL_LOGS,
+//            /*callback=*/[](const boost::system::error_code &ec, string_view data) {
+//                // TODO(qwang): Handle the succeeded callback.
+//                RAFTCPP_LOG(RLL_INFO) << "Received callback from HandleRequestPullLogs";
+//            },
+//            log_entry);
+//    }
+//}
+
+void RaftNode::HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_binary,
+                                     int64_t committed_log_index) {
+    RAFTCPP_LOG(RLL_INFO) << "HandleRequestPullLogs: committed_log_index="
+                          << committed_log_index;
+    std::lock_guard<std::recursive_mutex> guard{mutex_};
+    if (curr_state_ == RaftState::LEADER) {
+        auto logs_to_be_sync = leader_log_manager_->PullLogs(
+            NodeID::FromBinary(node_id_binary), committed_log_index);
+
+    } else {
+        // Log errors.
+    }
+}
+
+void RaftNode::HandleRequestPushLogs(rpc::RpcConn conn, LogEntry log_entry) {
+    RAFTCPP_LOG(RLL_INFO) << "HandleRequestPushLogs: log_entry.term_id="
+                          << log_entry.term_id.ToHex()
+                          << ", log_entry.log_index=" << log_entry.log_index
+                          << ", log_entry.data=" << log_entry.data;
+    std::lock_guard<std::recursive_mutex> guard{mutex_};
+    state_machine_->OnApply(log_entry.data);
+    if (curr_state_ == RaftState::FOLLOWER) {
+        /// Check log_index and term from RAFT protocol.
+    } else {
+        // handle candidate and leader.
+        // Log errors.
+    }
 }
 
 }  // namespace raftcpp::node
