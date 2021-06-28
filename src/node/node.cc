@@ -39,7 +39,7 @@ void RaftNode::Apply(const std::shared_ptr<raftcpp::RaftcppRequest> &request) {
     RAFTCPP_CHECK(curr_state_ == RaftState::LEADER);
     // This is leader code path.
     leader_log_manager_->Push(curr_term_id_, request);
-//    AsyncAppendLogsToFollowers(entry);
+    //    AsyncAppendLogsToFollowers(entry);
     // TODO(qwang)
 }
 
@@ -302,8 +302,8 @@ void RaftNode::InitRpcHandlers() {
                                                   &RaftNode::HandleRequestVote, this);
     rpc_server_.register_handler<rest_rpc::Async>(
         RaftcppConstants::REQUEST_HEARTBEAT, &RaftNode::HandleRequestHeartbeat, this);
-    rpc_server_.register_handler<rest_rpc::Async>(
-            RaftcppConstants::REQUEST_PULL_LOGS, &RaftNode::HandleRequestPullLogs, this);
+    rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_PULL_LOGS,
+                                                  &RaftNode::HandleRequestPullLogs, this);
 }
 
 void RaftNode::StepBack(int32_t term_id) {
@@ -315,7 +315,7 @@ void RaftNode::StepBack(int32_t term_id) {
     curr_term_id_.setTerm(term_id);
 }
 
-//void RaftNode::AsyncAppendLogsToFollowers(const LogEntry &log_entry) {
+// void RaftNode::AsyncAppendLogsToFollowers(const LogEntry &log_entry) {
 //    for(auto &item : rpc_clients_) {
 //        item.second->async_call<0>(
 //            RaftcppConstants::REQUEST_PULL_LOGS,
@@ -327,11 +327,14 @@ void RaftNode::StepBack(int32_t term_id) {
 //    }
 //}
 
-void RaftNode::HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_binary, int64_t committed_log_index) {
-    RAFTCPP_LOG(RLL_INFO) << "HandleRequestPullLogs: committed_log_index=" << committed_log_index;
-    std::lock_guard<std::recursive_mutex> guard {mutex_};
+void RaftNode::HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_binary,
+                                     int64_t committed_log_index) {
+    RAFTCPP_LOG(RLL_INFO) << "HandleRequestPullLogs: committed_log_index="
+                          << committed_log_index;
+    std::lock_guard<std::recursive_mutex> guard{mutex_};
     if (curr_state_ == RaftState::LEADER) {
-        auto logs_to_be_sync = leader_log_manager_->PullLogs(NodeID::FromBinary(node_id_binary), committed_log_index);
+        auto logs_to_be_sync = leader_log_manager_->PullLogs(
+            NodeID::FromBinary(node_id_binary), committed_log_index);
 
     } else {
         // Log errors.

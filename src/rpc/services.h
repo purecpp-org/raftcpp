@@ -1,7 +1,7 @@
 #pragma once
 
-#include "rest_rpc/rpc_server.h"
 #include "log_manager/log_entry.h"
+#include "rest_rpc/rpc_server.h"
 
 namespace raftcpp {
 namespace rpc {
@@ -24,10 +24,10 @@ protected:
 
     virtual void HandleRequestHeartbeat(RpcConn conn, int32_t termid) = 0;
 
-    virtual void HandleRequestPullLogs(RpcConn conn, std::string node_id_binary, int64_t committed_log_index) = 0;
+    virtual void HandleRequestPullLogs(RpcConn conn, std::string node_id_binary,
+                                       int64_t committed_log_index) = 0;
 
     virtual void HandleRequestPushLogs(RpcConn conn, LogEntry log_entry) = 0;
-
 };
 
 }  // namespace rpc

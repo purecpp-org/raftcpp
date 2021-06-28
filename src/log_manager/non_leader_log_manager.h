@@ -1,27 +1,25 @@
 #pragma once
 
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 #include <queue>
-#include <memory>
 
+#include "common/constants.h"
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
 #include "log_manager/log_entry.h"
-#include "common/constants.h"
 
 namespace raftcpp {
 
 class NonLeaderLogManager final {
-
 public:
-    NonLeaderLogManager(std::function<bool()> is_leader_func) :
-    is_leader_func_(std::move(is_leader_func)),
-    is_running_(true),
-    queue_in_non_leader_(std::make_unique<BlockingQueueMutexImpl<LogEntry>>()) {
+    NonLeaderLogManager(std::function<bool()> is_leader_func)
+        : is_leader_func_(std::move(is_leader_func)),
+          is_running_(false),
+          queue_in_non_leader_(std::make_unique<BlockingQueueMutexImpl<LogEntry>>()) {
         committing_thread_ = std::make_unique<std::thread>([this]() {
-            // TODO(qwang): while is not leader.
-            while (!is_leader_func_()) {
+            while (is_running_ && !is_leader_func_()) {
                 auto log = queue_in_non_leader_->Pop();
                 CommitLogToStateMachine(log);
                 std::lock_guard<std::mutex> lock(mutex_);
@@ -35,18 +33,23 @@ public:
                 {
                     std::lock_guard<std::mutex> lock(mutex_);
                     leader_rpc_client_->async_call<1>(
-                            RaftcppConstants::REQUEST_PULL_LOGS,
-                            [this](const boost::system::error_code &ec, string_view data) {
-                                HandleReceivedLogsFromLeader({});
-                                },
-                            /*this_node_id_str=*/this_node_id_.ToHex(), /*committed_index=*/committed_index_);
+                        RaftcppConstants::REQUEST_PULL_LOGS,
+                        [this](const boost::system::error_code &ec, string_view data) {
+                            HandleReceivedLogsFromLeader({});
+                        },
+                        /*this_node_id_str=*/this_node_id_.ToHex(),
+                        /*committed_index=*/committed_index_);
                 }
                 // TODO(qwang): This should be refined.
                 std::this_thread::sleep_for(std::chrono::milliseconds{2 * 1000});
-
             }
         });
     }
+
+    ~NonLeaderLogManager() {
+        committing_thread_->detach();
+        pull_thread_->detach();
+    };
 
 private:
     void CommitLogToStateMachine(const LogEntry &log) {
@@ -59,8 +62,8 @@ private:
     void HandleReceivedLogsFromLeader(LogEntry log_entry) {
         std::lock_guard<std::mutex> lock(mutex_);
         /// 对比term id/log index来决定:
-        /// 1) 现在leader的状态, 要不要更新节点的状态，或者丢弃log，更新本地log (直接参照raft论文即可)
-        /// 2) 如果没问题，则commit logs to state machine
+        /// 1) 现在leader的状态, 要不要更新节点的状态，或者丢弃log，更新本地log
+        /// (直接参照raft论文即可) 2) 如果没问题，则commit logs to state machine
     }
 
 private:
@@ -72,7 +75,7 @@ private:
     /// Next index to be read from leader.
     int64_t next_index_ = 0;
 
-    std::unique_ptr<BlockingQueueInterface<LogEntry>> queue_in_non_leader_ {nullptr};
+    std::unique_ptr<BlockingQueueInterface<LogEntry>> queue_in_non_leader_{nullptr};
 
     /// The thread used to send pull log entries requests to leader.
     /// Note that this is only used in non-leader node.
@@ -90,4 +93,4 @@ private:
     NodeID this_node_id_;
 };
 
-} // namespace raftcpp
+}  // namespace raftcpp

@@ -18,13 +18,13 @@ public:
     ~MockResponse() override {}
 };
 
-class MockStateMachine: public raftcpp::StateMachine {
+class MockStateMachine : public raftcpp::StateMachine {
 public:
     bool ShouldDoSnapshot() override { return true; }
 
-    void SaveSnapshot() override {};
+    void SaveSnapshot() override{};
 
-    void LoadSnapshot() override {};
+    void LoadSnapshot() override{};
 
     virtual raftcpp::RaftcppResponse OnApply(const std::string &serialized) override {
         return MockResponse();
@@ -62,9 +62,9 @@ void node_run(std::shared_ptr<raftcpp::node::RaftNode> &node, const std::string 
               rpc_server *server) {
     const auto config = raftcpp::common::Config::From(conf_str);
 
-    node = std::make_shared<raftcpp::node::RaftNode>(
-        std::make_shared<MockStateMachine>(), *server, config,
-        raftcpp::RaftcppLogLevel::RLL_DEBUG);
+    node = std::make_shared<raftcpp::node::RaftNode>(std::make_shared<MockStateMachine>(),
+                                                     *server, config,
+                                                     raftcpp::RaftcppLogLevel::RLL_DEBUG);
     auto fsm = std::make_shared<examples::counter::CounterStateMachine>();
 
     CounterServiceImpl service(node, fsm);

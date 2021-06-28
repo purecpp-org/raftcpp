@@ -1,7 +1,8 @@
 #pragma once
 
-#include "common/endpoint.h"
 #include <msgpack.hpp>
+
+#include "common/endpoint.h"
 
 namespace raftcpp {
 

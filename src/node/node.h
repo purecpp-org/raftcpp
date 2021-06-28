@@ -11,16 +11,16 @@
 #include "common/logging.h"
 #include "common/timer.h"
 #include "common/type_def.h"
+#include "log_manager/blocking_queue_interface.h"
+#include "log_manager/blocking_queue_mutex_impl.h"
+#include "log_manager/leader_log_manager.h"
+#include "log_manager/log_entry.h"
+#include "log_manager/non_leader_log_manager.h"
 #include "node/timer_manager.h"
 #include "rest_rpc/rpc_client.hpp"
 #include "rest_rpc/rpc_server.h"
 #include "rpc/common.h"
 #include "rpc/services.h"
-#include "log_manager/leader_log_manager.h"
-#include "log_manager/non_leader_log_manager.h"
-#include "log_manager/blocking_queue_interface.h"
-#include "log_manager/blocking_queue_mutex_impl.h"
-#include "log_manager/log_entry.h"
 #include "statemachine/state_machine.h"
 
 namespace raftcpp {
@@ -35,7 +35,7 @@ public:
 
     ~RaftNode();
 
-    void Apply(const std::shared_ptr<raftcpp::RaftcppRequest>& request);
+    void Apply(const std::shared_ptr<raftcpp::RaftcppRequest> &request);
 
     void RequestPreVote();
 
@@ -53,7 +53,8 @@ public:
 
     void HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) override;
 
-    void HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_binary, int64_t committed_log_index) override;
+    void HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_binary,
+                               int64_t committed_log_index) override;
 
     void HandleRequestPushLogs(rpc::RpcConn conn, LogEntry log_entry) override;
 
