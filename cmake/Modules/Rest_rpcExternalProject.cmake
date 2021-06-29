@@ -6,13 +6,13 @@
 #  - REST_RPC_INCLUDE_DIR
 #  - MSGPACK_INCLUDE_DIR
 
-set(REST_RPC_VERSION "0.09")
+set(REST_RPC_VERSION "0.11")
 
 set(REST_RPC_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/external/rest-rpc-install")
 set(REST_RPC_INCLUDE_DIR "${REST_RPC_PREFIX}/include")
 set(MSGPACK_INCLUDE_DIR "${REST_RPC_PREFIX}/third/msgpack/include")
 
-set(REST_RPC_URL_MD5 "eb4f76b2f4fbba05c305369cc6f965e9")
+set(REST_RPC_URL_MD5 "4ca191007548149ba6803ba9558925de")
 
 ExternalProject_Add(rest_rpc_ep
         PREFIX external/rest-rpc
@@ -25,4 +25,4 @@ ExternalProject_Add(rest_rpc_ep
 
 SET(REST_RPC_HOME ${CMAKE_CURRENT_BINARY_DIR}/external/rest-rpc/src/rest_rpc_ep)
 SET(REST_RPC_INCLUDE_DIR ${REST_RPC_HOME}/include)
-SET(MSGPACK_INCLUDE_DIR ${REST_RPC_HOME}/third/msgpack/include)
+SET(MSGPACK_INCLUDE_DIR ${REST_RPC_HOME}/thirdparty/msgpack-c/include)
