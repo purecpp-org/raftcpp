@@ -1,6 +1,7 @@
 #pragma once
 
 #include <msgpack.hpp>
+#include <iostream>
 
 #include "common/endpoint.h"
 
@@ -128,6 +129,11 @@ public:
     }
 
     MSGPACK_DEFINE(term_);
+
+    std::ostream& operator<<(std::ostream &os) {
+        os << "<Term: " << term_ << " Base: " << data_ << "" << ">";
+        return os;
+    }
 
 private:
     int32_t term_;
