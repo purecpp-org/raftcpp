@@ -9,8 +9,8 @@
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
 #include "log_manager/log_entry.h"
-#include "rpc/common.h"
 #include "rest_rpc.hpp"
+#include "rpc/common.h"
 
 namespace raftcpp {
 
