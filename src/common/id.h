@@ -1,7 +1,7 @@
 #pragma once
 
-#include <msgpack.hpp>
 #include <iostream>
+#include <msgpack.hpp>
 
 #include "common/endpoint.h"
 
@@ -130,10 +130,9 @@ public:
 
     MSGPACK_DEFINE(term_);
 
-    std::ostream& operator<<(std::ostream &os) {
+    std::ostream &operator<<(std::ostream &os) {
         os << "{\n"
-            << "    termId:" << term_
-            << "\n}";
+           << "    termId:" << term_ << "\n}";
         return os;
     }
 
