@@ -22,7 +22,8 @@ protected:
     virtual void HandleRequestVote(RpcConn conn, const std::string &endpoint_str,
                                    int32_t termid) = 0;
 
-    virtual void HandleRequestHeartbeat(RpcConn conn, int32_t term_id, std::string node_id_binary) = 0;
+    virtual void HandleRequestHeartbeat(RpcConn conn, int32_t term_id,
+                                        std::string node_id_binary) = 0;
 
     virtual void HandleRequestPullLogs(RpcConn conn, std::string node_id_binary,
                                        int64_t committed_log_index) = 0;

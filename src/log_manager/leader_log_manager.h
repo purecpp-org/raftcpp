@@ -5,7 +5,6 @@
 #include <mutex>
 #include <queue>
 
-#include "log_manager/log_entry.h"
 #include "common/constants.h"
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
@@ -15,15 +14,17 @@
 
 namespace raftcpp {
 
-using AllRpcClientType = std::unordered_map<NodeID, std::shared_ptr<rest_rpc::rpc_client>>;
+using AllRpcClientType =
+    std::unordered_map<NodeID, std::shared_ptr<rest_rpc::rpc_client>>;
 
 class LeaderLogManager final {
 public:
-    explicit LeaderLogManager(NodeID this_node_id, std::function<AllRpcClientType()> get_all_rpc_clients_func) :
-            this_node_id_(std::move(this_node_id)),
-            get_all_rpc_clients_func_(get_all_rpc_clients_func),
-            all_log_entries_(),
-            is_running_(false) {
+    explicit LeaderLogManager(NodeID this_node_id,
+                              std::function<AllRpcClientType()> get_all_rpc_clients_func)
+        : this_node_id_(std::move(this_node_id)),
+          get_all_rpc_clients_func_(get_all_rpc_clients_func),
+          all_log_entries_(),
+          is_running_(false) {
         push_thread_ = std::make_unique<std::thread>([this]() {
             while (is_running_) {
                 {

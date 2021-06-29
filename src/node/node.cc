@@ -15,21 +15,22 @@ RaftNode::RaftNode(std::shared_ptr<StateMachine> state_machine,
       rpc_server_(rpc_server),
       config_(config),
       this_node_id_(config.GetThisEndpoint()),
-      leader_log_manager_(std::make_unique<LeaderLogManager>(this_node_id_, [this]() -> AllRpcClientType {
-          return all_rpc_clients_;
-      })),
-      non_leader_log_manager_(std::make_unique<NonLeaderLogManager>([this]() {
-          std::lock_guard<std::recursive_mutex> guard{mutex_};
-          return curr_state_ == RaftState::LEADER;
-      }, [this]() -> std::shared_ptr<rest_rpc::rpc_client> {
-          std::lock_guard<std::recursive_mutex> guard{mutex_};
-          if (curr_state_ != RaftState::LEADER) {
-              return nullptr;
-          }
-          RAFTCPP_CHECK(leader_node_id_ != nullptr);
-          RAFTCPP_CHECK(all_rpc_clients_.count(*leader_node_id_) == 1);
-          return all_rpc_clients_[*leader_node_id_];
-      })),
+      leader_log_manager_(std::make_unique<LeaderLogManager>(
+          this_node_id_, [this]() -> AllRpcClientType { return all_rpc_clients_; })),
+      non_leader_log_manager_(std::make_unique<NonLeaderLogManager>(
+          [this]() {
+              std::lock_guard<std::recursive_mutex> guard{mutex_};
+              return curr_state_ == RaftState::LEADER;
+          },
+          [this]() -> std::shared_ptr<rest_rpc::rpc_client> {
+              std::lock_guard<std::recursive_mutex> guard{mutex_};
+              if (curr_state_ != RaftState::LEADER) {
+                  return nullptr;
+              }
+              RAFTCPP_CHECK(leader_node_id_ != nullptr);
+              RAFTCPP_CHECK(all_rpc_clients_.count(*leader_node_id_) == 1);
+              return all_rpc_clients_[*leader_node_id_];
+          })),
 
       state_machine_(std::move(state_machine)) {
     std::string log_name = "node-" + config_.GetThisEndpoint().ToString() + ".log";
@@ -229,14 +230,16 @@ void RaftNode::RequestHeartbeat() {
     }
 }
 
-void RaftNode::HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id, std::string node_id_binary) {
+void RaftNode::HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id,
+                                      std::string node_id_binary) {
     auto source_node_id = NodeID::FromBinary(node_id_binary);
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     if (curr_state_ == RaftState::FOLLOWER || curr_state_ == RaftState::CANDIDATE) {
         leader_node_id_ = std::make_unique<NodeID>(source_node_id);
         RAFTCPP_LOG(RLL_DEBUG) << "HandleRequestHeartbeat node "
                                << this->config_.GetThisEndpoint().ToString()
-                               << "received a heartbeat from leader(node_id=" << source_node_id.ToHex() << ")."
+                               << "received a heartbeat from leader(node_id="
+                               << source_node_id.ToHex() << ")."
                                << " curr_term_id_:" << curr_term_id_.getTerm()
                                << " receive term_id:" << term_id << " update term_id";
         timer_manager_.GetElectionTimerRef().Start(
