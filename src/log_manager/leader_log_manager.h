@@ -23,7 +23,7 @@ public:
             this_node_id_(std::move(this_node_id)),
             get_all_rpc_clients_func_(get_all_rpc_clients_func),
             all_log_entries_(),
-            is_running_(true) {
+            is_running_(false) {
         push_thread_ = std::make_unique<std::thread>([this]() {
             while (is_running_) {
                 {
