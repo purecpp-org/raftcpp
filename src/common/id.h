@@ -131,7 +131,9 @@ public:
     MSGPACK_DEFINE(term_);
 
     std::ostream& operator<<(std::ostream &os) {
-        os << "<Term: " << term_ << " Base: " << data_ << "" << ">";
+        os << "{\n"
+            << "    termId:" << term_
+            << "\n}";
         return os;
     }
 
