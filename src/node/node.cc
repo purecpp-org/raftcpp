@@ -19,7 +19,16 @@ RaftNode::RaftNode(std::shared_ptr<StateMachine> state_machine,
       non_leader_log_manager_(std::make_unique<NonLeaderLogManager>([this]() {
           std::lock_guard<std::recursive_mutex> guard{mutex_};
           return curr_state_ == RaftState::LEADER;
+      }, [this]() -> std::shared_ptr<rest_rpc::rpc_client> {
+          std::lock_guard<std::recursive_mutex> guard{mutex_};
+          if (curr_state_ != RaftState::LEADER) {
+              return nullptr;
+          }
+          RAFTCPP_CHECK(leader_node_id_ != nullptr);
+          RAFTCPP_CHECK(rpc_clients_.count(*leader_node_id_) == 1);
+          return rpc_clients_[*leader_node_id_];
       })),
+
       state_machine_(std::move(state_machine)) {
     std::string log_name = "node-" + config_.GetThisEndpoint().ToString() + ".log";
     replace(log_name.begin(), log_name.end(), '.', '-');
@@ -221,6 +230,7 @@ void RaftNode::RequestHeartbeat() {
 void RaftNode::HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     if (curr_state_ == RaftState::FOLLOWER || curr_state_ == RaftState::CANDIDATE) {
+//        leader_node_id_ = std::make_unique<NodeID>();
         RAFTCPP_LOG(RLL_DEBUG) << "HandleRequestHeartbeat node "
                                << this->config_.GetThisEndpoint().ToString()
                                << "received a heartbeat from leader."
@@ -286,7 +296,7 @@ void RaftNode::ConnectToOtherNodes() {
                 << "Failed to connect to the node " << endpoint.ToString();
         }
         rpc_client->enable_auto_reconnect();
-        rpc_clients_[NodeID(endpoint).ToHex()] = rpc_client;
+        rpc_clients_[NodeID(endpoint)] = rpc_client;
         RAFTCPP_LOG(RLL_INFO) << "This node " << config_.GetThisEndpoint().ToString()
                               << " succeeded to connect to the node "
                               << endpoint.ToString();
@@ -314,18 +324,6 @@ void RaftNode::StepBack(int32_t term_id) {
     curr_state_ = RaftState::FOLLOWER;
     curr_term_id_.setTerm(term_id);
 }
-
-// void RaftNode::AsyncAppendLogsToFollowers(const LogEntry &log_entry) {
-//    for(auto &item : rpc_clients_) {
-//        item.second->async_call<0>(
-//            RaftcppConstants::REQUEST_PULL_LOGS,
-//            /*callback=*/[](const boost::system::error_code &ec, string_view data) {
-//                // TODO(qwang): Handle the succeeded callback.
-//                RAFTCPP_LOG(RLL_INFO) << "Received callback from HandleRequestPullLogs";
-//            },
-//            log_entry);
-//    }
-//}
 
 void RaftNode::HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_binary,
                                      int64_t committed_log_index) {

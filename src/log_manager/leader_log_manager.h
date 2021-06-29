@@ -5,6 +5,7 @@
 #include <mutex>
 #include <queue>
 
+#include "log_manager/log_entry.h"
 #include "common/constants.h"
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
@@ -16,7 +17,7 @@ namespace raftcpp {
 
 class LeaderLogManager final {
 public:
-    LeaderLogManager() : all_log_entries_(), is_running_(false) {
+    LeaderLogManager() : all_log_entries_(), is_running_(true) {
         push_thread_ = std::make_unique<std::thread>([this]() {
             while (is_running_) {
                 {

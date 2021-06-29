@@ -14,10 +14,12 @@ namespace raftcpp {
 
 class NonLeaderLogManager final {
 public:
-    NonLeaderLogManager(std::function<bool()> is_leader_func)
+    NonLeaderLogManager(std::function<bool()> is_leader_func,
+                        std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func)
         : is_leader_func_(std::move(is_leader_func)),
-          is_running_(false),
-          queue_in_non_leader_(std::make_unique<BlockingQueueMutexImpl<LogEntry>>()) {
+          is_running_(true),
+          queue_in_non_leader_(std::make_unique<BlockingQueueMutexImpl<LogEntry>>()),
+          get_leader_rpc_client_func_(std::move(get_leader_rpc_client_func)) {
         committing_thread_ = std::make_unique<std::thread>([this]() {
             while (is_running_ && !is_leader_func_()) {
                 auto log = queue_in_non_leader_->Pop();
@@ -32,7 +34,14 @@ public:
             while (is_running_) {
                 {
                     std::lock_guard<std::mutex> lock(mutex_);
-                    leader_rpc_client_->async_call<1>(
+                    auto leader_rpc_client = get_leader_rpc_client_func_();
+                    if (leader_rpc_client == nullptr) {
+                        RAFTCPP_LOG(RLL_INFO) << "Failed to get leader rpc client.Is this node the leader? "
+                                              << is_leader_func_();
+                        is_running_.store(false);
+                        continue;
+                    }
+                    leader_rpc_client->async_call<1>(
                         RaftcppConstants::REQUEST_PULL_LOGS,
                         [this](const boost::system::error_code &ec, string_view data) {
                             HandleReceivedLogsFromLeader({});
@@ -83,8 +92,8 @@ private:
 
     std::unique_ptr<std::thread> committing_thread_;
 
-    /// The rpc client to leader.
-    std::shared_ptr<rest_rpc::rpc_client> leader_rpc_client_;
+    /// The function to get leader rpc client.
+    std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func_;
 
     std::function<bool()> is_leader_func_ = nullptr;
 
