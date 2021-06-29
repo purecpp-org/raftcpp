@@ -15,15 +15,26 @@
 
 namespace raftcpp {
 
+using AllRpcClientType = std::unordered_map<NodeID, std::shared_ptr<rest_rpc::rpc_client>>;
+
 class LeaderLogManager final {
 public:
-    LeaderLogManager() : all_log_entries_(), is_running_(true) {
+    explicit LeaderLogManager(NodeID this_node_id, std::function<AllRpcClientType()> get_all_rpc_clients_func) :
+            this_node_id_(std::move(this_node_id)),
+            get_all_rpc_clients_func_(get_all_rpc_clients_func),
+            all_log_entries_(),
+            is_running_(true) {
         push_thread_ = std::make_unique<std::thread>([this]() {
             while (is_running_) {
                 {
                     std::lock_guard<std::mutex> lock(mutex_);
-                    for (auto follower : follower_rpc_clients_) {
+                    auto all_rpc_clients = get_all_rpc_clients_func_();
+                    for (auto follower : all_rpc_clients) {
                         const auto &follower_node_id = follower.first;
+                        // Filter myself node.
+                        if (follower_node_id == this_node_id_) {
+                            continue;
+                        }
                         auto log_index_to_be_sent =
                             committed_log_indexes_[follower_node_id] + 1;
                         auto it = all_log_entries_.find(log_index_to_be_sent);
@@ -109,9 +120,11 @@ private:
     /// Note that this is only used in leader.
     std::unique_ptr<std::thread> push_thread_;
 
-    /// The rpc client to followers.
-    std::unordered_map<NodeID, std::shared_ptr<rest_rpc::rpc_client>>
-        follower_rpc_clients_;
+    /// The function to get all rpc clients to followers(Including this node self).
+    std::function<AllRpcClientType()> get_all_rpc_clients_func_;
+
+    /// ID of this node.
+    NodeID this_node_id_;
 
     std::atomic_bool is_running_ = false;
 
