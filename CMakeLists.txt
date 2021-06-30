@@ -28,7 +28,6 @@ INCLUDE_DIRECTORIES(
 		SYSTEM ${ASIO_INCLUDE_DIR}
 		SYSTEM ${REST_RPC_INCLUDE_DIR}
 		SYSTEM ${MSGPACK_INCLUDE_DIR}
-		SYSTEM ${MSGPACK_INCLUDE_DIR}
 		SYSTEM ${GFLAGS_INCLUDE_DIR}
 		SYSTEM ${SPDLOG_INCLUDE_DIR}
 )
@@ -39,7 +38,7 @@ ADD_LIBRARY(common_lib
 		src/common/timer.cc
 		src/common/file.cc
 		src/common/logging.cc)
-ADD_DEPENDENCIES(common_lib asio_ep spdlog_ep)
+ADD_DEPENDENCIES(common_lib asio_ep rest_rpc_ep spdlog_ep )
 
 # node library
 ADD_LIBRARY(node_lib src/node/node.cc src/node/timer_manager.cc)

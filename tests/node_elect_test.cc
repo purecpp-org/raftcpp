@@ -75,7 +75,7 @@ void node_run(std::shared_ptr<raftcpp::node::RaftNode> &node, const std::string 
     return;
 }
 
-TEST_CASE("TestNodeElect") {
+TEST_CASE("test_node_election") {
     int LeaderFlag = 0;
     std::vector<raftcpp::RaftState> nodeStateLeader;
     std::vector<raftcpp::RaftState> nodeStateFollower;

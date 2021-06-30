@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <msgpack.hpp>
 #include <iostream>
 
@@ -130,10 +131,16 @@ public:
 
     MSGPACK_DEFINE(term_);
 
+<<<<<<< HEAD
     std::ostream& operator<<(std::ostream &os) {
         os << "{\n"
             << "    termId:" << term_
             << "\n}";
+=======
+    std::ostream &operator<<(std::ostream &os) {
+        os << "{\n"
+           << "    termId:" << term_ << "\n}";
+>>>>>>> f0fde1d56afbfa853052cceac2980e29bd419fe3
         return os;
     }
 
