@@ -43,7 +43,7 @@ RaftNode::RaftNode(std::shared_ptr<StateMachine> state_machine,
     timer_manager_.Start();
 }
 
-RaftNode::~RaftNode() {}
+RaftNode::~RaftNode() { leader_log_manager_->Stop(); }
 
 void RaftNode::Apply(const std::shared_ptr<raftcpp::RaftcppRequest> &request) {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
@@ -216,6 +216,8 @@ void RaftNode::OnVote(const boost::system::error_code &ec, string_view data) {
         timer_manager_.GetHeartbeatTimerRef().Reset(
             RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS);
         this->RequestHeartbeat();
+        // This node became the leader, so run the leader log manager.
+        leader_log_manager_->Run();
     } else {
     }
 }
