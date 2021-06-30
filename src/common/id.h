@@ -68,7 +68,7 @@ public:
         return ret;
     }
 
-    std::ostream& operator<<(std::ostream &os) {
+    std::ostream &operator<<(std::ostream &os) {
         os << "{\n"
             << "    nodeId:" << ToHex() << "\n}";
         return os;
