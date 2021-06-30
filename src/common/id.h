@@ -67,6 +67,12 @@ public:
         return ret;
     }
 
+    std::ostream &operator<<(std::ostream &os) {
+        os << "{\n"
+           << "    nodeId:" << ToHex() << "\n}";
+        return os;
+    }
+
 private:
     static std::vector<std::string> explode(const std::string &s, const char &c) {
         std::string buff;
