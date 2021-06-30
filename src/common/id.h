@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <msgpack.hpp>
-#include <iostream>
 
 #include "common/endpoint.h"
 
