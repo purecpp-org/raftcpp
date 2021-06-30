@@ -70,7 +70,7 @@ public:
 
     std::ostream &operator<<(std::ostream &os) {
         os << "{\n"
-            << "    nodeId:" << ToHex() << "\n}";
+           << "    nodeId:" << ToHex() << "\n}";
         return os;
     }
 
