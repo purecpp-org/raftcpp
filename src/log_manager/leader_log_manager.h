@@ -6,6 +6,7 @@
 #include <queue>
 
 #include "common/constants.h"
+#include "common/timer.h"
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
 #include "log_manager/log_entry.h"
@@ -21,43 +22,15 @@ class LeaderLogManager final {
 public:
     explicit LeaderLogManager(NodeID this_node_id,
                               std::function<AllRpcClientType()> get_all_rpc_clients_func)
-        : this_node_id_(std::move(this_node_id)),
+        : io_service_(),
+          this_node_id_(std::move(this_node_id)),
           get_all_rpc_clients_func_(get_all_rpc_clients_func),
           all_log_entries_(),
-          is_running_(false) {
-        push_thread_ = std::make_unique<std::thread>([this]() {
-            while (is_running_) {
-                {
-                    std::lock_guard<std::mutex> lock(mutex_);
-                    auto all_rpc_clients = get_all_rpc_clients_func_();
-                    for (auto follower : all_rpc_clients) {
-                        const auto &follower_node_id = follower.first;
-                        // Filter myself node.
-                        if (follower_node_id == this_node_id_) {
-                            continue;
-                        }
-                        auto log_index_to_be_sent =
-                            committed_log_indexes_[follower_node_id] + 1;
-                        auto it = all_log_entries_.find(log_index_to_be_sent);
-                        if (it == all_log_entries_.end()) {
-                            continue;
-                        }
-                        auto &follower_rpc_client = follower.second;
-                        follower_rpc_client->async_call(
-                            RaftcppConstants::REQUEST_PUSH_LOGS,
-                            [](boost::system::error_code ec, string_view data) {
-                                //// LOG
-                            },
-                            it->second);
-                    }
-                }
-                // TODO(qwang): This should be refined.
-                std::this_thread::sleep_for(std::chrono::milliseconds{2 * 1000});
-            }
-        });
-    }
+          is_running_(false),
+          repeated_timer_(std::make_unique<common::RepeatedTimer>(
+              io_service_, [this](const asio::error_code &e) { DoPushLogs(); })) {}
 
-    ~LeaderLogManager() { push_thread_->detach(); }
+    ~LeaderLogManager() { repeated_timer_->Stop(); }
 
     std::vector<LogEntry> PullLogs(const NodeID &node_id, int64_t committed_log_index) {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -97,10 +70,38 @@ public:
         all_log_entries_[curr_log_index_] = entry;
     }
 
+    void Run() { repeated_timer_->Start(1000); }
+
+    void Stop() { repeated_timer_->Stop(); }
+
 private:
     void TriggerAsyncDumpLogs(size_t committed_log_index,
                               std::function<void(int64_t)> dumped_callback) {
         // TODO: Dump logs.
+    }
+
+    void DoPushLogs() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto all_rpc_clients = get_all_rpc_clients_func_();
+        for (const auto &follower : all_rpc_clients) {
+            const auto &follower_node_id = follower.first;
+            // Filter myself node.
+            if (follower_node_id == this_node_id_) {
+                continue;
+            }
+            auto log_index_to_be_sent = committed_log_indexes_[follower_node_id] + 1;
+            auto it = all_log_entries_.find(log_index_to_be_sent);
+            if (it == all_log_entries_.end()) {
+                continue;
+            }
+            auto &follower_rpc_client = follower.second;
+            follower_rpc_client->async_call(
+                RaftcppConstants::REQUEST_PUSH_LOGS,
+                [](boost::system::error_code ec, string_view data) {
+                    //// LOG
+                },
+                it->second);
+        }
     }
 
 private:
@@ -114,18 +115,15 @@ private:
     // The map that contains the non-leader nodes to the committed_log_index.
     std::unordered_map<NodeID, int64_t> committed_log_indexes_;
 
-    //    std::unique_ptr<BlockingQueueInterface<LogEntry>> queue_in_non_leader_
-    //    {nullptr};
-
-    /// The thread used to push the log entries to non-leader nodes.
-    /// Note that this is only used in leader.
-    std::unique_ptr<std::thread> push_thread_;
-
     /// The function to get all rpc clients to followers(Including this node self).
     std::function<AllRpcClientType()> get_all_rpc_clients_func_;
 
     /// ID of this node.
     NodeID this_node_id_;
+
+    boost::asio::io_service io_service_;
+
+    std::unique_ptr<common::RepeatedTimer> repeated_timer_;
 
     std::atomic_bool is_running_ = false;
 
