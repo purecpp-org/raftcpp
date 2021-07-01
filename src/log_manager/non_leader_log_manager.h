@@ -6,6 +6,7 @@
 #include <queue>
 
 #include "common/constants.h"
+#include "common/timer.h"
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
 #include "log_manager/log_entry.h"
@@ -17,7 +18,10 @@ public:
     NonLeaderLogManager(
         std::function<bool()> is_leader_func,
         std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func)
-        : is_leader_func_(std::move(is_leader_func)),
+        : io_service_(),
+          pull_logs_timer_(std::make_unique<common::RepeatedTimer>(
+              io_service_, [this](const asio::error_code &e) { DoPullLogs(); })),
+          is_leader_func_(std::move(is_leader_func)),
           is_running_(false),
           queue_in_non_leader_(std::make_unique<BlockingQueueMutexImpl<LogEntry>>()),
           get_leader_rpc_client_func_(std::move(get_leader_rpc_client_func)) {
@@ -29,39 +33,13 @@ public:
                 committed_index_ = log.log_index;
             }
         });
-
-        pull_thread_ = std::make_unique<std::thread>([this]() {
-            /// TODO: Use RepeatedTimer instead.
-            while (is_running_) {
-                {
-                    std::lock_guard<std::mutex> lock(mutex_);
-                    auto leader_rpc_client = get_leader_rpc_client_func_();
-                    if (leader_rpc_client == nullptr) {
-                        RAFTCPP_LOG(RLL_INFO) << "Failed to get leader rpc client.Is "
-                                                 "this node the leader? ";
-                        //                                              <<
-                        //                                              is_leader_func_();
-                        is_running_.store(false);
-                        continue;
-                    }
-                    leader_rpc_client->async_call<1>(
-                        RaftcppConstants::REQUEST_PULL_LOGS,
-                        [this](const boost::system::error_code &ec, string_view data) {
-                            HandleReceivedLogsFromLeader({});
-                        },
-                        /*this_node_id_str=*/this_node_id_.ToHex(),
-                        /*committed_index=*/committed_index_);
-                }
-                // TODO(qwang): This should be refined.
-                std::this_thread::sleep_for(std::chrono::milliseconds{2 * 1000});
-            }
-        });
     }
 
-    ~NonLeaderLogManager() {
-        committing_thread_->detach();
-        pull_thread_->detach();
-    };
+    ~NonLeaderLogManager() { committing_thread_->detach(); };
+
+    void Run() { pull_logs_timer_->Start(1000); }
+
+    void Stop() { pull_logs_timer_->Stop(); }
 
 private:
     void CommitLogToStateMachine(const LogEntry &log) {
@@ -78,6 +56,25 @@ private:
         /// (直接参照raft论文即可) 2) 如果没问题，则commit logs to state machine
     }
 
+    void DoPullLogs() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto leader_rpc_client = get_leader_rpc_client_func_();
+        if (leader_rpc_client == nullptr) {
+            RAFTCPP_LOG(RLL_INFO) << "Failed to get leader rpc client.Is "
+                                     "this node the leader? "
+                                  << is_leader_func_();
+            is_running_.store(false);
+            return;
+        }
+        leader_rpc_client->async_call<1>(
+            RaftcppConstants::REQUEST_PULL_LOGS,
+            [this](const boost::system::error_code &ec, string_view data) {
+                HandleReceivedLogsFromLeader({});
+            },
+            /*this_node_id_str=*/this_node_id_.ToHex(),
+            /*committed_index=*/committed_index_);
+    }
+
 private:
     std::mutex mutex_;
 
@@ -89,9 +86,11 @@ private:
 
     std::unique_ptr<BlockingQueueInterface<LogEntry>> queue_in_non_leader_{nullptr};
 
-    /// The thread used to send pull log entries requests to leader.
+    boost::asio::io_service io_service_;
+
+    /// The timer used to send pull log entries requests to leader.
     /// Note that this is only used in non-leader node.
-    std::unique_ptr<std::thread> pull_thread_;
+    std::unique_ptr<common::RepeatedTimer> pull_logs_timer_;
 
     std::unique_ptr<std::thread> committing_thread_;
 

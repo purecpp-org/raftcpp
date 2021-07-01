@@ -43,7 +43,7 @@ RaftNode::RaftNode(std::shared_ptr<StateMachine> state_machine,
     timer_manager_.Start();
 }
 
-RaftNode::~RaftNode() {}
+RaftNode::~RaftNode() { leader_log_manager_->Stop(); }
 
 void RaftNode::Apply(const std::shared_ptr<raftcpp::RaftcppRequest> &request) {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
@@ -216,6 +216,9 @@ void RaftNode::OnVote(const boost::system::error_code &ec, string_view data) {
         timer_manager_.GetHeartbeatTimerRef().Reset(
             RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS);
         this->RequestHeartbeat();
+        // This node became the leader, so run the leader log manager.
+        leader_log_manager_->Run();
+        non_leader_log_manager_->Stop();
     } else {
     }
 }
@@ -258,6 +261,8 @@ void RaftNode::HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id,
             timer_manager_.GetVoteTimerRef().Stop();
             timer_manager_.GetHeartbeatTimerRef().Stop();
             curr_state_ = RaftState::FOLLOWER;
+            leader_log_manager_->Stop();
+            non_leader_log_manager_->Run();
             timer_manager_.GetElectionTimerRef().Start(
                 RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS +
                 randomer_.TakeOne(1000, 2000));
@@ -285,6 +290,8 @@ void RaftNode::OnHeartbeat(const boost::system::error_code &ec, string_view data
     int32_t term_id = std::stoi(data.data());
     if (term_id > curr_term_id_.getTerm()) {
         curr_state_ = RaftState::FOLLOWER;
+        leader_log_manager_->Stop();
+        non_leader_log_manager_->Run();
         timer_manager_.GetVoteTimerRef().Stop();
         timer_manager_.GetElectionTimerRef().Start(
             RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS +
@@ -330,6 +337,8 @@ void RaftNode::StepBack(int32_t term_id) {
     timer_manager_.GetElectionTimerRef().Reset(
         RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
     curr_state_ = RaftState::FOLLOWER;
+    leader_log_manager_->Stop();
+    non_leader_log_manager_->Run();
     curr_term_id_.setTerm(term_id);
 }
 
