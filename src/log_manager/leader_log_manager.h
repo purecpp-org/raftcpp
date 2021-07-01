@@ -53,7 +53,7 @@ public:
             ret = {all_log_entries_[next_log_index]};
         }
         TryAsyncCommitLogs(node_id, next_log_index,
-                /*done=*/[this](int64_t dumped_log_index) {});
+                           /*done=*/[this](int64_t dumped_log_index) {});
         return ret;
     }
 
@@ -76,7 +76,8 @@ private:
     /// Try to commit the logs asynchronously. If a log was replied
     /// by more than one half of followers, it will be async-commit,
     /// and apply the user state machine. otherwise we don't dump it.
-    void TryAsyncCommitLogs(const NodeID &node_id, size_t next_log_index, std::function<void(int64_t)> committed_callback) {
+    void TryAsyncCommitLogs(const NodeID &node_id, size_t next_log_index,
+                            std::function<void(int64_t)> committed_callback) {
         /// TODO(qwang): Trigger commit.
     }
 

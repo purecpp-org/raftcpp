@@ -16,9 +16,9 @@ namespace raftcpp {
 
 class NonLeaderLogManager final {
 public:
-    NonLeaderLogManager(std::shared_ptr<StateMachine> fsm,
-                        std::function<bool()> is_leader_func,
-                        std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func)
+    NonLeaderLogManager(
+        std::shared_ptr<StateMachine> fsm, std::function<bool()> is_leader_func,
+        std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func)
         : io_service_(),
           pull_logs_timer_(std::make_unique<common::RepeatedTimer>(
               io_service_, [this](const asio::error_code &e) { DoPullLogs(); })),
@@ -27,7 +27,7 @@ public:
           get_leader_rpc_client_func_(std::move(get_leader_rpc_client_func)),
           fsm_(std::move(fsm)) {}
 
-    ~NonLeaderLogManager() {};
+    ~NonLeaderLogManager(){};
 
     void Run() { pull_logs_timer_->Start(1000); }
 
@@ -41,7 +41,7 @@ public:
             return;
         }
         if (log_entry.log_index > 0) {
-           RAFTCPP_CHECK(all_log_entries_.count(log_entry.log_index - 1) == 1);
+            RAFTCPP_CHECK(all_log_entries_.count(log_entry.log_index - 1) == 1);
         }
         RAFTCPP_CHECK(all_log_entries_.count(log_entry.log_index - 1) == 1);
         all_log_entries_[log_entry.log_index] = log_entry;
@@ -58,7 +58,8 @@ private:
         }
         const auto last_committed_log_index = committed_log_index;
         committed_log_index_ = committed_log_index;
-        for(auto index = last_committed_log_index + 1; index <= committed_log_index_; ++index) {
+        for (auto index = last_committed_log_index + 1; index <= committed_log_index_;
+             ++index) {
             RAFTCPP_CHECK(all_log_entries_.count(index) == 1);
             fsm_->OnApply(all_log_entries_[index].data);
         }
