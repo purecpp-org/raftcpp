@@ -9,7 +9,6 @@
 #include <mutex>
 #include <shared_mutex>
 
-#include "common/range.h"
 #include "common/util.h"
 
 namespace raftcpp {
