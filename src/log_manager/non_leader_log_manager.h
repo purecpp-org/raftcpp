@@ -10,6 +10,7 @@
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
 #include "log_manager/log_entry.h"
+#include "rest_rpc.hpp"
 #include "statemachine/state_machine.h"
 
 namespace raftcpp {
@@ -29,65 +30,16 @@ public:
 
     ~NonLeaderLogManager(){};
 
-    void Run() { pull_logs_timer_->Start(1000); }
+    void Run();
 
-    void Stop() { pull_logs_timer_->Stop(); }
+    void Stop();
 
-    void Push(int64_t committed_log_index, LogEntry log_entry) {
-        RAFTCPP_CHECK(log_entry.log_index >= 0);
-        /// Ignore if duplicated log_index.
-        if (all_log_entries_.count(log_entry.log_index) > 0) {
-            RAFTCPP_LOG(RLL_DEBUG) << "Duplicated log index = " << log_entry.log_index;
-            return;
-        }
-        if (log_entry.log_index > 0) {
-            RAFTCPP_CHECK(all_log_entries_.count(log_entry.log_index - 1) == 1);
-        }
-        RAFTCPP_CHECK(all_log_entries_.count(log_entry.log_index - 1) == 1);
-        all_log_entries_[log_entry.log_index] = log_entry;
-        if (log_entry.log_index >= next_index_) {
-            next_index_ = log_entry.log_index + 1;
-        }
-        CommitLogs(committed_log_index);
-    }
+    void Push(int64_t committed_log_index, LogEntry log_entry);
 
 private:
-    void CommitLogs(int64_t committed_log_index) {
-        if (committed_log_index <= committed_log_index_) {
-            return;
-        }
-        const auto last_committed_log_index = committed_log_index;
-        committed_log_index_ = committed_log_index;
-        for (auto index = last_committed_log_index + 1; index <= committed_log_index_;
-             ++index) {
-            RAFTCPP_CHECK(all_log_entries_.count(index) == 1);
-            fsm_->OnApply(all_log_entries_[index].data);
-        }
-    }
+    void CommitLogs(int64_t committed_log_index);
 
-    void HandleReceivedLogsFromLeader(LogEntry log_entry) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        /// 对比term id/log index来决定:
-        /// 1) 现在leader的状态, 要不要更新节点的状态，或者丢弃log，更新本地log
-        /// (直接参照raft论文即可) 2) 如果没问题，则commit logs to state machine
-    }
-
-    void DoPullLogs() {
-        std::lock_guard<std::mutex> lock(mutex_);
-        auto leader_rpc_client = get_leader_rpc_client_func_();
-        if (leader_rpc_client == nullptr) {
-            RAFTCPP_LOG(RLL_INFO) << "Failed to get leader rpc client.Is "
-                                     "this node the leader? "
-                                  << is_leader_func_();
-            is_running_.store(false);
-            return;
-        }
-        leader_rpc_client->async_call<1>(
-            RaftcppConstants::REQUEST_PULL_LOGS,
-            [this](const boost::system::error_code &ec, string_view data) {},
-            /*this_node_id_str=*/this_node_id_.ToHex(),
-            /*next_index=*/next_index_);
-    }
+    void DoPullLogs();
 
 private:
     std::mutex mutex_;
