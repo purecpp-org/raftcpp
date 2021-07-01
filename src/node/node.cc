@@ -18,6 +18,7 @@ RaftNode::RaftNode(std::shared_ptr<StateMachine> state_machine,
       leader_log_manager_(std::make_unique<LeaderLogManager>(
           this_node_id_, [this]() -> AllRpcClientType { return all_rpc_clients_; })),
       non_leader_log_manager_(std::make_unique<NonLeaderLogManager>(
+              state_machine,
           [this]() {
               std::lock_guard<std::recursive_mutex> guard{mutex_};
               return curr_state_ == RaftState::LEADER;
@@ -343,26 +344,27 @@ void RaftNode::StepBack(int32_t term_id) {
 }
 
 void RaftNode::HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_binary,
-                                     int64_t committed_log_index) {
-    RAFTCPP_LOG(RLL_INFO) << "HandleRequestPullLogs: committed_log_index="
-                          << committed_log_index;
+                                     int64_t next_log_index) {
+    RAFTCPP_LOG(RLL_INFO) << "HandleRequestPullLogs: next_log_index="
+                          << next_log_index;
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     if (curr_state_ == RaftState::LEADER) {
         auto logs_to_be_sync = leader_log_manager_->PullLogs(
-            NodeID::FromBinary(node_id_binary), committed_log_index);
+            NodeID::FromBinary(node_id_binary), next_log_index);
 
     } else {
         // Log errors.
     }
 }
 
-void RaftNode::HandleRequestPushLogs(rpc::RpcConn conn, LogEntry log_entry) {
+void RaftNode::HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_index, LogEntry log_entry) {
     RAFTCPP_LOG(RLL_INFO) << "HandleRequestPushLogs: log_entry.term_id="
                           << log_entry.term_id.ToHex()
+                          << ", committed_log_index=" << committed_log_index
                           << ", log_entry.log_index=" << log_entry.log_index
                           << ", log_entry.data=" << log_entry.data;
     std::lock_guard<std::recursive_mutex> guard{mutex_};
-    state_machine_->OnApply(log_entry.data);
+    non_leader_log_manager_->Push(committed_log_index, log_entry);
     if (curr_state_ == RaftState::FOLLOWER) {
         /// Check log_index and term from RAFT protocol.
     } else {

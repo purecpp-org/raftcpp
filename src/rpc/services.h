@@ -26,9 +26,9 @@ protected:
                                         std::string node_id_binary) = 0;
 
     virtual void HandleRequestPullLogs(RpcConn conn, std::string node_id_binary,
-                                       int64_t committed_log_index) = 0;
+                                       int64_t next_log_index) = 0;
 
-    virtual void HandleRequestPushLogs(RpcConn conn, LogEntry log_entry) = 0;
+    virtual void HandleRequestPushLogs(RpcConn conn, int64_t committed_log_index, LogEntry log_entry) = 0;
 };
 
 }  // namespace rpc
