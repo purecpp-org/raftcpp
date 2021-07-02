@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <msgpack.hpp>
+#include <sstream>
 
 #include "common/endpoint.h"
 
@@ -71,6 +72,12 @@ public:
         os << "{\n"
            << "    nodeId:" << ToHex() << "\n}";
         return os;
+    }
+
+    std::stringstream &operator<<(std::stringstream &ss) {
+        ss << "{\n"
+           << "    nodeId:" << ToHex() << "\n}";
+        return ss;
     }
 
 private:
