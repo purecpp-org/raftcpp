@@ -6,6 +6,7 @@
 
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/spdlog.h"
+#include "common/id.h"
 
 namespace raftcpp {
 enum class RaftcppLogLevel {
@@ -26,6 +27,13 @@ public:
     RaftcppLogBase &operator<<(const T &t) {
         if (IsEnabled()) {
             ss_ << t;
+        }
+        return *this;
+    }
+
+    RaftcppLogBase &operator<<(NodeID &id) {
+        if (IsEnabled()) {
+            id << ss_;
         }
         return *this;
     }
