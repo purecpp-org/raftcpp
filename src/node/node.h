@@ -57,7 +57,8 @@ public:
     void HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_binary,
                                int64_t committed_log_index) override;
 
-    void HandleRequestPushLogs(rpc::RpcConn conn, LogEntry log_entry) override;
+    void HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_index,
+                               LogEntry log_entry) override;
 
     void RequestHeartbeat();
 

@@ -10,81 +10,47 @@
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
 #include "log_manager/log_entry.h"
+#include "rest_rpc.hpp"
+#include "statemachine/state_machine.h"
 
 namespace raftcpp {
 
 class NonLeaderLogManager final {
 public:
     NonLeaderLogManager(
-        std::function<bool()> is_leader_func,
+        std::shared_ptr<StateMachine> fsm, std::function<bool()> is_leader_func,
         std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func)
         : io_service_(),
           pull_logs_timer_(std::make_unique<common::RepeatedTimer>(
               io_service_, [this](const asio::error_code &e) { DoPullLogs(); })),
           is_leader_func_(std::move(is_leader_func)),
           is_running_(false),
-          queue_in_non_leader_(std::make_unique<BlockingQueueMutexImpl<LogEntry>>()),
-          get_leader_rpc_client_func_(std::move(get_leader_rpc_client_func)) {
-        committing_thread_ = std::make_unique<std::thread>([this]() {
-            while (is_running_ && !is_leader_func_()) {
-                auto log = queue_in_non_leader_->Pop();
-                CommitLogToStateMachine(log);
-                std::lock_guard<std::mutex> lock(mutex_);
-                committed_index_ = log.log_index;
-            }
-        });
-    }
+          get_leader_rpc_client_func_(std::move(get_leader_rpc_client_func)),
+          fsm_(std::move(fsm)) {}
 
-    ~NonLeaderLogManager() { committing_thread_->detach(); };
+    ~NonLeaderLogManager(){};
 
-    void Run() { pull_logs_timer_->Start(1000); }
+    void Run();
 
-    void Stop() { pull_logs_timer_->Stop(); }
+    void Stop();
+
+    void Push(int64_t committed_log_index, LogEntry log_entry);
 
 private:
-    void CommitLogToStateMachine(const LogEntry &log) {
-        /// TODO: A callback to commit to fsm.
-        /// state_machine的接口，没有用户的真正子类state_machine
-        /// ->post(onApply);
-        ///
-    }
+    void CommitLogs(int64_t committed_log_index);
 
-    void HandleReceivedLogsFromLeader(LogEntry log_entry) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        /// 对比term id/log index来决定:
-        /// 1) 现在leader的状态, 要不要更新节点的状态，或者丢弃log，更新本地log
-        /// (直接参照raft论文即可) 2) 如果没问题，则commit logs to state machine
-    }
-
-    void DoPullLogs() {
-        std::lock_guard<std::mutex> lock(mutex_);
-        auto leader_rpc_client = get_leader_rpc_client_func_();
-        if (leader_rpc_client == nullptr) {
-            RAFTCPP_LOG(RLL_INFO) << "Failed to get leader rpc client.Is "
-                                     "this node the leader? "
-                                  << is_leader_func_();
-            is_running_.store(false);
-            return;
-        }
-        leader_rpc_client->async_call<1>(
-            RaftcppConstants::REQUEST_PULL_LOGS,
-            [this](const boost::system::error_code &ec, string_view data) {
-                HandleReceivedLogsFromLeader({});
-            },
-            /*this_node_id_str=*/this_node_id_.ToHex(),
-            /*committed_index=*/committed_index_);
-    }
+    void DoPullLogs();
 
 private:
     std::mutex mutex_;
 
-    /// The index where this node committed.
-    int64_t committed_index_ = -1;
+    /// The index which the leader committed.
+    int64_t committed_log_index_ = -1;
 
     /// Next index to be read from leader.
     int64_t next_index_ = 0;
 
-    std::unique_ptr<BlockingQueueInterface<LogEntry>> queue_in_non_leader_{nullptr};
+    std::unordered_map<int64_t, LogEntry> all_log_entries_;
 
     boost::asio::io_service io_service_;
 
@@ -102,6 +68,8 @@ private:
     std::atomic_bool is_running_ = false;
 
     NodeID this_node_id_;
+
+    std::shared_ptr<StateMachine> fsm_;
 };
 
 }  // namespace raftcpp
