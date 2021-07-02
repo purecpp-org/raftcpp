@@ -4,9 +4,9 @@
 #include <sstream>
 #include <string>
 
+#include "common/id.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/spdlog.h"
-#include "common/id.h"
 
 namespace raftcpp {
 enum class RaftcppLogLevel {
