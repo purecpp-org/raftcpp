@@ -1,5 +1,11 @@
 #pragma once
+
+#include <iostream>
+#include <msgpack.hpp>
+#include <sstream>
+
 #include "common/endpoint.h"
+
 namespace raftcpp {
 
 class BaseID {
@@ -38,7 +44,8 @@ protected:
 class NodeID : public BaseID {
 public:
     NodeID() {}
-    NodeID(const Endpoint &endpoint_id) {
+
+    explicit NodeID(const Endpoint &endpoint_id) {
         data_ = "";
         data_.resize(sizeof(uint32_t) + sizeof(uint16_t));
         uint32_t inet = ip2uint(endpoint_id.GetHost());
@@ -46,22 +53,42 @@ public:
         memcpy(data_.data(), &inet, sizeof(uint32_t));
         memcpy(data_.data() + sizeof(uint32_t), &port, sizeof(uint16_t));
     }
-    NodeID(const NodeID &nid) { data_ = nid.data_; }
+
+    NodeID(const NodeID &nid) : BaseID(nid) { data_ = nid.data_; }
+
     NodeID &operator=(const NodeID &o) {
         if (this == &o) return *this;
         data_ = o.data_;
         return *this;
     }
 
+    static NodeID FromBinary(const std::string &binary) {
+        NodeID ret;
+        ret.data_ = binary;
+        return ret;
+    }
+
+    std::ostream &operator<<(std::ostream &os) {
+        os << "{\n"
+           << "    nodeId:" << ToHex() << "\n}";
+        return os;
+    }
+
+    std::stringstream &operator<<(std::stringstream &ss) {
+        ss << "{\n"
+           << "    nodeId:" << ToHex() << "\n}";
+        return ss;
+    }
+
 private:
-    const std::vector<std::string> explode(const std::string &s, const char &c) {
-        std::string buff{""};
+    static std::vector<std::string> explode(const std::string &s, const char &c) {
+        std::string buff;
         std::vector<std::string> v;
 
         for (auto n : s) {
             if (n != c)
                 buff += n;
-            else if (n == c && buff != "") {
+            else if (n == c && !buff.empty()) {
                 v.push_back(buff);
                 buff = "";
             }
@@ -70,7 +97,7 @@ private:
 
         return v;
     }
-    uint32_t ip2uint(const std::string &ip) {
+    static uint32_t ip2uint(const std::string &ip) {
         std::vector<std::string> v{explode(ip, '.')};
         uint32_t result = 0;
         for (auto i = 1; i <= v.size(); i++)
@@ -86,18 +113,27 @@ private:
 class TermID : public BaseID {
 public:
     TermID() { term_ = 0; }
-    TermID(int32_t term) : term_(term) {
+
+    explicit TermID(int32_t term) : term_(term) {
         data_ = "";
         data_.resize(sizeof(int32_t));
         memcpy(data_.data(), &term_, sizeof(int32_t));
     }
-    TermID(const TermID &tid) { data_ = tid.data_; }
+
+    TermID(const TermID &tid) : BaseID(tid) {
+        term_ = tid.term_;
+        data_ = tid.data_;
+    }
+
     TermID &operator=(const TermID &o) {
         if (this == &o) return *this;
+        term_ = o.term_;
         data_ = o.data_;
         return *this;
     }
-    int32_t getTerm() { return term_; }
+
+    int32_t getTerm() const { return term_; }
+
     void setTerm(int32_t term) {
         term_ = term;
         data_ = "";
@@ -105,8 +141,32 @@ public:
         memcpy(data_.data(), &term_, sizeof(int32_t));
     }
 
+    MSGPACK_DEFINE(term_);
+
+    std::ostream &operator<<(std::ostream &os) {
+        os << "{\n"
+           << "    termId:" << term_ << "\n}";
+        return os;
+    }
+
 private:
     int32_t term_;
 };
 
 }  // namespace raftcpp
+
+namespace std {
+template <>
+struct hash<raftcpp::NodeID> {
+    std::size_t operator()(const raftcpp::NodeID &n) const noexcept {
+        return std::hash<std::string>()(n.ToBinary());
+    }
+};
+
+template <>
+struct hash<raftcpp::TermID> {
+    std::size_t operator()(const raftcpp::TermID &t) const noexcept {
+        return std::hash<std::int32_t>()(t.getTerm());
+    }
+};
+}  // namespace std

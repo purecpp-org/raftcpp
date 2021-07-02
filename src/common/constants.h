@@ -20,6 +20,10 @@ public:
     constexpr static const char *REQUEST_VOTE_RPC_NAME = "request_vote";
 
     constexpr static const char *REQUEST_HEARTBEAT = "request_heartbeat";
+
+    constexpr static const char *REQUEST_PULL_LOGS = "request_pull_logs";
+
+    constexpr static const char *REQUEST_PUSH_LOGS = "request_push_logs";
 };
 
 }  // namespace raftcpp

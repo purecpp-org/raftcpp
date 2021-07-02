@@ -33,7 +33,7 @@ jobs:
     - name: build
       run: ./build.sh
     - name: run test
-      run: cd build && ../run_all_tests.sh
+      run: cd build && ../run_all_tests.sh 
       
   build_on_windows:
     runs-on: windows-latest

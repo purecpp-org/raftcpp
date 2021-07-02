@@ -11,6 +11,28 @@
 #include "node/node.h"
 #include "rest_rpc/rpc_server.h"
 
+class MockResponse : public raftcpp::RaftcppResponse {
+public:
+    MockResponse() {}
+
+    ~MockResponse() override {}
+};
+
+class MockStateMachine : public raftcpp::StateMachine {
+public:
+    bool ShouldDoSnapshot() override { return true; }
+
+    void SaveSnapshot() override{};
+
+    void LoadSnapshot() override{};
+
+    virtual raftcpp::RaftcppResponse OnApply(const std::string &serialized) override {
+        return MockResponse();
+    };
+
+private:
+};
+
 class CounterServiceImpl {
 public:
     // TODO(qwang): Are node and fsm uncopyable?
@@ -19,7 +41,8 @@ public:
         : node_(std::move(node)), fsm_(std::move(fsm)) {}
 
     void Incr(rpc_conn conn, int delta) {
-        examples::counter::IncrRequest request = examples::counter::IncrRequest(delta);
+        std::shared_ptr<examples::counter::IncrRequest> request =
+            std::make_shared<examples::counter::IncrRequest>(delta);
         node_->Apply(request);
     }
 
@@ -39,7 +62,8 @@ void node_run(std::shared_ptr<raftcpp::node::RaftNode> &node, const std::string 
               rpc_server *server) {
     const auto config = raftcpp::common::Config::From(conf_str);
 
-    node = std::make_shared<raftcpp::node::RaftNode>((*server), config,
+    node = std::make_shared<raftcpp::node::RaftNode>(std::make_shared<MockStateMachine>(),
+                                                     *server, config,
                                                      raftcpp::RaftcppLogLevel::RLL_DEBUG);
     auto fsm = std::make_shared<examples::counter::CounterStateMachine>();
 
@@ -51,7 +75,7 @@ void node_run(std::shared_ptr<raftcpp::node::RaftNode> &node, const std::string 
     return;
 }
 
-TEST_CASE("TestNodeElect") {
+TEST_CASE("test_node_election") {
     int LeaderFlag = 0;
     std::vector<raftcpp::RaftState> nodeStateLeader;
     std::vector<raftcpp::RaftState> nodeStateFollower;

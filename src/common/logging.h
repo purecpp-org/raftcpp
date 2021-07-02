@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 
+#include "common/id.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/spdlog.h"
 
@@ -26,6 +27,13 @@ public:
     RaftcppLogBase &operator<<(const T &t) {
         if (IsEnabled()) {
             ss_ << t;
+        }
+        return *this;
+    }
+
+    RaftcppLogBase &operator<<(NodeID &id) {
+        if (IsEnabled()) {
+            id << ss_;
         }
         return *this;
     }
@@ -63,7 +71,7 @@ protected:
 
 class Voidify {
 public:
-    Voidify() {}
+    Voidify() { std::abort(); }
 
     void operator&(RaftcppLogBase &) {}
 };

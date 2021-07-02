@@ -1,7 +1,7 @@
 #include <chrono>
 #include <thread>
 
-#include "log_manager/log_manager_mutex_impl.h"
+#include "log_manager/blocking_queue_mutex_impl.h"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest.h>
@@ -21,7 +21,7 @@ struct LogEntryTest {
 };
 
 bool g_flag = false;
-void thread_func(LogManagerMutexImpl<LogEntryTest> &log_manager) {
+void thread_func(BlockingQueueMutexImpl<LogEntryTest> &log_manager) {
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     g_flag = true;
     LogEntryTest log_entry{123, 456};
@@ -31,7 +31,7 @@ void thread_func(LogManagerMutexImpl<LogEntryTest> &log_manager) {
 TEST_CASE("LogManagerTest") {
     using namespace raftcpp;
 
-    LogManagerMutexImpl<LogEntryTest> log_manager;
+    BlockingQueueMutexImpl<LogEntryTest> log_manager;
     LogEntryTest log_entry{123, 456};
     log_manager.Push(log_entry);
     LogEntryTest res = log_manager.Pop();
@@ -42,7 +42,7 @@ TEST_CASE("LogManagerTest") {
 TEST_CASE("LogManagerEmptyTest, NonBlocking") {
     using namespace raftcpp;
 
-    LogManagerMutexImpl<LogEntryTest> log_manager;
+    BlockingQueueMutexImpl<LogEntryTest> log_manager;
     LogEntryTest log_entry;
     bool res = log_manager.Pop(log_entry);
     REQUIRE_EQ(res, false);
@@ -51,7 +51,7 @@ TEST_CASE("LogManagerEmptyTest, NonBlocking") {
 TEST_CASE("LogManagerTest, Blocking") {
     using namespace raftcpp;
 
-    LogManagerMutexImpl<LogEntryTest> log_manager;
+    BlockingQueueMutexImpl<LogEntryTest> log_manager;
     REQUIRE_EQ(g_flag, false);
     std::thread th(thread_func, std::ref(log_manager));
     LogEntryTest res;
@@ -60,4 +60,23 @@ TEST_CASE("LogManagerTest, Blocking") {
     REQUIRE_EQ(res.index_, 123);
     REQUIRE_EQ(res.term_, 456);
     th.join();
+}
+
+TEST_CASE("MostFront Test") {
+    using namespace raftcpp;
+
+    BlockingQueueMutexImpl<LogEntryTest> log_manager;
+    LogEntryTest log_entry0{1, 5};
+    LogEntryTest log_entry1{2, 6};
+    LogEntryTest log_entry2{3, 7};
+    LogEntryTest log_entry3{4, 8};
+    log_manager.Push(log_entry0);
+    log_manager.Push(log_entry1);
+    log_manager.Push(log_entry2);
+    log_manager.Push(log_entry3);
+    std::vector<LogEntryTest> v = log_manager.MostFront(3);
+    REQUIRE_EQ(v.size(), 3);
+    REQUIRE_EQ(v[0].index_, log_entry0.index_);
+    REQUIRE_EQ(v[1].index_, log_entry1.index_);
+    REQUIRE_EQ(v[2].index_, log_entry2.index_);
 }

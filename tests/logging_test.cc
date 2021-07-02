@@ -5,6 +5,8 @@
 
 #include <doctest.h>
 
+#include "common/id.h"
+
 TEST_CASE("TestLogLevel") {
     raftcpp::RaftcppLog::StartRaftcppLog("log/test.log",
                                          raftcpp::RaftcppLogLevel::RLL_INFO, 10, 3);
@@ -37,4 +39,10 @@ TEST_CASE("TestLogLevel") {
     REQUIRE_EQ(warn_count, 1);
     file.close();
     std::remove("log/test.log");
+}
+
+// Here tests trivial things for the logging
+TEST_CASE("TestLogTrivial") {
+    raftcpp::NodeID node_id;
+    RAFTCPP_LOG(RLL_DEBUG) << node_id;
 }

@@ -11,11 +11,17 @@
 #include "common/logging.h"
 #include "common/timer.h"
 #include "common/type_def.h"
+#include "log_manager/blocking_queue_interface.h"
+#include "log_manager/blocking_queue_mutex_impl.h"
+#include "log_manager/leader_log_manager.h"
+#include "log_manager/log_entry.h"
+#include "log_manager/non_leader_log_manager.h"
 #include "node/timer_manager.h"
 #include "rest_rpc/rpc_client.hpp"
 #include "rest_rpc/rpc_server.h"
 #include "rpc/common.h"
 #include "rpc/services.h"
+#include "statemachine/state_machine.h"
 
 namespace raftcpp {
 namespace node {
@@ -23,12 +29,13 @@ namespace node {
 class RaftNode : public rpc::NodeService {
 public:
     RaftNode(
+        std::shared_ptr<StateMachine> state_machine,
         rest_rpc::rpc_service::rpc_server &rpc_server, const common::Config &config,
         const raftcpp::RaftcppLogLevel severity = raftcpp::RaftcppLogLevel::RLL_DEBUG);
 
     ~RaftNode();
 
-    void Apply(std::shared_ptr<raftcpp::RaftcppRequest> request);
+    void Apply(const std::shared_ptr<raftcpp::RaftcppRequest> &request);
 
     void RequestPreVote();
 
@@ -44,7 +51,14 @@ public:
 
     void OnVote(const boost::system::error_code &ec, string_view data);
 
-    void HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) override;
+    void HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id,
+                                std::string node_id_binary) override;
+
+    void HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_binary,
+                               int64_t committed_log_index) override;
+
+    void HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_index,
+                               LogEntry log_entry) override;
 
     void RequestHeartbeat();
 
@@ -72,9 +86,7 @@ private:
     rest_rpc::rpc_service::rpc_server &rpc_server_;
 
     // The rpc clients to all other nodes.
-    // NodeID instead
-    //    std::unordered_map<int, std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
-    std::vector<std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
+    std::unordered_map<NodeID, std::shared_ptr<rest_rpc::rpc_client>> all_rpc_clients_;
 
     common::Config config_;
 
@@ -92,6 +104,18 @@ private:
     // Accept the heartbeat reset election time to be random,
     // otherwise the all followers will be timed out at one time.
     Randomer randomer_;
+
+    // The ID of this node.
+    NodeID this_node_id_;
+
+    // LogManager for this node.
+    std::unique_ptr<LeaderLogManager> leader_log_manager_;
+
+    std::unique_ptr<NonLeaderLogManager> non_leader_log_manager_;
+
+    std::shared_ptr<StateMachine> state_machine_;
+
+    std::unique_ptr<NodeID> leader_node_id_ = nullptr;
 };
 
 }  // namespace node

@@ -28,7 +28,6 @@ INCLUDE_DIRECTORIES(
 		SYSTEM ${ASIO_INCLUDE_DIR}
 		SYSTEM ${REST_RPC_INCLUDE_DIR}
 		SYSTEM ${MSGPACK_INCLUDE_DIR}
-		SYSTEM ${MSGPACK_INCLUDE_DIR}
 		SYSTEM ${GFLAGS_INCLUDE_DIR}
 		SYSTEM ${SPDLOG_INCLUDE_DIR}
 )
@@ -39,10 +38,15 @@ ADD_LIBRARY(common_lib
 		src/common/timer.cc
 		src/common/file.cc
 		src/common/logging.cc)
-ADD_DEPENDENCIES(common_lib asio_ep spdlog_ep)
+ADD_DEPENDENCIES(common_lib asio_ep rest_rpc_ep spdlog_ep )
 
 # node library
-ADD_LIBRARY(node_lib src/node/node.cc src/node/timer_manager.cc)
+ADD_LIBRARY(
+		node_lib
+		src/node/node.cc
+		src/node/timer_manager.cc
+		src/log_manager/leader_log_manager.cc
+		src/log_manager/non_leader_log_manager.cc)
 ADD_DEPENDENCIES(node_lib asio_ep rest_rpc_ep common_lib)
 TARGET_LINK_LIBRARIES(node_lib common_lib)
 
@@ -61,10 +65,10 @@ endif()
 RAFTCPP_DEFINE_TEST(example_counter_client_main SRC_FILES examples/counter/counter_client_main.cc LINKS common_lib gflags)
 RAFTCPP_DEFINE_TEST(example_counter_server_main SRC_FILES examples/counter/counter_server_main.cc LINKS node_lib gflags)
 RAFTCPP_DEFINE_TEST(test_timer SRC_FILES tests/timer_test.cc LINKS common_lib)
-RAFTCPP_DEFINE_TEST(test_range SRC_FILES tests/range_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_config SRC_FILES tests/config_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_logging SRC_FILES tests/logging_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_file SRC_FILES tests/file_test.cc LINKS common_lib)
-RAFTCPP_DEFINE_TEST(test_log_manager SRC_FILES tests/log_manager_test.cc LINKS common_lib)
+RAFTCPP_DEFINE_TEST(test_log_manager SRC_FILES tests/blocking_queue_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_nodeid SRC_FILES tests/nodeid_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_node_elect SRC_FILES tests/node_elect_test.cc LINKS common_lib node_lib)
+RAFTCPP_DEFINE_TEST(logging_check_test SRC_FILES tests/logging_check_test.cc LINKS common_lib node_lib)
