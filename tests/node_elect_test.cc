@@ -99,7 +99,7 @@ std::string init_config(std::string address, int basePort, int nodeNum, int this
 }
 
 TEST_CASE("test_node_election") {
-    int leaderFlag = 0; // mark the leader node
+    int leaderFlag = 0;  // mark the leader node
     int nodeNum = 3;
     int basePort = 10001;
     std::string address("127.0.0.1");
@@ -108,7 +108,7 @@ TEST_CASE("test_node_election") {
     std::vector<raftcpp::RaftState> nodeStateFollower;
 
     std::vector<std::shared_ptr<raftcpp::node::RaftNode>> nodes(nodeNum);
-    std::vector<rpc_server*> servers(nodeNum);
+    std::vector<rpc_server *> servers(nodeNum);
     std::vector<std::thread> threads(nodeNum);
 
     // create nodes
@@ -118,8 +118,8 @@ TEST_CASE("test_node_election") {
 
     for (int i = 0; i < nodeNum; i++) {
         std::string config = init_config(address, basePort, nodeNum, i);
-        std::cout << config << std::endl;
-        threads[i] = std::thread(node_run, std::ref(nodes[i]), config, std::ref(servers[i]));
+        threads[i] =
+            std::thread(node_run, std::ref(nodes[i]), config, std::ref(servers[i]));
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
@@ -131,7 +131,7 @@ TEST_CASE("test_node_election") {
                 isAllOK = false;
             }
         }
-        
+
         if (isAllOK) {
             break;
         }
@@ -174,7 +174,7 @@ TEST_CASE("test_node_election") {
         if (servers[i] == nullptr) {
             continue;
         }
-        
+
         if (nodes[i]->GetCurrState() == raftcpp::RaftState::FOLLOWER) {
             nodeStateFollower.push_back(raftcpp::RaftState::FOLLOWER);
         } else if (nodes[i]->GetCurrState() == raftcpp::RaftState::LEADER) {
