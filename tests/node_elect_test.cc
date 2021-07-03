@@ -3,6 +3,7 @@
 #include <doctest.h>
 
 #include <thread>
+#include <vector>
 
 #include "../examples/counter/counter_service_def.h"
 #include "../examples/counter/counter_state_machine.h"
@@ -75,33 +76,63 @@ void node_run(std::shared_ptr<raftcpp::node::RaftNode> &node, const std::string 
     return;
 }
 
+std::string init_config(std::string address, int basePort, int nodeNum, int thisNode) {
+    std::vector<std::string> addr;
+    addr.push_back(address + ":" + std::to_string(basePort + thisNode));
+
+    for (int i = 0; i < nodeNum; i++) {
+        if (i == thisNode) {
+            continue;
+        }
+        addr.push_back(address + ":" + std::to_string(basePort + i));
+    }
+
+    std::string config;
+    for (int i = 0; i < nodeNum; i++) {
+        config += addr[i];
+        if (i < nodeNum - 1) {
+            config += ",";
+        }
+    }
+
+    return config;
+}
+
 TEST_CASE("test_node_election") {
-    int LeaderFlag = 0;
+    int leaderFlag = 0;  // mark the leader node
+    int nodeNum = 3;
+    int basePort = 10001;
+    std::string address("127.0.0.1");
+
     std::vector<raftcpp::RaftState> nodeStateLeader;
     std::vector<raftcpp::RaftState> nodeStateFollower;
 
-    std::shared_ptr<raftcpp::node::RaftNode> node1 = nullptr;
-    std::shared_ptr<raftcpp::node::RaftNode> node2 = nullptr;
-    std::shared_ptr<raftcpp::node::RaftNode> node3 = nullptr;
+    std::vector<std::shared_ptr<raftcpp::node::RaftNode>> nodes(nodeNum);
+    std::vector<rpc_server *> servers(nodeNum);
+    std::vector<std::thread> threads(nodeNum);
 
-    rpc_server *server1 = new rpc_server(10001, std::thread::hardware_concurrency());
-    rpc_server *server2 = new rpc_server(10002, std::thread::hardware_concurrency());
-    rpc_server *server3 = new rpc_server(10003, std::thread::hardware_concurrency());
+    // create nodes
+    for (int i = 0; i < nodeNum; i++) {
+        servers[i] = new rpc_server(basePort + i, std::thread::hardware_concurrency());
+    }
 
-    std::thread t1(node_run, std::ref(node1),
-                   "127.0.0.1:10001,127.0.0.1:10002,127.0.0.1:10003", std::ref(server1));
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    for (int i = 0; i < nodeNum; i++) {
+        std::string config = init_config(address, basePort, nodeNum, i);
+        threads[i] =
+            std::thread(node_run, std::ref(nodes[i]), config, std::ref(servers[i]));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 
-    std::thread t2(node_run, std::ref(node2),
-                   "127.0.0.1:10002,127.0.0.1:10001,127.0.0.1:10003", std::ref(server2));
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
-    std::thread t3(node_run, std::ref(node3),
-                   "127.0.0.1:10003,127.0.0.1:10001,127.0.0.1:10002", std::ref(server3));
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
+    // wait for their initialization
     while (true) {
-        if (node1 && node2 && node3) {
+        bool isAllOK = true;
+        for (int i = 0; i < nodeNum; i++) {
+            if (!nodes[i]) {
+                isAllOK = false;
+            }
+        }
+
+        if (isAllOK) {
             break;
         }
         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -109,25 +140,15 @@ TEST_CASE("test_node_election") {
 
     nodeStateFollower.clear();
     nodeStateLeader.clear();
-    if (node1->GetCurrState() == raftcpp::RaftState::FOLLOWER)
-        nodeStateFollower.push_back(raftcpp::RaftState::FOLLOWER);
-    else if (node1->GetCurrState() == raftcpp::RaftState::LEADER) {
-        LeaderFlag = 1;
-        nodeStateLeader.push_back(raftcpp::RaftState::LEADER);
-    }
 
-    if (node2->GetCurrState() == raftcpp::RaftState::FOLLOWER)
-        nodeStateFollower.push_back(raftcpp::RaftState::FOLLOWER);
-    else if (node2->GetCurrState() == raftcpp::RaftState::LEADER) {
-        LeaderFlag = 2;
-        nodeStateLeader.push_back(raftcpp::RaftState::LEADER);
-    }
-
-    if (node3->GetCurrState() == raftcpp::RaftState::FOLLOWER)
-        nodeStateFollower.push_back(raftcpp::RaftState::FOLLOWER);
-    else if (node3->GetCurrState() == raftcpp::RaftState::LEADER) {
-        LeaderFlag = 3;
-        nodeStateLeader.push_back(raftcpp::RaftState::LEADER);
+    // get the leader node
+    for (int i = 0; i < nodeNum; i++) {
+        if (nodes[i]->GetCurrState() == raftcpp::RaftState::FOLLOWER) {
+            nodeStateFollower.push_back(raftcpp::RaftState::FOLLOWER);
+        } else if (nodes[i]->GetCurrState() == raftcpp::RaftState::LEADER) {
+            leaderFlag = i;
+            nodeStateLeader.push_back(raftcpp::RaftState::LEADER);
+        }
     }
 
     REQUIRE_EQ(nodeStateLeader.size(), 1);
@@ -135,68 +156,29 @@ TEST_CASE("test_node_election") {
 
     nodeStateFollower.clear();
     nodeStateLeader.clear();
-    if (LeaderFlag == 1) {
-        delete server1;
-        server1 = nullptr;
-        node1.reset();
-        if (t1.joinable()) {
-            t1.detach();
-            t1.std::thread::~thread();
-        }
-    } else if (LeaderFlag == 2) {
-        delete server2;
-        server2 = nullptr;
-        node2.reset();
-        if (t2.joinable()) {
-            t2.detach();
-            t2.std::thread::~thread();
-        }
-    } else if (LeaderFlag == 3) {
-        delete server3;
-        server3 = nullptr;
-        node3.reset();
-        if (t3.joinable()) {
-            t3.detach();
-            t3.std::thread::~thread();
-        }
+
+    // shutdown the leader
+    delete servers[leaderFlag];
+    servers[leaderFlag] = nullptr;
+    nodes[leaderFlag].reset();
+    if (threads[leaderFlag].joinable()) {
+        threads[leaderFlag].detach();
+        threads[leaderFlag].std::thread::~thread();
     }
 
+    // wait for the re-election in another two nodes
     std::this_thread::sleep_for(std::chrono::seconds(10));
 
-    if (LeaderFlag == 1) {
-        if (node2->GetCurrState() == raftcpp::RaftState::FOLLOWER)
-            nodeStateFollower.push_back(raftcpp::RaftState::FOLLOWER);
-        else if (node2->GetCurrState() == raftcpp::RaftState::LEADER) {
-            nodeStateLeader.push_back(raftcpp::RaftState::LEADER);
+    // get the new leader node
+    for (int i = 0; i < nodeNum; i++) {
+        if (servers[i] == nullptr) {
+            continue;
         }
 
-        if (node3->GetCurrState() == raftcpp::RaftState::FOLLOWER)
+        if (nodes[i]->GetCurrState() == raftcpp::RaftState::FOLLOWER) {
             nodeStateFollower.push_back(raftcpp::RaftState::FOLLOWER);
-        else if (node3->GetCurrState() == raftcpp::RaftState::LEADER) {
-            nodeStateLeader.push_back(raftcpp::RaftState::LEADER);
-        }
-    } else if (LeaderFlag == 2) {
-        if (node1->GetCurrState() == raftcpp::RaftState::FOLLOWER)
-            nodeStateFollower.push_back(raftcpp::RaftState::FOLLOWER);
-        else if (node1->GetCurrState() == raftcpp::RaftState::LEADER) {
-            nodeStateLeader.push_back(raftcpp::RaftState::LEADER);
-        }
-
-        if (node3->GetCurrState() == raftcpp::RaftState::FOLLOWER)
-            nodeStateFollower.push_back(raftcpp::RaftState::FOLLOWER);
-        else if (node3->GetCurrState() == raftcpp::RaftState::LEADER) {
-            nodeStateLeader.push_back(raftcpp::RaftState::LEADER);
-        }
-    } else if (LeaderFlag == 3) {
-        if (node1->GetCurrState() == raftcpp::RaftState::FOLLOWER)
-            nodeStateFollower.push_back(raftcpp::RaftState::FOLLOWER);
-        else if (node1->GetCurrState() == raftcpp::RaftState::LEADER) {
-            nodeStateLeader.push_back(raftcpp::RaftState::LEADER);
-        }
-
-        if (node2->GetCurrState() == raftcpp::RaftState::FOLLOWER)
-            nodeStateFollower.push_back(raftcpp::RaftState::FOLLOWER);
-        else if (node2->GetCurrState() == raftcpp::RaftState::LEADER) {
+        } else if (nodes[i]->GetCurrState() == raftcpp::RaftState::LEADER) {
+            leaderFlag = i;
             nodeStateLeader.push_back(raftcpp::RaftState::LEADER);
         }
     }
@@ -204,32 +186,20 @@ TEST_CASE("test_node_election") {
     REQUIRE_EQ(nodeStateLeader.size(), 1);
     REQUIRE_EQ(nodeStateFollower.size(), 1);
 
-    if (server1) {
-        delete server1;
-        server1 = nullptr;
-        node1.reset();
-    }
-    if (server2) {
-        delete server2;
-        server2 = nullptr;
-        node2.reset();
-    }
-    if (server3) {
-        delete server3;
-        server3 = nullptr;
-        node3.reset();
+    // shutdown the leader node
+    delete servers[leaderFlag];
+    servers[leaderFlag] = nullptr;
+    nodes[leaderFlag].reset();
+    if (threads[leaderFlag].joinable()) {
+        threads[leaderFlag].detach();
+        threads[leaderFlag].std::thread::~thread();
     }
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    if (t1.joinable()) {
-        t1.detach();
-        t1.std::thread::~thread();
-    }
-    if (t2.joinable()) {
-        t2.detach();
-        t2.std::thread::~thread();
-    }
-    if (t3.joinable()) {
-        t3.detach();
-        t3.std::thread::~thread();
+
+    for (int i = 0; i < nodeNum; i++) {
+        if (threads[i].joinable()) {
+            threads[i].detach();
+            threads[i].std::thread::~thread();
+        }
     }
 }
