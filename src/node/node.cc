@@ -330,6 +330,8 @@ void RaftNode::InitRpcHandlers() {
         RaftcppConstants::REQUEST_HEARTBEAT, &RaftNode::HandleRequestHeartbeat, this);
     rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_PULL_LOGS,
                                                   &RaftNode::HandleRequestPullLogs, this);
+    rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_PUSH_LOGS,
+                                                  &RaftNode::HandleRequestPushLogs, this);
 }
 
 void RaftNode::StepBack(int32_t term_id) {
