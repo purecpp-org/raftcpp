@@ -90,7 +90,8 @@ void LeaderLogManager::DoPushLogs() {
             [](boost::system::error_code ec, string_view data) {
                 //// LOG
             },
-            it->second);
+            /*committed_log_index=*/committed_log_index_,
+            /*log_entry=*/it->second);
     }
 }
 
