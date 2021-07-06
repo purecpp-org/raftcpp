@@ -51,12 +51,14 @@ public:
 
     void OnVote(const boost::system::error_code &ec, string_view data);
 
-    void HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id) override;
+    void HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id,
+                                std::string node_id_binary) override;
 
     void HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_binary,
                                int64_t committed_log_index) override;
 
-    void HandleRequestPushLogs(rpc::RpcConn conn, LogEntry log_entry) override;
+    void HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_index,
+                               LogEntry log_entry) override;
 
     void RequestHeartbeat();
 
@@ -84,7 +86,7 @@ private:
     rest_rpc::rpc_service::rpc_server &rpc_server_;
 
     // The rpc clients to all other nodes.
-    std::unordered_map<std::string, std::shared_ptr<rest_rpc::rpc_client>> rpc_clients_;
+    std::unordered_map<NodeID, std::shared_ptr<rest_rpc::rpc_client>> all_rpc_clients_;
 
     common::Config config_;
 
@@ -112,6 +114,8 @@ private:
     std::unique_ptr<NonLeaderLogManager> non_leader_log_manager_;
 
     std::shared_ptr<StateMachine> state_machine_;
+
+    std::unique_ptr<NodeID> leader_node_id_ = nullptr;
 };
 
 }  // namespace node

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <iostream>
 #include <msgpack.hpp>
+#include <sstream>
 
 #include "common/endpoint.h"
 
@@ -66,6 +68,18 @@ public:
         return ret;
     }
 
+    std::ostream &operator<<(std::ostream &os) {
+        os << "{\n"
+           << "    nodeId:" << ToHex() << "\n}";
+        return os;
+    }
+
+    std::stringstream &operator<<(std::stringstream &ss) {
+        ss << "{\n"
+           << "    nodeId:" << ToHex() << "\n}";
+        return ss;
+    }
+
 private:
     static std::vector<std::string> explode(const std::string &s, const char &c) {
         std::string buff;
@@ -128,6 +142,12 @@ public:
     }
 
     MSGPACK_DEFINE(term_);
+
+    std::ostream &operator<<(std::ostream &os) {
+        os << "{\n"
+           << "    termId:" << term_ << "\n}";
+        return os;
+    }
 
 private:
     int32_t term_;
