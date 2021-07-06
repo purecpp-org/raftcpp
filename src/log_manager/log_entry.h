@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/id.h"
-#include <iostream>
+#include <sstream>
 
 namespace raftcpp {
 
@@ -16,12 +16,14 @@ struct LogEntry final {
     std::string data;
 
     std::string toString() {
-        return "{termId: " + std::to_string(term_id.getTerm()) + "," +
-        "logIndex: " + std::to_string(log_index) + "," +
-        "data: " + data.substr(0,100) +" }";
+        return "{\n\ttermId: " + std::to_string(term_id.getTerm()) + "," +
+        "\n\tlogIndex: " + std::to_string(log_index) + "," +
+        "\n\tdata: " + data.substr(0,100) +" \n}";
     };
-    std::ostream& operator <<(std::ostream &os) {
-        return os << toString();
+
+    std::stringstream& operator <<(std::stringstream &ss) {
+        ss.str(this->toString());
+        return ss;
     }
 
     MSGPACK_DEFINE(term_id, log_index, data);
