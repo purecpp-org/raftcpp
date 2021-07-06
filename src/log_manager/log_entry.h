@@ -1,7 +1,8 @@
 #pragma once
 
-#include "common/id.h"
 #include <sstream>
+
+#include "common/id.h"
 
 namespace raftcpp {
 
@@ -17,11 +18,11 @@ struct LogEntry final {
 
     std::string toString() {
         return "{\n\ttermId: " + std::to_string(term_id.getTerm()) + "," +
-        "\n\tlogIndex: " + std::to_string(log_index) + "," +
-        "\n\tdata: " + data.substr(0,100) +" \n}";
+               "\n\tlogIndex: " + std::to_string(log_index) + "," +
+               "\n\tdata: " + data.substr(0, 100) + " \n}";
     };
 
-    std::stringstream& operator <<(std::stringstream &ss) {
+    std::stringstream &operator<<(std::stringstream &ss) {
         ss.str(this->toString());
         return ss;
     }
