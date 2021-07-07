@@ -12,8 +12,11 @@
 #include "rest_rpc/rpc_server.h"
 #include "node/node.h"
 #include "rwlock.h"
+#include "rpc/services.h"
 
 const int DEFAULT_MAX_DELAY = 3000; // ms
+
+using RpcServ = rest_rpc::rpc_service::rpc_server
 
 class NetworkConfig {
 public:
@@ -65,16 +68,35 @@ private:
     ReaderWriterLock rwlock;
 };
 
-class ProxyNode {
+class ProxyNode : public rpc::NodeService {
 public:
+    void HandleRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str,
+                            int32_t term_id) override;
+
+    void HandleRequestVote(rpc::RpcConn conn, const std::string &endpoint_str,
+                            int32_t term_id) override;
+
+    void HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id,
+                                std::string node_id_binary) override;
+
+    void HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_binary,
+                                int64_t next_log_index) override;
+
+    void HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_index,
+                                LogEntry log_entry) override;
+
 private:
+    void ConnectToOtherNodes();
+    void InitRpcHandlers();
+
     std::shared_ptr<NetworkConfig> net_cfg_;
+    RpcServ rpc_server_;
 };
 
 
 // TODO Node failure should be considered which is different from blocking nodes
 /**
- * @brief A Cluster manages several raft nodes and could mock a real-world network environment
+ * @brief Cluster manages several raft nodes and mocks a real-world network environment
  */
 class Cluster {
 public:
@@ -82,22 +104,46 @@ public:
         : node_num_(node_num), net_cfg_(std::make_shared<NetworkConfig>(is_unreliable, max_delay)) {
         std::vector<std::string> proxy_node_addr;
         std::vector<std::string> node_addr;
-        std::deque<std::string> addr = InitAddress();
+        std::deque<std::pair<std::string, std::string>> addr = InitAddress();
 
-        // allocate addresses
+        // allocate addresses and create servers
+        for (int i = 0; i < node_num_; i++) {
+            auto ip_port = addr.front();
+            proxy_node_addr.push_back(ip_port.first + ":" + ip_port.second);
+            port_to_node_.insert(ip_port.second, i);
+            addr.pop_front();
+            proxy_servers_.push_back(
+                std::make_shared<RpcServ>(std::stoi(ip_port.second), std::thread::hardware_concurrency()));
+
+            ip_port = addr.front();
+            node_addr.push_back(ip_port.first + ":" + ip_port.second);
+            addr.pop_front();
+            servers_.push_back(
+                std::make_shared<RpcServ>(std::stoi(ip_port.second), std::thread::hardware_concurrency()));
+        }
 
         std::vector<std::string> proxy_node_cfg;
         std::vector<std::string> node_cfg;
 
         // init node config
         for (int i = 0; i < node_num_; i++) {
-            
+            std::vector<std::string> addrs;
+            addrs.push_back(node_addr[i]);
+            for (auto addr : proxy_node_addr) {
+                addrs.push_back(addr);
+            }
+            node_cfg.push_back(GenerateConfig(addrs));
         }
 
         // init proxy node config
         for (int i = 0; i < node_num_; i++) {
-            
+            std::vector<std::string> addrs;
+            addrs.push_back(proxy_nodes_[i]);
+            addrs.push_back(node_addr[i]);
+            proxy_node_cfg.push_back(GenerateConfig(addrs));
         }
+
+        
     }
 
     Cluster(const Cluster &cluster) = delete;
@@ -117,7 +163,7 @@ public:
     }
 
     void Stop(int idx) {
-
+        
     }
 
     void Start(int idx) {
@@ -153,18 +199,18 @@ public:
     }
 
 private:
-    std::deque<std::string> InitAddress() {
+    std::deque<std::pair<std::string, std::string>> InitAddress() {
         std::string ip("127.0.0.1");
         std::deque<std::string> addr;
 
         for (int i = 0; i < node_num_ * 2; i++) {
-            addr.push_back(ip + ":" + std::to_string(BASE_PORT + i));
+            addr.push_back(std::make_pair(ip, std::to_string(BASE_PORT + i)));
         }
 
         return addr;
     }
 
-    std::string GenerateConfig(std::vector<std::string> addr) {
+    std::string GenerateConfig(const std::vector<std::string> &addr) {
         std::string config;
         int size = addr.size();
         for (int i = 0; i < size; i++) {
@@ -179,10 +225,13 @@ private:
     int node_num_;
 
     std::vector<std::shared_ptr<raftcpp::node::RaftNode>> nodes_;
-    std::vector<std::shared_ptr<rpc_server>> servers_;
+    std::vector<std::shared_ptr<RpcServ>> servers_;
+
+    // help the proxy node find the rpc caller node
+    std::map<std::string, int> port_to_node_;
 
     std::vector<std::shared_ptr<ProxyNode>> proxy_nodes_;
-    std::vector<std::shared_ptr<rpc_server>> proxy_servers_;
+    std::vector<std::shared_ptr<RpcServ>> proxy_servers_;
 
     std::shared_ptr<NetworkConfig> net_cfg_;
 
