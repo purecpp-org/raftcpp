@@ -1,27 +1,32 @@
 #pragma once
 
+#include <deque>
 #include <iostream>
-#include <memory>
-#include <vector>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
-#include <deque>
+#include <vector>
 
-#include "rest_rpc/rpc_server.h"
+#include "common/config.h"
+#include "log_manager/log_entry.h"
 #include "node/node.h"
-#include "rwlock.h"
+#include "rest_rpc/rpc_server.h"
 #include "rpc/services.h"
+#include "rwlock.h"
 
-const int DEFAULT_MAX_DELAY = 3000; // ms
+const int DEFAULT_MAX_DELAY = 3000;  // ms
 
-using RpcServ = rest_rpc::rpc_service::rpc_server
+using RpcServ = rest_rpc::rpc_service::rpc_server;
+using RpcConn = rest_rpc::rpc_service::rpc_conn;
+using RaftNode = raftcpp::node::RaftNode;
+using RaftcppConstants = raftcpp::RaftcppConstants;
 
 class NetworkConfig {
 public:
-    NetworkConfig(bool is_unreliable, int max_delay) 
-        : is_unreliable_(is_unreliable), max_delay_(max_delay) {}
+    NetworkConfig(bool is_unreliable, int max_delay, std::map<std::string, int> port_to_node)
+        : is_unreliable_(is_unreliable), max_delay_(max_delay), port_to_idx_(port_to_node) {}
 
     void ReadLock() { rwlock.r_lock(); }
 
@@ -55,6 +60,14 @@ public:
 
     void BlockNode(int idx) { block_nodes_.insert(idx); }
 
+    int GetNode(std::string port) {
+        auto iter = port_to_node_.find(port);
+        if (iter == port_to_node_.end()) {
+            return -1;
+        }
+        return iter->second;
+    }
+
 private:
     // ndoes that their rpc should be discarded
     std::set<int> block_nodes_;
@@ -65,34 +78,75 @@ private:
     // maximum delay time, ms
     int max_delay_ = 3000;
 
+    std::map<std::string, int> port_to_node_;
+
     ReaderWriterLock rwlock;
 };
 
-class ProxyNode : public rpc::NodeService {
+class ProxyNode : public raftcpp::rpc::NodeService {
 public:
-    void HandleRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                            int32_t term_id) override;
+    ProxyNode(std::shared_ptr<RpcServ> rpc_server, const raftcpp::common::Config &config,
+              int peer_node_idx)
+        : rpc_server_(rpc_server),
+          config_(config),
+          node_id_(config_.GetThisEndpoint()),
+          peer_node_idx_(peer_node_idx) {
+        InitRpcHandlers();
+        ConnectToOtherNodes();
+    }
 
-    void HandleRequestVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                            int32_t term_id) override;
+    void HandleRequestPreVote(RpcConn conn, const std::string &endpoint_str,
+                              int32_t term_id) override {}
 
-    void HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id,
-                                std::string node_id_binary) override;
+    void HandleRequestVote(RpcConn conn, const std::string &endpoint_str,
+                           int32_t term_id) override {}
 
-    void HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_binary,
-                                int64_t next_log_index) override;
+    void HandleRequestHeartbeat(RpcConn conn, int32_t term_id,
+                                std::string node_id_binary) override {}
 
-    void HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_index,
-                                LogEntry log_entry) override;
+    void HandleRequestPullLogs(RpcConn conn, std::string node_id_binary,
+                               int64_t next_log_index) override {}
+
+    void HandleRequestPushLogs(RpcConn conn, int64_t committed_log_index,
+                               raftcpp::LogEntry log_entry) override {}
 
 private:
-    void ConnectToOtherNodes();
-    void InitRpcHandlers();
+    void ConnectToOtherNodes() {
+        // Initial the rpc clients connecting to other nodes.
+        for (const auto &endpoint : config_.GetOtherEndpoints()) {
+            auto rpc_client = std::make_shared<rest_rpc::rpc_client>(endpoint.GetHost(),
+                                                                     endpoint.GetPort());
+            bool connected = rpc_client->connect();
+            if (!connected) {
+                fprintf(stderr, "proxy node connects to peer fail\n");
+                exit(-1);
+            }
+            rpc_client->enable_auto_reconnect();
+        }
+    }
+
+    void InitRpcHandlers() {
+        rpc_server_->register_handler<rest_rpc::Async>(
+            RaftcppConstants::REQUEST_PRE_VOTE_RPC_NAME, &RaftNode::HandleRequestPreVote,
+            this);
+        rpc_server_->register_handler<rest_rpc::Async>(
+            RaftcppConstants::REQUEST_VOTE_RPC_NAME, &RaftNode::HandleRequestVote, this);
+        rpc_server_->register_handler<rest_rpc::Async>(
+            RaftcppConstants::REQUEST_HEARTBEAT, &RaftNode::HandleRequestHeartbeat, this);
+        rpc_server_->register_handler<rest_rpc::Async>(
+            RaftcppConstants::REQUEST_PULL_LOGS, &RaftNode::HandleRequestPullLogs, this);
+        rpc_server_->register_handler<rest_rpc::Async>(
+            RaftcppConstants::REQUEST_PUSH_LOGS, &RaftNode::HandleRequestPushLogs, this);
+    }
 
     std::shared_ptr<NetworkConfig> net_cfg_;
-    RpcServ rpc_server_;
-};
+    std::shared_ptr<RpcServ> rpc_server_;
 
+    raftcpp::common::Config config_;
+    raftcpp::NodeID node_id_;
+
+    int peer_node_idx_;
+};
 
 // TODO Node failure should be considered which is different from blocking nodes
 /**
@@ -101,7 +155,7 @@ private:
 class Cluster {
 public:
     Cluster(int node_num, bool is_unreliable = true, int max_delay = DEFAULT_MAX_DELAY)
-        : node_num_(node_num), net_cfg_(std::make_shared<NetworkConfig>(is_unreliable, max_delay)) {
+        : node_num_(node_num) {
         std::vector<std::string> proxy_node_addr;
         std::vector<std::string> node_addr;
         std::deque<std::pair<std::string, std::string>> addr = InitAddress();
@@ -110,16 +164,16 @@ public:
         for (int i = 0; i < node_num_; i++) {
             auto ip_port = addr.front();
             proxy_node_addr.push_back(ip_port.first + ":" + ip_port.second);
-            port_to_node_.insert(ip_port.second, i);
+            port_to_node_.insert(std::make_pair(ip_port.second, i));
             addr.pop_front();
-            proxy_servers_.push_back(
-                std::make_shared<RpcServ>(std::stoi(ip_port.second), std::thread::hardware_concurrency()));
+            proxy_servers_.push_back(std::make_shared<RpcServ>(
+                std::stoi(ip_port.second), std::thread::hardware_concurrency()));
 
             ip_port = addr.front();
             node_addr.push_back(ip_port.first + ":" + ip_port.second);
             addr.pop_front();
-            servers_.push_back(
-                std::make_shared<RpcServ>(std::stoi(ip_port.second), std::thread::hardware_concurrency()));
+            servers_.push_back(std::make_shared<RpcServ>(
+                std::stoi(ip_port.second), std::thread::hardware_concurrency()));
         }
 
         std::vector<std::string> proxy_node_cfg;
@@ -138,17 +192,27 @@ public:
         // init proxy node config
         for (int i = 0; i < node_num_; i++) {
             std::vector<std::string> addrs;
-            addrs.push_back(proxy_nodes_[i]);
+            addrs.push_back(proxy_node_addr[i]);
             addrs.push_back(node_addr[i]);
             proxy_node_cfg.push_back(GenerateConfig(addrs));
         }
 
+        net_cfg_ = std::make_shared<NetworkConfig>(is_unreliable, max_delay, port_to_node_);
+
+        // create proxy nodes
+        for (int i = 0; i < node_num_; i++) {
+            const auto config = raftcpp::common::Config::From(proxy_node_cfg[i]);
+            proxy_nodes_.push_back(std::make_shared<ProxyNode>(proxy_servers_[i], config, i));
+            proxy_servers_[i]->run();
+        }
+
+        // create nodes
         
     }
 
     Cluster(const Cluster &cluster) = delete;
     Cluster &operator=(const Cluster &cluster) = delete;
-    
+
     std::vector<int> GetLeader() {
         std::vector<int> leader;
         for (int i = 0; i < node_num_; i++) {
@@ -158,17 +222,11 @@ public:
         }
     }
 
-    raftcpp::RaftState GetNodeState(int idx) {
-        return nodes_[idx]->GetCurrState();
-    }
+    raftcpp::RaftState GetNodeState(int idx) { return nodes_[idx]->GetCurrState(); }
 
-    void Stop(int idx) {
-        
-    }
+    void Stop(int idx) {}
 
-    void Start(int idx) {
-
-    }
+    void Start(int idx) {}
 
     void BlockNode(int idx) {
         net_cfg_->WriteLock();
@@ -182,9 +240,7 @@ public:
         net_cfg_->WriteUnlock();
     }
 
-    int GetNodeNum() {
-        return node_num_;
-    }
+    int GetNodeNum() { return node_num_; }
 
     void SetNetUnreliable() {
         net_cfg_->WriteLock();
@@ -201,7 +257,7 @@ public:
 private:
     std::deque<std::pair<std::string, std::string>> InitAddress() {
         std::string ip("127.0.0.1");
-        std::deque<std::string> addr;
+        std::deque<std::pair<std::string, std::string>> addr;
 
         for (int i = 0; i < node_num_ * 2; i++) {
             addr.push_back(std::make_pair(ip, std::to_string(BASE_PORT + i)));
@@ -221,7 +277,7 @@ private:
         }
         return config;
     }
-    
+
     int node_num_;
 
     std::vector<std::shared_ptr<raftcpp::node::RaftNode>> nodes_;
