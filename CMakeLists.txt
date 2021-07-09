@@ -72,3 +72,5 @@ RAFTCPP_DEFINE_TEST(test_log_manager SRC_FILES tests/blocking_queue_test.cc LINK
 RAFTCPP_DEFINE_TEST(test_nodeid SRC_FILES tests/nodeid_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_node_elect SRC_FILES tests/node_elect_test.cc LINKS common_lib node_lib)
 RAFTCPP_DEFINE_TEST(logging_check_test SRC_FILES tests/logging_check_test.cc LINKS common_lib node_lib)
+RAFTCPP_DEFINE_TEST(cluster_test SRC_FILES tests/cluster_test.cc LINKS common_lib node_lib)
+add_subdirectory(try)
