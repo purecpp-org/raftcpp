@@ -259,7 +259,6 @@ private:
 };
 
 // TODO Node failure should be considered which is different from blocking nodes
-// WARNING TODO exit with the handle of the threads
 /**
  * @brief Cluster manages several raft nodes and mocks a real-world network environment
  */
@@ -326,6 +325,28 @@ public:
         }
     }
 
+    ~Cluster() {
+        // destroy nodes
+        for (int i = 0; i < node_num_; i++) {
+            nodes_[i].reset();
+            node_servers_[i].reset();
+            if (node_threads_[i].joinable()) {
+                node_threads_[i].detach();
+                node_threads_[i].std::thread::~thread();
+            }
+        }
+
+        // destroy proxy nodes
+        for (int i = 0; i < node_num_; i++) {
+            proxy_nodes_[i].reset();
+            proxy_servers_[i].reset();
+            if (proxy_threads_[i].joinable()) {
+                proxy_threads_[i].detach();
+                proxy_threads_[i].std::thread::~thread();
+            }
+        }
+    }
+
     Cluster(const Cluster &cluster) = delete;
     Cluster &operator=(const Cluster &cluster) = delete;
 
@@ -338,10 +359,20 @@ public:
         }
     }
 
+    bool CheckOneLeader() {
+        std::vector<int> leaders = GetLeader();
+        if (leaders.size() == 1) {
+            return true;
+        }
+        return false;
+    }
+
     raftcpp::RaftState GetNodeState(int idx) { return nodes_[idx]->GetCurrState(); }
 
-    void Stop(int idx) {}
+    // TODO it's different from block the node
+    void ShutDown(int idx) {}
 
+    // TODO
     void Start(int idx) {}
 
     void BlockNode(int idx) {
