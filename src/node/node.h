@@ -64,7 +64,10 @@ public:
 
     void OnHeartbeat(const boost::system::error_code &ec, string_view data);
 
-    RaftState GetCurrState() const { return curr_state_; }
+    RaftState GetCurrState() {
+        std::lock_guard<std::recursive_mutex> guard{mutex_};
+        return curr_state_;
+    }
 
 private:
     void ConnectToOtherNodes();
@@ -74,6 +77,8 @@ private:
     void StepBack(int32_t term_id);
 
 private:
+    friend class Cluster;
+
     TimerManager timer_manager_;
 
     // Current state of this node. This initial value of this should be a FOLLOWER.

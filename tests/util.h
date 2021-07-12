@@ -123,7 +123,21 @@ public:
         if (IfDiscard(conn) || MockNet()) {
             return;
         }
-        
+
+        auto request_pre_vote_callback = [this, conn](const boost::system::error_code &ec,
+                                                        string_view data) {
+            auto conn_sp = conn.lock();
+            if (conn_sp) {
+                const auto req_id = conn.lock()->request_id();
+                std::string ret_data(data);
+                conn_sp->response(req_id, ret_data);
+            }
+        };
+
+        rpc_client_->async_call<0>(RaftcppConstants::REQUEST_PRE_VOTE_RPC_NAME,
+                                    std::move(request_pre_vote_callback),
+                                    endpoint_str,
+                                    term_id);
     }
 
     void HandleRequestVote(RpcConn conn, const std::string &endpoint_str,
@@ -131,6 +145,21 @@ public:
         if (IfDiscard(conn) || MockNet()) {
             return;
         }
+
+        auto request_vote_callback = [this, conn](const boost::system::error_code &ec,
+                                                        string_view data) {
+            auto conn_sp = conn.lock();
+            if (conn_sp) {
+                const auto req_id = conn.lock()->request_id();
+                std::string ret_data(data);
+                conn_sp->response(req_id, ret_data);
+            }
+        };
+
+        rpc_client_->async_call<0>(RaftcppConstants::REQUEST_VOTE_RPC_NAME,
+                                    std::move(request_vote_callback),
+                                    endpoint_str,
+                                    term_id);
     }
 
     void HandleRequestHeartbeat(RpcConn conn, int32_t term_id,
@@ -139,8 +168,24 @@ public:
         if (IfDiscard(conn) || MockNet()) {
             return;
         }
+
+        auto request_heartbeat_callback = [this, conn](const boost::system::error_code &ec,
+                                                        string_view data) {
+            auto conn_sp = conn.lock();
+            if (conn_sp) {
+                const auto req_id = conn.lock()->request_id();
+                std::string ret_data(data);
+                conn_sp->response(req_id, ret_data);
+            }
+        };
+
+        rpc_client_->async_call<0>(RaftcppConstants::REQUEST_HEARTBEAT,
+                                    std::move(request_heartbeat_callback),
+                                    term_id,
+                                    node_id_binary);
     }
 
+    // TODO
     void HandleRequestPullLogs(RpcConn conn, std::string node_id_binary,
                                int64_t next_log_index) override {
         if (IfDiscard(conn) || MockNet()) {
@@ -148,6 +193,7 @@ public:
         }
     }
 
+    // TODO
     void HandleRequestPushLogs(RpcConn conn, int64_t committed_log_index,
                                raftcpp::LogEntry log_entry) override {
         if (IfDiscard(conn) || MockNet()) {
@@ -189,14 +235,17 @@ private:
 
     /**
      * check if source or destination of the rpc is blocked
+     * check if destination is the source itself
      * @return true: discard the rpc
      */
     bool IfDiscard(const RpcConn &conn) {
+        bool if_discard = false;
         net_cfg_->ReadLock();
 
         // check source of the rpc
         std::string remote_port = GetRemoteNodePort(conn);
-        int remote_node = net_cfg_->GetNode(remote_port);
+        std::cout << "received: " << remote_port << std::endl;
+        int remote_node = net_cfg_->GetNode(remote_port); // TODO bug here
         bool is_blocked = net_cfg_->IsBlocked(remote_node);
 
         // check destination of the rpc
@@ -204,7 +253,12 @@ private:
 
         net_cfg_->ReadUnlock();
 
-        return is_blocked;
+        std::cout << "remote: " << remote_node << " peer: " << peer_node_ << std::endl;
+        if (remote_node == peer_node_ || is_blocked) {
+            if_discard = true;
+        }
+
+        return if_discard;
     }
 
     std::string GetRemoteNodePort(const RpcConn &conn) {
@@ -274,6 +328,7 @@ public:
         for (int i = 0; i < node_num_; i++) {
             auto ip_port = addr.front();
             proxy_node_addr.push_back(ip_port.first + ":" + ip_port.second);
+            std::cout << "insert: " << ip_port.second << " i: " << i << std::endl;
             port_to_node_.insert(std::make_pair(ip_port.second, i));
             addr.pop_front();
             proxy_servers_.push_back(std::make_shared<RpcServ>(
@@ -353,14 +408,17 @@ public:
     std::vector<int> GetLeader() {
         std::vector<int> leader;
         for (int i = 0; i < node_num_; i++) {
+            std::cout << "node: " << i << " cur state: " << static_cast<int>(nodes_[i]->GetCurrState()) << std::endl;
             if (nodes_[i]->GetCurrState() == raftcpp::RaftState::LEADER) {
                 leader.push_back(i);
             }
         }
+        return leader;
     }
 
     bool CheckOneLeader() {
         std::vector<int> leaders = GetLeader();
+        std::cout << "l size: " << leaders.size() << std::endl;
         if (leaders.size() == 1) {
             return true;
         }
@@ -369,7 +427,7 @@ public:
 
     raftcpp::RaftState GetNodeState(int idx) { return nodes_[idx]->GetCurrState(); }
 
-    // TODO it's different from block the node
+    // TODO it's different from blocking the node
     void ShutDown(int idx) {}
 
     // TODO

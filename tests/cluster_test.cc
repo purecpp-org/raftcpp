@@ -6,7 +6,7 @@
 
 TEST_CASE("test_cluster") {
     Cluster cl(3);
-    std::this_thread::sleep_for(std::chrono::seconds(6));
+    std::this_thread::sleep_for(std::chrono::seconds(10));
 
     REQUIRE_EQ(cl.CheckOneLeader(), true);
 }
