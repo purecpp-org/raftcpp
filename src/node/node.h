@@ -77,8 +77,6 @@ private:
     void StepBack(int32_t term_id);
 
 private:
-    friend class Cluster;
-
     TimerManager timer_manager_;
 
     // Current state of this node. This initial value of this should be a FOLLOWER.
