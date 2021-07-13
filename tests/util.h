@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <condition_variable>
 
 #include "common/config.h"
 #include "common/randomer.h"
@@ -63,6 +64,22 @@ public:
 
     void BlockNode(int idx) { block_nodes_.insert(idx); }
 
+    void UnblockNodes(std::vector<int> nodes) {
+        for (auto node : nodes) {
+            auto iter = block_nodes_.find(node);
+            if (iter != block_nodes_.end()) {
+                block_nodes_.erase(iter);
+            }
+        }
+    }
+
+    void UnblockNode(int idx) {
+        auto iter = block_nodes_.find(idx);
+        if (iter != block_nodes_.end()) {
+            block_nodes_.erase(iter);
+        }
+    }
+
     int GetNode(std::string port) {
         auto iter = port_to_node_.find(port);
         if (iter == port_to_node_.end()) {
@@ -74,6 +91,8 @@ public:
     int GetProbLoss() { return prob_loss_; }
 
     int GetProbDelay() { return prob_delay_; }
+
+    std::set<int> GetBlockedNodes() { return block_nodes_; }
 
 private:
     // ndoes that their rpc should be discarded
@@ -105,7 +124,7 @@ private:
     ReaderWriterLock rwlock;
 };
 
-class ProxyNode : public raftcpp::rpc::NodeService {
+class ProxyNode : public raftcpp::rpc::NodeService, public std::enable_shared_from_this<ProxyNode> {
 public:
     ProxyNode(std::shared_ptr<RpcServ> rpc_server, raftcpp::common::Config config,
               int peer_node, std::shared_ptr<NetworkConfig> net_cfg)
@@ -120,11 +139,13 @@ public:
 
     void HandleRequestPreVote(RpcConn conn, const std::string &endpoint_str,
                               int32_t term_id) override {
-        if (IfDiscard(conn) || MockNet()) {
+        if (IfDiscard(GetPortFromEndPoint(endpoint_str)) || MockNet()) {
             return;
         }
 
-        auto request_pre_vote_callback = [this, conn](const boost::system::error_code &ec,
+        auto self = shared_from_this();
+
+        auto request_pre_vote_callback = [self, conn](const boost::system::error_code &ec,
                                                         string_view data) {
             auto conn_sp = conn.lock();
             if (conn_sp) {
@@ -142,11 +163,13 @@ public:
 
     void HandleRequestVote(RpcConn conn, const std::string &endpoint_str,
                            int32_t term_id) override {
-        if (IfDiscard(conn) || MockNet()) {
+        if (IfDiscard(GetPortFromEndPoint(endpoint_str)) || MockNet()) {
             return;
         }
 
-        auto request_vote_callback = [this, conn](const boost::system::error_code &ec,
+        auto self = shared_from_this();
+
+        auto request_vote_callback = [self, conn](const boost::system::error_code &ec,
                                                         string_view data) {
             auto conn_sp = conn.lock();
             if (conn_sp) {
@@ -164,12 +187,13 @@ public:
 
     void HandleRequestHeartbeat(RpcConn conn, int32_t term_id,
                                 std::string node_id_binary) override {
-
-        if (IfDiscard(conn) || MockNet()) {
+        if (IfDiscard(GetPortFromBinary(node_id_binary)) || MockNet()) {
             return;
         }
 
-        auto request_heartbeat_callback = [this, conn](const boost::system::error_code &ec,
+        auto self = shared_from_this();
+
+        auto request_heartbeat_callback = [self, conn](const boost::system::error_code &ec,
                                                         string_view data) {
             auto conn_sp = conn.lock();
             if (conn_sp) {
@@ -188,20 +212,48 @@ public:
     // TODO
     void HandleRequestPullLogs(RpcConn conn, std::string node_id_binary,
                                int64_t next_log_index) override {
-        if (IfDiscard(conn) || MockNet()) {
+        if (IfDiscard(GetPortFromBinary(node_id_binary)) || MockNet()) {
             return;
         }
     }
 
-    // TODO
+    /**
+     * There is no information to identify the source node.
+     * We may see the leader as source node forever? 
+     */
     void HandleRequestPushLogs(RpcConn conn, int64_t committed_log_index,
-                               raftcpp::LogEntry log_entry) override {
-        if (IfDiscard(conn) || MockNet()) {
-            return;
-        }
-    }
+                               raftcpp::LogEntry log_entry) override {}
 
 private:
+    uint16_t GetPortFromBinary(const std::string &binary_addr) {
+        uint16_t port;
+
+        /* 
+         * size in the second and third parameters should be 
+         * the same with the explicit constructor in NodeID.
+         */
+        memcpy(&port, binary_addr.data() + sizeof(uint32_t), sizeof(uint16_t));
+
+        return port;
+    }
+
+    uint16_t GetPortFromEndPoint(const std::string &endpoint) {
+        int idx = 0;
+
+        // jump to the beginning of the port
+        while (endpoint[idx] != ':') idx++;
+        idx++;
+
+        uint16_t port = 0;
+        while (idx < endpoint.size()) {
+            port *= 10;
+            port += endpoint[idx] - 48;
+            idx++;
+        }
+
+        return port;
+    }
+
     /**
      * Discard or delay the rpc here.
      * @return true: discard the rpc
@@ -238,23 +290,24 @@ private:
      * check if destination is the source itself
      * @return true: discard the rpc
      */
-    bool IfDiscard(const RpcConn &conn) {
+    bool IfDiscard(uint16_t source_port) {
         bool if_discard = false;
         net_cfg_->ReadLock();
 
         // check source of the rpc
-        std::string remote_port = GetRemoteNodePort(conn);
-        std::cout << "received: " << remote_port << std::endl;
-        int remote_node = net_cfg_->GetNode(remote_port); // TODO bug here
-        bool is_blocked = net_cfg_->IsBlocked(remote_node);
+        int remote_node = net_cfg_->GetNode(std::to_string(source_port));
+        bool source_is_blocked = net_cfg_->IsBlocked(remote_node);
+        if (source_is_blocked) {
+        }
 
         // check destination of the rpc
-        is_blocked = net_cfg_->IsBlocked(peer_node_);
+        bool dst_is_blocked = net_cfg_->IsBlocked(peer_node_);
+        if (dst_is_blocked) {
+        }
 
         net_cfg_->ReadUnlock();
 
-        std::cout << "remote: " << remote_node << " peer: " << peer_node_ << std::endl;
-        if (remote_node == peer_node_ || is_blocked) {
+        if (remote_node == peer_node_ || source_is_blocked || dst_is_blocked) {
             if_discard = true;
         }
 
@@ -326,19 +379,20 @@ public:
 
         // allocate addresses and create servers
         for (int i = 0; i < node_num_; i++) {
+            // allocate for proxy nodes
             auto ip_port = addr.front();
             proxy_node_addr.push_back(ip_port.first + ":" + ip_port.second);
-            std::cout << "insert: " << ip_port.second << " i: " << i << std::endl;
-            port_to_node_.insert(std::make_pair(ip_port.second, i));
             addr.pop_front();
             proxy_servers_.push_back(std::make_shared<RpcServ>(
                 std::stoi(ip_port.second), std::thread::hardware_concurrency()));
 
+            // allocate for nodes
             ip_port = addr.front();
             node_addr.push_back(ip_port.first + ":" + ip_port.second);
             addr.pop_front();
             node_servers_.push_back(std::make_shared<RpcServ>(
                 std::stoi(ip_port.second), std::thread::hardware_concurrency()));
+            port_to_node_.insert(std::make_pair(ip_port.second, i));
         }
 
         std::vector<std::string> proxy_node_cfg;
@@ -348,10 +402,12 @@ public:
         for (int i = 0; i < node_num_; i++) {
             std::vector<std::string> addrs;
 
-            // node should connect to all proxy servers
             addrs.push_back(node_addr[i]);
-            for (auto addr : proxy_node_addr) {
-                addrs.push_back(addr);
+            for (int j = 0; j < node_num_; j++) {
+                if (j == i) {
+                    continue;
+                }
+                addrs.push_back(proxy_node_addr[j]);
             }
             node_cfg.push_back(GenerateConfig(addrs));
         }
@@ -367,16 +423,22 @@ public:
         }
         net_cfg_ = std::make_shared<NetworkConfig>(is_unreliable, max_delay, port_to_node_);
 
+        std::condition_variable cond;
+
         // create proxy nodes
         for (int i = 0; i < node_num_; i++) {
             const auto config = raftcpp::common::Config::From(proxy_node_cfg[i]);
-            proxy_threads_.push_back(std::thread(Cluster::ProxyRun, this, config, i));
+            proxy_threads_.push_back(std::thread(Cluster::ProxyRun, this, config, i, std::ref(cond)));
+            std::unique_lock<std::mutex> up(mu);
+            cond.wait(up);
         }
 
         // create nodes
         for (int i = 0; i < node_num_; i++) {
             const auto config = raftcpp::common::Config::From(node_cfg[i]);
-            node_threads_.push_back(std::thread(Cluster::NodeRun, this, config, i));
+            node_threads_.push_back(std::thread(Cluster::NodeRun, this, config, i, std::ref(cond)));
+            std::unique_lock<std::mutex> up(mu);
+            cond.wait(up);
         }
     }
 
@@ -407,18 +469,19 @@ public:
 
     std::vector<int> GetLeader() {
         std::vector<int> leader;
+        net_cfg_->ReadLock();
         for (int i = 0; i < node_num_; i++) {
-            std::cout << "node: " << i << " cur state: " << static_cast<int>(nodes_[i]->GetCurrState()) << std::endl;
-            if (nodes_[i]->GetCurrState() == raftcpp::RaftState::LEADER) {
+            // ensure it's not a blocked node since a blocked node will keep its leader role
+            if ((nodes_[i]->GetCurrState() == raftcpp::RaftState::LEADER) && !(net_cfg_->IsBlocked(i))) {
                 leader.push_back(i);
             }
         }
+        net_cfg_->ReadUnlock();
         return leader;
     }
 
     bool CheckOneLeader() {
         std::vector<int> leaders = GetLeader();
-        std::cout << "l size: " << leaders.size() << std::endl;
         if (leaders.size() == 1) {
             return true;
         }
@@ -443,6 +506,25 @@ public:
         net_cfg_->WriteLock();
         net_cfg_->BlockNodes(nodes);
         net_cfg_->WriteUnlock();
+    }
+
+    void UnblockNode(int idx) {
+        net_cfg_->WriteLock();
+        net_cfg_->UnblockNode(idx);
+        net_cfg_->WriteUnlock();
+    }
+
+    void UnblockNodes(std::vector<int> nodes) {
+        net_cfg_->WriteLock();
+        net_cfg_->UnblockNodes(nodes);
+        net_cfg_->WriteUnlock();
+    }
+
+    std::set<int> GetBlockedNodes() {
+        net_cfg_->ReadLock();
+        std::set<int> blocked_nodes = net_cfg_->GetBlockedNodes();
+        net_cfg_->ReadUnlock();
+        return blocked_nodes;
     }
 
     int GetNodeNum() { return node_num_; }
@@ -484,20 +566,18 @@ private:
     }
 
     // proxy node's index is equal to the peer_node
-    static void ProxyRun(Cluster *self, raftcpp::common::Config config, int peer_node) {
-        self->mu.lock();
+    static void ProxyRun(Cluster *self, raftcpp::common::Config config, int peer_node, std::condition_variable &cond) {
         self->proxy_nodes_.push_back(std::make_shared<ProxyNode>(self->proxy_servers_[peer_node], config, peer_node, self->net_cfg_));
-        self->mu.unlock();
+        cond.notify_all();
         self->proxy_servers_[peer_node]->run();
     }
 
-    static void NodeRun(Cluster *self, raftcpp::common::Config config, int idx) {
-        self->mu.lock();
+    static void NodeRun(Cluster *self, raftcpp::common::Config config, int idx, std::condition_variable &cond) {
         self->nodes_.push_back(std::make_shared<raftcpp::node::RaftNode>(std::make_shared<MockStateMachine>(),
                                                                             *(self->node_servers_[idx]),
                                                                             config,
                                                                             raftcpp::RaftcppLogLevel::RLL_DEBUG));
-        self->mu.unlock();
+        cond.notify_all();
         self->node_servers_[idx]->run();
     }
 
