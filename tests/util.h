@@ -8,6 +8,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <shared_mutex>
 #include <string>
 #include <vector>
 
@@ -18,7 +19,6 @@
 #include "node/node.h"
 #include "rest_rpc/rpc_server.h"
 #include "rpc/services.h"
-#include "rwlock.h"
 
 const int DEFAULT_MAX_DELAY = 3000;  // ms
 
@@ -35,13 +35,13 @@ public:
           max_delay_(max_delay),
           port_to_node_(port_to_node) {}
 
-    void ReadLock() { rwlock.r_lock(); }
+    void ReadLock() { rwlock.lock_shared(); }
 
-    void ReadUnlock() { rwlock.r_unlock(); }
+    void ReadUnlock() { rwlock.unlock_shared(); }
 
-    void WriteLock() { rwlock.w_lock(); }
+    void WriteLock() { rwlock.lock(); }
 
-    void WriteUnlock() { rwlock.w_unlock(); }
+    void WriteUnlock() { rwlock.unlock(); }
 
     bool IsUnreliable() { return is_unreliable_; }
 
@@ -124,7 +124,7 @@ private:
 
     std::map<std::string, int> port_to_node_;
 
-    ReaderWriterLock rwlock;
+    std::shared_mutex rwlock;
 };
 
 class ProxyNode : public raftcpp::rpc::NodeService,
