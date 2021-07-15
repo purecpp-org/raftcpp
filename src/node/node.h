@@ -64,7 +64,10 @@ public:
 
     void OnHeartbeat(const boost::system::error_code &ec, string_view data);
 
-    RaftState GetCurrState() const { return curr_state_; }
+    RaftState GetCurrState() {
+        std::lock_guard<std::recursive_mutex> guard{mutex_};
+        return curr_state_;
+    }
 
 private:
     void ConnectToOtherNodes();

@@ -72,7 +72,7 @@ void RaftNode::RequestPreVote() {
         auto &rpc_client = item.second;
         RAFTCPP_LOG(RLL_DEBUG) << "RequestPreVote Node "
                                << this->config_.GetThisEndpoint().ToString()
-                               << "request_vote_callback client" << rpc_client.get();
+                               << " request_vote_callback client" << rpc_client.get();
         auto request_pre_vote_callback = [this](const boost::system::error_code &ec,
                                                 string_view data) {
             this->OnPreVote(ec, data);
