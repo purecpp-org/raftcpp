@@ -20,7 +20,7 @@
 #include "rest_rpc/rpc_server.h"
 #include "rpc/services.h"
 
-const int DEFAULT_MAX_DELAY = 3000;  // ms
+const int DEFAULT_MAX_DELAY_MS = 3000;  // ms
 
 using RpcServ = rest_rpc::rpc_service::rpc_server;
 using RpcConn = rest_rpc::rpc_service::rpc_conn;
@@ -373,7 +373,8 @@ private:
  */
 class Cluster {
 public:
-    Cluster(int node_num, bool is_unreliable = false, int max_delay = DEFAULT_MAX_DELAY)
+    Cluster(int node_num, bool is_unreliable = false,
+            int max_delay = DEFAULT_MAX_DELAY_MS)
         : node_num_(node_num) {
         std::vector<std::string> proxy_node_addr;
         std::vector<std::string> node_addr;
