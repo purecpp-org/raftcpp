@@ -49,7 +49,7 @@ function(RAFTCPP_DEFINE_TEST)
         math(EXPR link_index "${link_index} + 1")
     endwhile()
 
-    list(APPEND default_deps node_lib gflags_ep doctest_ep rest_rpc_ep common_lib googletest_ep)
+    list(APPEND default_deps node_lib gflags_ep rest_rpc_ep common_lib googletest_ep)
     add_executable(${ARGV${name_arg}} ${src_files})
     add_dependencies(${ARGV${name_arg}} ${default_deps})
     target_link_libraries(${ARGV${name_arg}} ${link_libs})
