@@ -14,6 +14,7 @@ else()
 endif()
 INCLUDE(CompilerOptions)
 INCLUDE(ExternalProject)
+INCLUDE(GtestExternalProject)
 INCLUDE(DoctestExternalProject)
 INCLUDE(AsioExternalProject)
 INCLUDE(Rest_rpcExternalProject)
@@ -25,6 +26,7 @@ INCLUDE_DIRECTORIES(SYSTEM thirdparty/logging)
 INCLUDE_DIRECTORIES(src/)
 INCLUDE_DIRECTORIES(includes)
 INCLUDE_DIRECTORIES(
+		SYSTEM ${GTEST_INCLUDE_DIR}
 		SYSTEM ${ASIO_INCLUDE_DIR}
 		SYSTEM ${REST_RPC_INCLUDE_DIR}
 		SYSTEM ${MSGPACK_INCLUDE_DIR}
