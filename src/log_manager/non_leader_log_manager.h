@@ -28,7 +28,9 @@ public:
           get_leader_rpc_client_func_(std::move(get_leader_rpc_client_func)),
           fsm_(std::move(fsm)) {}
 
-    ~NonLeaderLogManager(){};
+    ~NonLeaderLogManager(){
+        pull_logs_timer_->Stop();
+    };
 
     void Run();
 
