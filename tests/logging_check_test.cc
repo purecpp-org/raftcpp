@@ -1,11 +1,12 @@
-
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-
-#include <doctest.h>
-
 #include "common/logging.h"
+#include "gtest/gtest.h"
 
-TEST_CASE("TestLogCheck") {
+TEST(LogCheckTest, TestRaftcppCheck) {
     RAFTCPP_CHECK(true);
     RAFTCPP_CHECK(false);
+}
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

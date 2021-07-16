@@ -1,4 +1,3 @@
-
 #include "common/timer.h"
 
 #include <asio/io_service.hpp>
@@ -6,10 +5,9 @@
 #include <thread>
 
 #include "common/util.h"
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <doctest.h>
+#include "gtest/gtest.h"
 
-TEST_CASE("test_repeated_timer_reset") {
+TEST(RepeatedTimerTest, TestReset) {
     using namespace raftcpp::common;
 
     asio::io_service io_service;
@@ -27,15 +25,15 @@ TEST_CASE("test_repeated_timer_reset") {
 
     repeated_timer.Reset(6 * 1000);
     auto resetting_time_ms = CurrentTimeMs();
-    REQUIRE_EQ(true, callback_invoked_time_ms > 0);
-    REQUIRE_EQ(true, (callback_invoked_time_ms - resetting_time_ms > 0));
+    ASSERT_EQ(true, callback_invoked_time_ms > 0);
+    ASSERT_EQ(true, (callback_invoked_time_ms - resetting_time_ms > 0));
 
     repeated_timer.Stop();
     io_service.stop();
     th.join();
 }
 
-TEST_CASE("Timer-ContinuousTimer") {
+TEST(ContinuousTimerTest, TestBasic) {
     using namespace raftcpp::common;
 
     uint64_t counter = 0;
@@ -53,5 +51,10 @@ TEST_CASE("Timer-ContinuousTimer") {
     io_service.stop();
     th.join();
 
-    REQUIRE_EQ(5, counter);
+    ASSERT_EQ(5, counter);
+}
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
