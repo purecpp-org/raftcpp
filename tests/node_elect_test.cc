@@ -1,7 +1,3 @@
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-
-#include <doctest.h>
-
 #include <thread>
 #include <vector>
 
@@ -9,6 +5,7 @@
 #include "../examples/counter/counter_state_machine.h"
 #include "common/config.h"
 #include "common/logging.h"
+#include "gtest/gtest.h"
 #include "node/node.h"
 #include "rest_rpc/rpc_server.h"
 
@@ -98,7 +95,7 @@ std::string init_config(std::string address, int basePort, int nodeNum, int this
     return config;
 }
 
-TEST_CASE("test_node_election") {
+TEST(NodeElectionTest, test_basic_elect) {
     int leaderFlag = 0;  // mark the leader node
     int nodeNum = 3;
     int basePort = 10001;
@@ -151,8 +148,8 @@ TEST_CASE("test_node_election") {
         }
     }
 
-    REQUIRE_EQ(nodeStateLeader.size(), 1);
-    REQUIRE_EQ(nodeStateFollower.size(), 2);
+    ASSERT_EQ(nodeStateLeader.size(), 1);
+    ASSERT_EQ(nodeStateFollower.size(), 2);
 
     nodeStateFollower.clear();
     nodeStateLeader.clear();
@@ -183,8 +180,8 @@ TEST_CASE("test_node_election") {
         }
     }
 
-    REQUIRE_EQ(nodeStateLeader.size(), 1);
-    REQUIRE_EQ(nodeStateFollower.size(), 1);
+    ASSERT_EQ(nodeStateLeader.size(), 1);
+    ASSERT_EQ(nodeStateFollower.size(), 1);
 
     // shutdown the leader node
     delete servers[leaderFlag];
@@ -202,4 +199,9 @@ TEST_CASE("test_node_election") {
             threads[i].std::thread::~thread();
         }
     }
+}
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

@@ -45,11 +45,11 @@ function(RAFTCPP_DEFINE_TEST)
 
     set(link_index 0)    
     while(link_index LESS ${link_count})
-        list(APPEND link_libs "${link_lib_${link_index}_list}" )
+        list(APPEND link_libs "${link_lib_${link_index}_list}" ${GTEST_STATIC_LIB} ${GTEST_MAIN_STATIC_LIB} ${GMOCK_MAIN_STATIC_LIB})
         math(EXPR link_index "${link_index} + 1")
     endwhile()
 
-    list(APPEND default_deps node_lib gflags_ep doctest_ep rest_rpc_ep common_lib)    
+    list(APPEND default_deps node_lib gflags_ep rest_rpc_ep common_lib googletest_ep)
     add_executable(${ARGV${name_arg}} ${src_files})
     add_dependencies(${ARGV${name_arg}} ${default_deps})
     target_link_libraries(${ARGV${name_arg}} ${link_libs})
