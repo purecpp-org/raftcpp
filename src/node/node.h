@@ -26,7 +26,7 @@
 namespace raftcpp {
 namespace node {
 
-class RaftNode : public rpc::NodeService {
+class RaftNode : public rpc::NodeService, public std::enable_shared_from_this<RaftNode> {
 public:
     RaftNode(
         std::shared_ptr<StateMachine> state_machine,
@@ -34,6 +34,8 @@ public:
         const raftcpp::RaftcppLogLevel severity = raftcpp::RaftcppLogLevel::RLL_DEBUG);
 
     ~RaftNode();
+
+    void Init();
 
     void Apply(const std::shared_ptr<raftcpp::RaftcppRequest> &request);
 
@@ -77,7 +79,7 @@ private:
     void StepBack(int32_t term_id);
 
 private:
-    TimerManager timer_manager_;
+    std::shared_ptr<TimerManager> timer_manager_;
 
     // Current state of this node. This initial value of this should be a FOLLOWER.
     RaftState curr_state_ = RaftState::FOLLOWER;
