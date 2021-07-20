@@ -39,9 +39,12 @@ RaftNode::RaftNode(std::shared_ptr<StateMachine> state_machine,
 void RaftNode::Init() {
     InitRpcHandlers();
     ConnectToOtherNodes();
-    timer_manager_ = std::make_shared<TimerManager>([this, self = shared_from_this()]() { this->RequestPreVote(); },
-        /*heartbeat_timer_timeout_handler=*/[this, self = shared_from_this()]() { this->RequestHeartbeat(); },
-        /*vote_timer_timeout_handler=*/[this, self = shared_from_this()]() { this->RequestVote(); });
+    timer_manager_ = std::make_shared<TimerManager>(
+        [this, self = shared_from_this()]() { this->RequestPreVote(); },
+        /*heartbeat_timer_timeout_handler=*/
+        [this, self = shared_from_this()]() { this->RequestHeartbeat(); },
+        /*vote_timer_timeout_handler=*/
+        [this, self = shared_from_this()]() { this->RequestVote(); });
     // Starting timer manager should be invoked after all rpc initialization.
     timer_manager_->Start();
 }

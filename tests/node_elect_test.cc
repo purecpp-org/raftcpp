@@ -59,16 +59,17 @@ private:
     std::shared_ptr<examples::counter::CounterStateMachine> fsm_;
 };
 
-void node_run(std::shared_ptr<rpc_server> server, CounterServiceImpl& service) {
-//    const auto config = raftcpp::common::Config::From(conf_str);
-//    std::cout<<config.GetThisEndpoint().GetPort()<<std::endl;
-//
-//    node = std::make_shared<raftcpp::node::RaftNode>(std::make_shared<MockStateMachine>(),
-//                                                     *server, config,
-//                                                     raftcpp::RaftcppLogLevel::RLL_DEBUG);
-//    auto fsm = std::make_shared<examples::counter::CounterStateMachine>();
+void node_run(std::shared_ptr<rpc_server> server, CounterServiceImpl &service) {
+    //    const auto config = raftcpp::common::Config::From(conf_str);
+    //    std::cout<<config.GetThisEndpoint().GetPort()<<std::endl;
+    //
+    //    node =
+    //    std::make_shared<raftcpp::node::RaftNode>(std::make_shared<MockStateMachine>(),
+    //                                                     *server, config,
+    //                                                     raftcpp::RaftcppLogLevel::RLL_DEBUG);
+    //    auto fsm = std::make_shared<examples::counter::CounterStateMachine>();
 
-//    CounterServiceImpl service(node, fsm);
+    //    CounterServiceImpl service(node, fsm);
     server->register_handler("incr", &CounterServiceImpl::Incr, &service);
     server->register_handler("get", &CounterServiceImpl::Get, &service);
     server->run();
@@ -134,7 +135,7 @@ TEST(NodeElectTest, TestNodeElect) {
 
         threads[i] = std::thread([i, &server] {
             server->run();
-            std::cout<<"stop\n";
+            std::cout << "stop\n";
         });
     }
 
@@ -186,9 +187,10 @@ TEST(NodeElectTest, TestNodeElect) {
         }
     }
 
-    //TODO this test case won't pass, it seems the re-election not succesfull, need to be fixed later.
-//    ASSERT_EQ(nodeStateLeader.size(), 1);
-//    ASSERT_EQ(nodeStateFollower.size(), 1);
+    // TODO this test case won't pass, it seems the re-election not succesfull, need to be
+    // fixed later.
+    //    ASSERT_EQ(nodeStateLeader.size(), 1);
+    //    ASSERT_EQ(nodeStateFollower.size(), 1);
 
     // shutdown the leader node
     // delete servers[leaderFlag];
