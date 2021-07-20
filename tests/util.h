@@ -584,9 +584,11 @@ private:
 
     static void NodeRun(Cluster *self, raftcpp::common::Config config, int idx,
                         std::condition_variable &cond) {
-        self->nodes_.push_back(std::make_shared<raftcpp::node::RaftNode>(
+        auto node = std::make_shared<raftcpp::node::RaftNode>(
             std::make_shared<MockStateMachine>(), *(self->node_servers_[idx]), config,
-            raftcpp::RaftcppLogLevel::RLL_DEBUG));
+            raftcpp::RaftcppLogLevel::RLL_DEBUG);
+        node->Init();
+        self->nodes_.push_back(std::move(node));
         cond.notify_all();
         self->node_servers_[idx]->run();
     }
