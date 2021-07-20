@@ -1,7 +1,5 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#include "gtest/gtest.h"
-
 #include <thread>
 #include <vector>
 
@@ -9,6 +7,7 @@
 #include "../examples/counter/counter_state_machine.h"
 #include "common/config.h"
 #include "common/logging.h"
+#include "gtest/gtest.h"
 #include "node/node.h"
 #include "rest_rpc/rpc_server.h"
 
