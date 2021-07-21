@@ -28,7 +28,10 @@ public:
         RAFTCPP_LOG(RLL_INFO) << "=============Incring: " << delta;
         // Does this should be enabled from this?
         std::shared_ptr<IncrRequest> request = std::make_shared<IncrRequest>(delta);
-        node_->Apply(request);
+        if (!node_->IsLeader()) {
+            //// RETURN redirect.
+        }
+        node_->PushRequest(request);
     }
 
     int64_t Get(rpc_conn conn) {
@@ -63,6 +66,7 @@ int main(int argc, char *argv[]) {
 
     auto fsm = std::make_shared<CounterStateMachine>();
     auto node = std::make_shared<raftcpp::node::RaftNode>(fsm, server, config);
+    node->Init();
 
     CounterServiceImpl service(node, fsm);
     server.register_handler("incr", &CounterServiceImpl::Incr, &service);

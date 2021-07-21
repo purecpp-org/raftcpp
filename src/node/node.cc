@@ -49,9 +49,14 @@ void RaftNode::Init() {
     timer_manager_->Start();
 }
 
+bool RaftNode::IsLeader() const {
+    std::lock_guard<std::recursive_mutex> guard{mutex_};
+    return curr_state_ == RaftState::LEADER;
+}
+
 RaftNode::~RaftNode() { leader_log_manager_->Stop(); }
 
-void RaftNode::Apply(const std::shared_ptr<raftcpp::RaftcppRequest> &request) {
+void RaftNode::PushRequest(const std::shared_ptr<raftcpp::RaftcppRequest> &request) {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     RAFTCPP_CHECK(request != nullptr);
     RAFTCPP_CHECK(curr_state_ == RaftState::LEADER);

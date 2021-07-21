@@ -43,7 +43,7 @@ public:
     void Incr(rpc_conn conn, int delta) {
         std::shared_ptr<examples::counter::IncrRequest> request =
             std::make_shared<examples::counter::IncrRequest>(delta);
-        node_->Apply(request);
+        node_->PushRequest(request);
     }
 
     int64_t Get(rpc_conn conn) {
