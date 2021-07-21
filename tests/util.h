@@ -370,25 +370,30 @@ private:
 // TODO Node failure should be considered which is different from blocking nodes
 /**
  * @brief Cluster manages several raft nodes and mocks a real-world network environment
- * 
+ *
  * Examples can be referred in cluster_test.cc
- * 
+ *
  * How to check leader?
  *     CheckOneLeader() will return true if there is only one leader in the cluster.
  *     GetLeader() returns all leaders.
  *     NOTICE: The above functions consider leaders in all terms, this should be fixed.
- * 
+ *
  * How to manage the network?
- *     1. Pass true for Cluster constructor: "Cluster c(3, true);". This makes the network unreliable.
+ *     1. Pass true for Cluster constructor: "Cluster c(3, true);". This makes the network
+ *        unreliable.
  *     2. Call SetNetUnreliable() when cluster is running makes the network unreliable.
  *     3. Call SetNetReliable() when cluster is running makes the network reliable.
- *     4. Max delay time can be set in the Cluster constructor: "CLuster c(3, true, 3000)".  3000ms
+ *     4. Max delay time can be set in the Cluster constructor: "CLuster c(3, true,
+ *        3000)".  3000ms
  *     Tips: Unreliable network means some rpc will be discarded or delayed.
- * 
+ *
  * How to manage nodes?
- *     1. BlockNode(int idx) cuts the network of the idx node, all rpc that it sends or receives will be discarded.
- *     2. UnblockNode(int idx) recovers the network of the idx node, all rpc that it sends or receives will be ok.
- *     3. TODO Shutdown(int idx) shuts one node down, it's different from blocking one node.
+ *     1. BlockNode(int idx) cuts the network of the idx node, all rpc that it sends or
+ *        receives will be discarded.
+ *     2. UnblockNode(int idx) recovers the network of the idx node, all rpc that it sends
+ *        or receives will be ok.
+ *     3. TODO Shutdown(int idx) shuts one node down, it's different from blocking one
+ *        node.
  */
 class Cluster {
 public:
@@ -497,7 +502,8 @@ public:
         std::vector<int> leader;
         net_cfg_->ReadLock();
         for (int i = 0; i < node_num_; i++) {
-            // ensure it's not a blocked node since a blocked node will keep its leader role
+            // ensure it's not a blocked node since a blocked
+            // node will keep its leader role
             if ((nodes_[i]->GetCurrState() == raftcpp::RaftState::LEADER) &&
                 !(net_cfg_->IsBlocked(i))) {
                 leader.push_back(i);
