@@ -37,7 +37,9 @@ public:
 
     void Init();
 
-    void Apply(const std::shared_ptr<raftcpp::RaftcppRequest> &request);
+    bool IsLeader() const;
+
+    void PushRequest(const std::shared_ptr<raftcpp::RaftcppRequest> &request);
 
     void RequestPreVote();
 
@@ -104,7 +106,7 @@ private:
     std::unordered_set<std::string> responded_vote_nodes_;
 
     // The recursive mutex that protects all of the node state.
-    std::recursive_mutex mutex_;
+    mutable std::recursive_mutex mutex_;
 
     // Accept the heartbeat reset election time to be random,
     // otherwise the all followers will be timed out at one time.
