@@ -1,5 +1,6 @@
 #include "log_manager/leader_log_manager.h"
 
+#include <algorithm>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
@@ -67,7 +68,22 @@ void LeaderLogManager::Stop() { repeated_timer_->Stop(); }
 void LeaderLogManager::TryAsyncCommitLogs(
     const NodeID &node_id, size_t next_log_index,
     std::function<void(int64_t)> committed_callback) {
-    /// TODO(qwang): Trigger commit.
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = next_log_indexes_.find(node_id);
+    if (it != next_log_indexes_.end()) {
+        RAFTCPP_CHECK(it->second <= next_log_index);
+    }
+    next_log_indexes_[node_id] = next_log_index;
+    std::vector<int64_t> local_indexes;
+    for (const auto &item : next_log_indexes_) {
+        local_indexes.push_back(item.second);
+    }
+    RAFTCPP_CHECK(local_indexes.size() == NODE_NUM);
+    std::sort(local_indexes.begin(), local_indexes.end(), std::greater<int64_t>());
+    const auto index_should_be_committed = local_indexes[local_indexes.size() / 2];
+    RAFTCPP_LOG(RLL_INFO) << "One half of nodes received the log with index: "
+                          << index_should_be_committed;
+    committed_log_index_ = index_should_be_committed;
 }
 
 void LeaderLogManager::DoPushLogs() {

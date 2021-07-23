@@ -21,8 +21,8 @@ using AllRpcClientType =
 /// TODO(qwang): Should clean all inmemory data once this is Ran().
 class LeaderLogManager final {
 public:
-    explicit LeaderLogManager(NodeID this_node_id,
-                              std::function<AllRpcClientType()> get_all_rpc_clients_func);
+    LeaderLogManager(NodeID this_node_id,
+                     std::function<AllRpcClientType()> get_all_rpc_clients_func);
 
     ~LeaderLogManager() { repeated_timer_->Stop(); }
 
