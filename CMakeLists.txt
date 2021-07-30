@@ -38,6 +38,7 @@ INCLUDE_DIRECTORIES(
 ADD_LIBRARY(common_lib
 		src/common/config.cc
 		src/common/timer.cc
+		src/common/timer_manager.cc
 		src/common/file.cc
 		src/common/logging.cc)
 ADD_DEPENDENCIES(common_lib asio_ep rest_rpc_ep spdlog_ep )
@@ -46,7 +47,6 @@ ADD_DEPENDENCIES(common_lib asio_ep rest_rpc_ep spdlog_ep )
 ADD_LIBRARY(
 		node_lib
 		src/node/node.cc
-		src/node/timer_manager.cc
 		src/log_manager/leader_log_manager.cc
 		src/log_manager/non_leader_log_manager.cc)
 ADD_DEPENDENCIES(node_lib asio_ep rest_rpc_ep common_lib)
