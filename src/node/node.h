@@ -83,8 +83,6 @@ private:
     void InitTimers();
 
 private:
-    std::shared_ptr<common::TimerManager> timer_manager_;
-
     // Current state of this node. This initial value of this should be a FOLLOWER.
     RaftState curr_state_ = RaftState::FOLLOWER;
 
@@ -117,18 +115,19 @@ private:
     // The ID of this node.
     NodeID this_node_id_;
 
-    // LogManager for this node.
-    std::unique_ptr<LeaderLogManager> leader_log_manager_;
-
-    std::unique_ptr<NonLeaderLogManager> non_leader_log_manager_;
-
     std::shared_ptr<StateMachine> state_machine_;
-
     std::unique_ptr<NodeID> leader_node_id_ = nullptr;
 
     int election_timer_id_ = -1;
     int heartbeat_timer_id_ = -1;
     int vote_timer_id_ = -1;
+
+    std::shared_ptr<common::TimerManager> timer_manager_;
+
+    // LogManager for this node.
+    std::unique_ptr<LeaderLogManager> leader_log_manager_;
+
+    std::unique_ptr<NonLeaderLogManager> non_leader_log_manager_;
 };
 
 }  // namespace node

@@ -120,7 +120,7 @@ TEST(NodeElectTest, TestNodeElect) {
         const auto config = raftcpp::common::Config::From(config_str);
         std::cout << config.GetThisEndpoint().GetPort() << std::endl;
 
-        auto& server = servers[i];
+        auto &server = servers[i];
 
         auto node = std::make_shared<raftcpp::node::RaftNode>(
             std::make_shared<MockStateMachine>(), *server, config,
