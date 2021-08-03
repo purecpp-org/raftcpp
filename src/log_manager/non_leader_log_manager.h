@@ -64,7 +64,7 @@ private:
 
     std::shared_ptr<common::TimerManager> timer_manager_;
 
-    /// The timer used to send pull log entries requests to leader.
+    /// The timer used to send pull log entries requests to the leader.
     /// Note that this is only used in non-leader node.
     int pull_logs_timer_id_ = -1;
 };
