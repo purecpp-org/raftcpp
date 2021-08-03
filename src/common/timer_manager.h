@@ -21,10 +21,13 @@ public:
 
     ~TimerManager();
 
+    // run the manager, as start run timers that be registered
     void Run();
 
+    // register timer by timer handler func, and return timer id that be assign
     int RegisterTimer(const std::function<void(void)> &handler);
 
+    // enclosure timer's operation by timer id
     void StartTimer(int id, uint64_t timeout_ms);
     void ResetTimer(int id, uint64_t timeout_ms);
     void StopTimer(int id);

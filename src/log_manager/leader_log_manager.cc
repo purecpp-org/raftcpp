@@ -74,7 +74,7 @@ void LeaderLogManager::TryAsyncCommitLogs(
 }
 
 void LeaderLogManager::DoPushLogs() {
-    //    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     auto all_rpc_clients = get_all_rpc_clients_func_();
     for (const auto &follower : all_rpc_clients) {
         const auto &follower_node_id = follower.first;

@@ -1,5 +1,6 @@
 #include "timer_manager.h"
 
+#include "common/logging.h"
 #include "common/util.h"
 
 namespace raftcpp {
@@ -25,24 +26,18 @@ void TimerManager::Run() {
 }
 
 void TimerManager::StartTimer(int id, uint64_t timeout_ms) {
-    int size = (int)timers_.size();
-    if (id >= 0 && id < size) {
-        timers_[id]->Start(timeout_ms);
-    }
+    RAFTCPP_CHECK(0 <= id < static_cast<int>(timers_.size()));
+    timers_[id]->Start(timeout_ms);
 }
 
 void TimerManager::ResetTimer(int id, uint64_t timeout_ms) {
-    int size = (int)timers_.size();
-    if (id >= 0 && id < size) {
-        timers_[id]->Reset(timeout_ms);
-    }
+    RAFTCPP_CHECK(0 <= id < static_cast<int>(timers_.size()));
+    timers_[id]->Reset(timeout_ms);
 }
 
 void TimerManager::StopTimer(int id) {
-    int size = (int)timers_.size();
-    if (id >= 0 && id < size) {
-        timers_[id]->Stop();
-    }
+    RAFTCPP_CHECK(0 <= id < static_cast<int>(timers_.size()));
+    timers_[id]->Stop();
 }
 int TimerManager::RegisterTimer(const std::function<void(void)> &handler) {
     if (handler == nullptr) {
@@ -56,7 +51,7 @@ int TimerManager::RegisterTimer(const std::function<void(void)> &handler) {
             }
         }));
 
-    return (int)timers_.size() - 1;
+    return static_cast<int>(timers_.size()) - 1;
 }
 
 }  // namespace common
