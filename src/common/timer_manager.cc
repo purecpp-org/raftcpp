@@ -26,17 +26,17 @@ void TimerManager::Run() {
 }
 
 void TimerManager::StartTimer(int id, uint64_t timeout_ms) {
-    RAFTCPP_CHECK(0 <= id < static_cast<int>(timers_.size()));
+    RAFTCPP_CHECK(0 <= id && id < static_cast<int>(timers_.size()));
     timers_[id]->Start(timeout_ms);
 }
 
 void TimerManager::ResetTimer(int id, uint64_t timeout_ms) {
-    RAFTCPP_CHECK(0 <= id < static_cast<int>(timers_.size()));
+    RAFTCPP_CHECK(0 <= id && id < static_cast<int>(timers_.size()));
     timers_[id]->Reset(timeout_ms);
 }
 
 void TimerManager::StopTimer(int id) {
-    RAFTCPP_CHECK(0 <= id < static_cast<int>(timers_.size()));
+    RAFTCPP_CHECK(0 <= id && id < static_cast<int>(timers_.size()));
     timers_[id]->Stop();
 }
 int TimerManager::RegisterTimer(const std::function<void(void)> &handler) {
