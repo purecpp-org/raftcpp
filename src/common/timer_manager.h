@@ -24,7 +24,7 @@ public:
     // run the manager, as start run timers that be registered
     void Run();
 
-    // register timer by timer handler func, and return timer id that be assign
+    /// Register timer by timer handler func, and return timer id that be assigned.
     int RegisterTimer(const std::function<void(void)> &handler);
 
     // enclosure timer's operation by timer id
