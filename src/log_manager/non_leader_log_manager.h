@@ -7,6 +7,7 @@
 
 #include "common/constants.h"
 #include "common/timer.h"
+#include "common/timer_manager.h"
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
 #include "log_manager/log_entry.h"
@@ -19,16 +20,10 @@ class NonLeaderLogManager final {
 public:
     NonLeaderLogManager(
         std::shared_ptr<StateMachine> fsm, std::function<bool()> is_leader_func,
-        std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func)
-        : io_service_(),
-          pull_logs_timer_(std::make_unique<common::RepeatedTimer>(
-              io_service_, [this](const asio::error_code &e) { DoPullLogs(); })),
-          is_leader_func_(std::move(is_leader_func)),
-          is_running_(false),
-          get_leader_rpc_client_func_(std::move(get_leader_rpc_client_func)),
-          fsm_(std::move(fsm)) {}
+        std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func,
+        const std::shared_ptr<common::TimerManager> &timer_manager);
 
-    ~NonLeaderLogManager() { pull_logs_timer_->Stop(); };
+    ~NonLeaderLogManager() { timer_manager_->StopTimer(pull_logs_timer_id_); };
 
     void Run();
 
@@ -54,10 +49,6 @@ private:
 
     boost::asio::io_service io_service_;
 
-    /// The timer used to send pull log entries requests to leader.
-    /// Note that this is only used in non-leader node.
-    std::unique_ptr<common::RepeatedTimer> pull_logs_timer_;
-
     std::unique_ptr<std::thread> committing_thread_;
 
     /// The function to get leader rpc client.
@@ -70,6 +61,12 @@ private:
     NodeID this_node_id_;
 
     std::shared_ptr<StateMachine> fsm_;
+
+    std::shared_ptr<common::TimerManager> timer_manager_;
+
+    /// The timer used to send pull log entries requests to the leader.
+    /// Note that this is only used in non-leader node.
+    int pull_logs_timer_id_ = -1;
 };
 
 }  // namespace raftcpp

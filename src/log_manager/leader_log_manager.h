@@ -7,6 +7,7 @@
 
 #include "common/constants.h"
 #include "common/timer.h"
+#include "common/timer_manager.h"
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
 #include "log_manager/log_entry.h"
@@ -22,9 +23,10 @@ using AllRpcClientType =
 class LeaderLogManager final {
 public:
     explicit LeaderLogManager(NodeID this_node_id,
-                              std::function<AllRpcClientType()> get_all_rpc_clients_func);
+                              std::function<AllRpcClientType()> get_all_rpc_clients_func,
+                              const std::shared_ptr<common::TimerManager> &timer_manager);
 
-    ~LeaderLogManager() { repeated_timer_->Stop(); }
+    ~LeaderLogManager() { timer_manager_->StopTimer(push_logs_timer_id_); }
 
     std::vector<LogEntry> PullLogs(const NodeID &node_id, int64_t next_log_index);
 
@@ -65,14 +67,16 @@ private:
 
     boost::asio::io_service io_service_;
 
-    std::unique_ptr<common::RepeatedTimer> repeated_timer_;
-
     std::atomic_bool is_running_ = false;
 
     /// TODO(qwang): This shouldn't be hardcode.
     constexpr static size_t NODE_NUM = 3;
 
     constexpr static size_t MAX_LOG_INDEX = 1000000000;
+
+    std::shared_ptr<common::TimerManager> timer_manager_;
+
+    int push_logs_timer_id_ = -1;
 };
 
 }  // namespace raftcpp

@@ -15,9 +15,22 @@
 
 namespace raftcpp {
 
-void NonLeaderLogManager::Run() { pull_logs_timer_->Start(1000); }
+NonLeaderLogManager::NonLeaderLogManager(
+    std::shared_ptr<StateMachine> fsm, std::function<bool()> is_leader_func,
+    std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func,
+    const std::shared_ptr<common::TimerManager> &timer_manager)
+    : is_leader_func_(std::move(is_leader_func)),
+      is_running_(false),
+      get_leader_rpc_client_func_(std::move(get_leader_rpc_client_func)),
+      fsm_(std::move(fsm)),
+      timer_manager_(timer_manager) {
+    pull_logs_timer_id_ =
+        timer_manager_->RegisterTimer(std::bind(&NonLeaderLogManager::DoPullLogs, this));
+}
 
-void NonLeaderLogManager::Stop() { pull_logs_timer_->Stop(); }
+void NonLeaderLogManager::Run() { timer_manager_->StartTimer(pull_logs_timer_id_, 1000); }
+
+void NonLeaderLogManager::Stop() { timer_manager_->StopTimer(pull_logs_timer_id_); }
 
 void NonLeaderLogManager::Push(int64_t committed_log_index, LogEntry log_entry) {
     RAFTCPP_CHECK(log_entry.log_index >= 0);
