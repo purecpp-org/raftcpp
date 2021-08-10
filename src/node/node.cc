@@ -184,7 +184,8 @@ void RaftNode::HandleRequestVote(rpc::RpcConn conn, const std::string &endpoint_
         if (term_id > curr_term_id_.getTerm()) {
             curr_term_id_.setTerm(term_id);
             timer_manager_->ResetTimer(
-                RaftcppConstants::TIMER_ELECTION, RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
+                RaftcppConstants::TIMER_ELECTION,
+                RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
             if (conn_sp) {
                 conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
             }
@@ -350,7 +351,8 @@ void RaftNode::InitTimers() {
     timer_manager_->RegisterTimer(RaftcppConstants::TIMER_VOTE,
                                   std::bind(&RaftNode::RequestVote, this));
 
-    timer_manager_->StartTimer(RaftcppConstants::TIMER_ELECTION, randomer_.TakeOne(1000, 2000));
+    timer_manager_->StartTimer(RaftcppConstants::TIMER_ELECTION,
+                               randomer_.TakeOne(1000, 2000));
     timer_manager_->Run();
 }
 

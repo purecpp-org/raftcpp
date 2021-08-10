@@ -25,7 +25,7 @@ public:
 
     constexpr static const char *REQUEST_PUSH_LOGS = "request_push_logs";
 
-    ///timer keys
+    /// timer keys
     constexpr static const char *TIMER_PUSH_LOGS = "push_logs_timer";
 
     constexpr static const char *TIMER_PULL_LOGS = "pull_logs_timer";

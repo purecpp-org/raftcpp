@@ -28,9 +28,13 @@ NonLeaderLogManager::NonLeaderLogManager(
                                   std::bind(&NonLeaderLogManager::DoPullLogs, this));
 }
 
-void NonLeaderLogManager::Run() { timer_manager_->StartTimer(RaftcppConstants::TIMER_PULL_LOGS, 1000); }
+void NonLeaderLogManager::Run() {
+    timer_manager_->StartTimer(RaftcppConstants::TIMER_PULL_LOGS, 1000);
+}
 
-void NonLeaderLogManager::Stop() { timer_manager_->StopTimer(RaftcppConstants::TIMER_PULL_LOGS); }
+void NonLeaderLogManager::Stop() {
+    timer_manager_->StopTimer(RaftcppConstants::TIMER_PULL_LOGS);
+}
 
 void NonLeaderLogManager::Push(int64_t committed_log_index, LogEntry log_entry) {
     RAFTCPP_CHECK(log_entry.log_index >= 0);

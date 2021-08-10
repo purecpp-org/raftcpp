@@ -63,9 +63,13 @@ void LeaderLogManager::Push(const TermID &term_id,
     all_log_entries_[curr_log_index_] = entry;
 }
 
-void LeaderLogManager::Run() { timer_manager_->StartTimer(RaftcppConstants::TIMER_PUSH_LOGS, 1000); }
+void LeaderLogManager::Run() {
+    timer_manager_->StartTimer(RaftcppConstants::TIMER_PUSH_LOGS, 1000);
+}
 
-void LeaderLogManager::Stop() { timer_manager_->StopTimer(RaftcppConstants::TIMER_PUSH_LOGS); }
+void LeaderLogManager::Stop() {
+    timer_manager_->StopTimer(RaftcppConstants::TIMER_PUSH_LOGS);
+}
 
 void LeaderLogManager::TryAsyncCommitLogs(
     const NodeID &node_id, size_t next_log_index,
