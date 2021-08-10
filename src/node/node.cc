@@ -103,7 +103,7 @@ void RaftNode::HandleRequestPreVote(rpc::RpcConn conn, const std::string &endpoi
     if (curr_state_ == RaftState::FOLLOWER) {
         if (term_id > curr_term_id_.getTerm()) {
             curr_term_id_.setTerm(term_id);
-            timer_manager_->ResetTimer(election_timer_id_,
+            timer_manager_->ResetTimer(RaftcppConstants::TIMER_ELECTION,
                                        RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS +
                                            randomer_.TakeOne(1000, 2000));
             if (conn_sp) {
@@ -143,8 +143,8 @@ void RaftNode::OnPreVote(const boost::system::error_code &ec, string_view data) 
                               << this->config_.GetThisEndpoint().ToString()
                               << " has became a candidate now.";
         curr_term_id_.setTerm(curr_term_id_.getTerm() + 1);
-        timer_manager_->StopTimer(election_timer_id_);
-        timer_manager_->StartTimer(vote_timer_id_,
+        timer_manager_->StopTimer(RaftcppConstants::TIMER_ELECTION);
+        timer_manager_->StartTimer(RaftcppConstants::TIMER_VOTE,
                                    RaftcppConstants::DEFAULT_VOTE_TIMER_TIMEOUT_MS);
         this->RequestVote();
     } else {
@@ -184,7 +184,7 @@ void RaftNode::HandleRequestVote(rpc::RpcConn conn, const std::string &endpoint_
         if (term_id > curr_term_id_.getTerm()) {
             curr_term_id_.setTerm(term_id);
             timer_manager_->ResetTimer(
-                election_timer_id_, RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
+                RaftcppConstants::TIMER_ELECTION, RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
             if (conn_sp) {
                 conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
             }
@@ -219,9 +219,9 @@ void RaftNode::OnVote(const boost::system::error_code &ec, string_view data) {
                               << " has became a leader now";
         curr_term_id_.setTerm(curr_term_id_.getTerm() + 1);
 
-        timer_manager_->StopTimer(vote_timer_id_);
-        timer_manager_->StopTimer(election_timer_id_);
-        timer_manager_->ResetTimer(heartbeat_timer_id_,
+        timer_manager_->StopTimer(RaftcppConstants::TIMER_VOTE);
+        timer_manager_->StopTimer(RaftcppConstants::TIMER_ELECTION);
+        timer_manager_->ResetTimer(RaftcppConstants::TIMER_HEARTBEAT,
                                    RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS);
 
         this->RequestHeartbeat();
@@ -254,7 +254,7 @@ void RaftNode::HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id,
                                << source_node_id.ToHex() << ")."
                                << " curr_term_id_:" << curr_term_id_.getTerm()
                                << " receive term_id:" << term_id << " update term_id";
-        timer_manager_->StartTimer(election_timer_id_,
+        timer_manager_->StartTimer(RaftcppConstants::TIMER_ELECTION,
                                    RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS +
                                        randomer_.TakeOne(1000, 2000));
         curr_term_id_.setTerm(term_id);
@@ -267,12 +267,12 @@ void RaftNode::HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id,
                                    << " curr_term_id_:" << curr_term_id_.getTerm()
                                    << " receive term_id:" << term_id << " StepBack";
             curr_term_id_.setTerm(term_id);
-            timer_manager_->StopTimer(vote_timer_id_);
-            timer_manager_->StopTimer(heartbeat_timer_id_);
+            timer_manager_->StopTimer(RaftcppConstants::TIMER_VOTE);
+            timer_manager_->StopTimer(RaftcppConstants::TIMER_HEARTBEAT);
             curr_state_ = RaftState::FOLLOWER;
             leader_log_manager_->Stop();
             non_leader_log_manager_->Run();
-            timer_manager_->StartTimer(election_timer_id_,
+            timer_manager_->StartTimer(RaftcppConstants::TIMER_ELECTION,
                                        RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS +
                                            randomer_.TakeOne(1000, 2000));
         } else {
@@ -301,11 +301,11 @@ void RaftNode::OnHeartbeat(const boost::system::error_code &ec, string_view data
         curr_state_ = RaftState::FOLLOWER;
         leader_log_manager_->Stop();
         non_leader_log_manager_->Run();
-        timer_manager_->StopTimer(vote_timer_id_);
-        timer_manager_->StartTimer(election_timer_id_,
+        timer_manager_->StopTimer(RaftcppConstants::TIMER_VOTE);
+        timer_manager_->StartTimer(RaftcppConstants::TIMER_ELECTION,
                                    RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS +
                                        randomer_.TakeOne(1000, 2000));
-        timer_manager_->StopTimer(heartbeat_timer_id_);
+        timer_manager_->StopTimer(RaftcppConstants::TIMER_HEARTBEAT);
     }
 }
 
@@ -343,21 +343,21 @@ void RaftNode::InitRpcHandlers() {
 }
 
 void RaftNode::InitTimers() {
-    election_timer_id_ =
-        timer_manager_->RegisterTimer(std::bind(&RaftNode::RequestPreVote, this));
-    heartbeat_timer_id_ =
-        timer_manager_->RegisterTimer(std::bind(&RaftNode::RequestHeartbeat, this));
-    vote_timer_id_ =
-        timer_manager_->RegisterTimer(std::bind(&RaftNode::RequestVote, this));
+    timer_manager_->RegisterTimer(RaftcppConstants::TIMER_ELECTION,
+                                  std::bind(&RaftNode::RequestPreVote, this));
+    timer_manager_->RegisterTimer(RaftcppConstants::TIMER_HEARTBEAT,
+                                  std::bind(&RaftNode::RequestHeartbeat, this));
+    timer_manager_->RegisterTimer(RaftcppConstants::TIMER_VOTE,
+                                  std::bind(&RaftNode::RequestVote, this));
 
-    timer_manager_->StartTimer(election_timer_id_, randomer_.TakeOne(1000, 2000));
+    timer_manager_->StartTimer(RaftcppConstants::TIMER_ELECTION, randomer_.TakeOne(1000, 2000));
     timer_manager_->Run();
 }
 
 void RaftNode::StepBack(int32_t term_id) {
-    timer_manager_->StopTimer(heartbeat_timer_id_);
-    timer_manager_->StopTimer(vote_timer_id_);
-    timer_manager_->ResetTimer(election_timer_id_,
+    timer_manager_->StopTimer(RaftcppConstants::TIMER_HEARTBEAT);
+    timer_manager_->StopTimer(RaftcppConstants::TIMER_VOTE);
+    timer_manager_->ResetTimer(RaftcppConstants::TIMER_ELECTION,
                                RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
 
     curr_state_ = RaftState::FOLLOWER;

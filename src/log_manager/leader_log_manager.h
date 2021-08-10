@@ -26,7 +26,7 @@ public:
                               std::function<AllRpcClientType()> get_all_rpc_clients_func,
                               const std::shared_ptr<common::TimerManager> &timer_manager);
 
-    ~LeaderLogManager() { timer_manager_->StopTimer(push_logs_timer_id_); }
+    ~LeaderLogManager() { timer_manager_->StopTimer(RaftcppConstants::TIMER_PUSH_LOGS); }
 
     std::vector<LogEntry> PullLogs(const NodeID &node_id, int64_t next_log_index);
 
@@ -75,8 +75,6 @@ private:
     constexpr static size_t MAX_LOG_INDEX = 1000000000;
 
     std::shared_ptr<common::TimerManager> timer_manager_;
-
-    int push_logs_timer_id_ = -1;
 };
 
 }  // namespace raftcpp

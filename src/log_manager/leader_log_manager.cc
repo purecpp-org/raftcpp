@@ -23,8 +23,8 @@ LeaderLogManager::LeaderLogManager(
       all_log_entries_(),
       is_running_(true),
       timer_manager_(timer_manager) {
-    push_logs_timer_id_ =
-        timer_manager->RegisterTimer(std::bind(&LeaderLogManager::DoPushLogs, this));
+    timer_manager->RegisterTimer(RaftcppConstants::TIMER_PUSH_LOGS,
+                                 std::bind(&LeaderLogManager::DoPushLogs, this));
 }
 
 std::vector<LogEntry> LeaderLogManager::PullLogs(const NodeID &node_id,
@@ -63,9 +63,9 @@ void LeaderLogManager::Push(const TermID &term_id,
     all_log_entries_[curr_log_index_] = entry;
 }
 
-void LeaderLogManager::Run() { timer_manager_->StartTimer(push_logs_timer_id_, 1000); }
+void LeaderLogManager::Run() { timer_manager_->StartTimer(RaftcppConstants::TIMER_PUSH_LOGS, 1000); }
 
-void LeaderLogManager::Stop() { timer_manager_->StopTimer(push_logs_timer_id_); }
+void LeaderLogManager::Stop() { timer_manager_->StopTimer(RaftcppConstants::TIMER_PUSH_LOGS); }
 
 void LeaderLogManager::TryAsyncCommitLogs(
     const NodeID &node_id, size_t next_log_index,

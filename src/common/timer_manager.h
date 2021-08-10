@@ -2,9 +2,10 @@
 
 #include <asio/io_service.hpp>
 #include <iostream>
+#include <map>
 #include <memory>
+#include <string>
 #include <thread>
-#include <vector>
 
 #include "common/randomer.h"
 #include "common/timer.h"
@@ -25,12 +26,13 @@ public:
     void Run();
 
     /// Register timer by timer handler func, and return timer id that be assigned.
-    int RegisterTimer(const std::function<void(void)> &handler);
+    void RegisterTimer(const std::string &timer_key,
+                       const std::function<void(void)> &handler);
 
     // enclosure timer's operation by timer id
-    void StartTimer(int id, uint64_t timeout_ms);
-    void ResetTimer(int id, uint64_t timeout_ms);
-    void StopTimer(int id);
+    void StartTimer(const std::string &timer_key, uint64_t timeout_ms);
+    void ResetTimer(const std::string &timer_key, uint64_t timeout_ms);
+    void StopTimer(const std::string &timer_key);
 
 private:
     // A separated service that runs for all timers.
@@ -41,7 +43,7 @@ private:
     // The thread that runs all timers.
     std::unique_ptr<std::thread> thread_ = nullptr;
 
-    std::vector<std::shared_ptr<common::RepeatedTimer>> timers_;
+    std::map<std::string, std::shared_ptr<common::RepeatedTimer>> timers_;
 };
 
 }  // namespace common
