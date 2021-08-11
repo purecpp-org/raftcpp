@@ -23,7 +23,9 @@ public:
         std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func,
         const std::shared_ptr<common::TimerManager> &timer_manager);
 
-    ~NonLeaderLogManager() { timer_manager_->StopTimer(pull_logs_timer_id_); };
+    ~NonLeaderLogManager() {
+        timer_manager_->StopTimer(RaftcppConstants::TIMER_PULL_LOGS);
+    };
 
     void Run();
 
@@ -66,7 +68,6 @@ private:
 
     /// The timer used to send pull log entries requests to the leader.
     /// Note that this is only used in non-leader node.
-    int pull_logs_timer_id_ = -1;
 };
 
 }  // namespace raftcpp

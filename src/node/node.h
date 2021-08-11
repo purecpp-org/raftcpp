@@ -118,10 +118,6 @@ private:
     std::shared_ptr<StateMachine> state_machine_;
     std::unique_ptr<NodeID> leader_node_id_ = nullptr;
 
-    int election_timer_id_ = -1;
-    int heartbeat_timer_id_ = -1;
-    int vote_timer_id_ = -1;
-
     std::shared_ptr<common::TimerManager> timer_manager_;
 
     // LogManager for this node.

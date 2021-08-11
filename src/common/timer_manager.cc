@@ -12,8 +12,8 @@ TimerManager::TimerManager() {
 }
 
 TimerManager::~TimerManager() {
-    for (auto &timer : timers_) {
-        timer->Stop();
+    for (auto &iter : timers_) {
+        iter.second->Stop();
     }
 
     io_service_->stop();
@@ -25,33 +25,31 @@ void TimerManager::Run() {
     thread_ = std::make_unique<std::thread>([this]() { io_service_->run(); });
 }
 
-void TimerManager::StartTimer(int id, uint64_t timeout_ms) {
-    RAFTCPP_CHECK(0 <= id && id < static_cast<int>(timers_.size()));
-    timers_[id]->Start(timeout_ms);
+void TimerManager::StartTimer(const std::string &timer_key, uint64_t timeout_ms) {
+    RAFTCPP_CHECK(timers_.end() != timers_.find(timer_key));
+    timers_[timer_key]->Start(timeout_ms);
 }
 
-void TimerManager::ResetTimer(int id, uint64_t timeout_ms) {
-    RAFTCPP_CHECK(0 <= id && id < static_cast<int>(timers_.size()));
-    timers_[id]->Reset(timeout_ms);
+void TimerManager::ResetTimer(const std::string &timer_key, uint64_t timeout_ms) {
+    RAFTCPP_CHECK(timers_.end() != timers_.find(timer_key));
+    timers_[timer_key]->Reset(timeout_ms);
 }
 
-void TimerManager::StopTimer(int id) {
-    RAFTCPP_CHECK(0 <= id && id < static_cast<int>(timers_.size()));
-    timers_[id]->Stop();
+void TimerManager::StopTimer(const std::string &timer_key) {
+    RAFTCPP_CHECK(timers_.end() != timers_.find(timer_key));
+    timers_[timer_key]->Stop();
 }
-int TimerManager::RegisterTimer(const std::function<void(void)> &handler) {
-    if (handler == nullptr) {
-        return -1;
-    }
-
-    timers_.emplace_back(std::make_shared<common::RepeatedTimer>(
-        *io_service_, [handler](const asio::error_code &e) {
-            if (e.value() != asio::error::operation_aborted) {
-                handler();
-            }
-        }));
-
-    return static_cast<int>(timers_.size()) - 1;
+void TimerManager::RegisterTimer(const std::string &timer_key,
+                                 const std::function<void(void)> &handler) {
+    RAFTCPP_CHECK(handler != nullptr);
+    RAFTCPP_CHECK(timers_.end() == timers_.find(timer_key));
+    timers_.insert(std::make_pair(
+        timer_key, std::make_shared<common::RepeatedTimer>(
+                       *io_service_, [handler](const asio::error_code &e) {
+                           if (e.value() != asio::error::operation_aborted) {
+                               handler();
+                           }
+                       })));
 }
 
 }  // namespace common
