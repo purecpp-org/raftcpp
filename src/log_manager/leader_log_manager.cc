@@ -15,14 +15,17 @@
 namespace raftcpp {
 
 LeaderLogManager::LeaderLogManager(
-    NodeID this_node_id, std::function<AllRpcClientType()> get_all_rpc_clients_func)
+    NodeID this_node_id, std::function<AllRpcClientType()> get_all_rpc_clients_func,
+    const std::shared_ptr<common::TimerManager> &timer_manager)
     : io_service_(),
       this_node_id_(std::move(this_node_id)),
       get_all_rpc_clients_func_(get_all_rpc_clients_func),
       all_log_entries_(),
       is_running_(true),
-      repeated_timer_(std::make_unique<common::RepeatedTimer>(
-          io_service_, [this](const asio::error_code &e) { DoPushLogs(); })) {}
+      timer_manager_(timer_manager) {
+    timer_manager->RegisterTimer(RaftcppConstants::TIMER_PUSH_LOGS,
+                                 std::bind(&LeaderLogManager::DoPushLogs, this));
+}
 
 std::vector<LogEntry> LeaderLogManager::PullLogs(const NodeID &node_id,
                                                  int64_t next_log_index) {
@@ -60,9 +63,13 @@ void LeaderLogManager::Push(const TermID &term_id,
     all_log_entries_[curr_log_index_] = entry;
 }
 
-void LeaderLogManager::Run() { repeated_timer_->Start(1000); }
+void LeaderLogManager::Run() {
+    timer_manager_->StartTimer(RaftcppConstants::TIMER_PUSH_LOGS, 1000);
+}
 
-void LeaderLogManager::Stop() { repeated_timer_->Stop(); }
+void LeaderLogManager::Stop() {
+    timer_manager_->StopTimer(RaftcppConstants::TIMER_PUSH_LOGS);
+}
 
 void LeaderLogManager::TryAsyncCommitLogs(
     const NodeID &node_id, size_t next_log_index,
@@ -90,7 +97,8 @@ void LeaderLogManager::DoPushLogs() {
             [](boost::system::error_code ec, string_view data) {
                 //// LOG
             },
-            it->second);
+            /*committed_log_index=*/committed_log_index_,
+            /*log_entry=*/it->second);
     }
 }
 

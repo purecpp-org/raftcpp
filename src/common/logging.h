@@ -76,7 +76,14 @@ public:
     void operator&(RaftcppLogBase &) {}
 };
 
-#define RAFTCPP_LOG_INTERNAL(level) ::raftcpp::RaftcppLog(__FILE__, __LINE__, level)
+#ifdef _WIN32
+#define spdlogfilename(x) strrchr(x, '\\') ? strrchr(x, '\\') + 1 : x
+#else
+#define spdlogfilename(x) strrchr(x, '/') ? strrchr(x, '/') + 1 : x
+#endif
+
+#define RAFTCPP_LOG_INTERNAL(level) \
+    ::raftcpp::RaftcppLog(spdlogfilename(__FILE__), __LINE__, level)
 #define RAFTCPP_LOG(level)                                                    \
     if (raftcpp::RaftcppLog::IsLevelEnabled(raftcpp::RaftcppLogLevel::level)) \
     RAFTCPP_LOG_INTERNAL(raftcpp::RaftcppLogLevel::level)

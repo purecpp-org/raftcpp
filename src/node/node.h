@@ -10,13 +10,13 @@
 #include "common/id.h"
 #include "common/logging.h"
 #include "common/timer.h"
+#include "common/timer_manager.h"
 #include "common/type_def.h"
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
 #include "log_manager/leader_log_manager.h"
 #include "log_manager/log_entry.h"
 #include "log_manager/non_leader_log_manager.h"
-#include "node/timer_manager.h"
 #include "rest_rpc/rpc_client.hpp"
 #include "rest_rpc/rpc_server.h"
 #include "rpc/common.h"
@@ -26,7 +26,7 @@
 namespace raftcpp {
 namespace node {
 
-class RaftNode : public rpc::NodeService {
+class RaftNode : public rpc::NodeService, public std::enable_shared_from_this<RaftNode> {
 public:
     RaftNode(
         std::shared_ptr<StateMachine> state_machine,
@@ -35,7 +35,11 @@ public:
 
     ~RaftNode();
 
-    void Apply(const std::shared_ptr<raftcpp::RaftcppRequest> &request);
+    void Init();
+
+    bool IsLeader() const;
+
+    void PushRequest(const std::shared_ptr<raftcpp::RaftcppRequest> &request);
 
     void RequestPreVote();
 
@@ -64,7 +68,10 @@ public:
 
     void OnHeartbeat(const boost::system::error_code &ec, string_view data);
 
-    RaftState GetCurrState() const { return curr_state_; }
+    RaftState GetCurrState() {
+        std::lock_guard<std::recursive_mutex> guard{mutex_};
+        return curr_state_;
+    }
 
 private:
     void ConnectToOtherNodes();
@@ -73,9 +80,9 @@ private:
 
     void StepBack(int32_t term_id);
 
-private:
-    TimerManager timer_manager_;
+    void InitTimers();
 
+private:
     // Current state of this node. This initial value of this should be a FOLLOWER.
     RaftState curr_state_ = RaftState::FOLLOWER;
 
@@ -99,7 +106,7 @@ private:
     std::unordered_set<std::string> responded_vote_nodes_;
 
     // The recursive mutex that protects all of the node state.
-    std::recursive_mutex mutex_;
+    mutable std::recursive_mutex mutex_;
 
     // Accept the heartbeat reset election time to be random,
     // otherwise the all followers will be timed out at one time.
@@ -108,14 +115,15 @@ private:
     // The ID of this node.
     NodeID this_node_id_;
 
+    std::shared_ptr<StateMachine> state_machine_;
+    std::unique_ptr<NodeID> leader_node_id_ = nullptr;
+
+    std::shared_ptr<common::TimerManager> timer_manager_;
+
     // LogManager for this node.
     std::unique_ptr<LeaderLogManager> leader_log_manager_;
 
     std::unique_ptr<NonLeaderLogManager> non_leader_log_manager_;
-
-    std::shared_ptr<StateMachine> state_machine_;
-
-    std::unique_ptr<NodeID> leader_node_id_ = nullptr;
 };
 
 }  // namespace node

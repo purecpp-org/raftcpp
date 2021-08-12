@@ -1,10 +1,8 @@
 #include <chrono>
 #include <thread>
 
+#include "gtest/gtest.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
-
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <doctest.h>
 
 using namespace raftcpp;
 
@@ -28,41 +26,41 @@ void thread_func(BlockingQueueMutexImpl<LogEntryTest> &log_manager) {
     log_manager.Push(log_entry);
 }
 
-TEST_CASE("LogManagerTest") {
+TEST(LogManagerTest, TestLogManager) {
     using namespace raftcpp;
 
     BlockingQueueMutexImpl<LogEntryTest> log_manager;
     LogEntryTest log_entry{123, 456};
     log_manager.Push(log_entry);
     LogEntryTest res = log_manager.Pop();
-    REQUIRE_EQ(log_entry.index_, res.index_);
-    REQUIRE_EQ(log_entry.term_, res.term_);
+    ASSERT_EQ(log_entry.index_, res.index_);
+    ASSERT_EQ(log_entry.term_, res.term_);
 }
 
-TEST_CASE("LogManagerEmptyTest, NonBlocking") {
+TEST(LogManagerTest, TestNonBlocking) {
     using namespace raftcpp;
 
     BlockingQueueMutexImpl<LogEntryTest> log_manager;
     LogEntryTest log_entry;
     bool res = log_manager.Pop(log_entry);
-    REQUIRE_EQ(res, false);
+    ASSERT_EQ(res, false);
 }
 
-TEST_CASE("LogManagerTest, Blocking") {
+TEST(LogManagerTest, TestBlocking) {
     using namespace raftcpp;
 
     BlockingQueueMutexImpl<LogEntryTest> log_manager;
-    REQUIRE_EQ(g_flag, false);
+    ASSERT_EQ(g_flag, false);
     std::thread th(thread_func, std::ref(log_manager));
     LogEntryTest res;
     res = log_manager.Pop();
-    REQUIRE_EQ(g_flag, true);
-    REQUIRE_EQ(res.index_, 123);
-    REQUIRE_EQ(res.term_, 456);
+    ASSERT_EQ(g_flag, true);
+    ASSERT_EQ(res.index_, 123);
+    ASSERT_EQ(res.term_, 456);
     th.join();
 }
 
-TEST_CASE("MostFront Test") {
+TEST(BlockingQueueTest, TestMostFront) {
     using namespace raftcpp;
 
     BlockingQueueMutexImpl<LogEntryTest> log_manager;
@@ -75,8 +73,13 @@ TEST_CASE("MostFront Test") {
     log_manager.Push(log_entry2);
     log_manager.Push(log_entry3);
     std::vector<LogEntryTest> v = log_manager.MostFront(3);
-    REQUIRE_EQ(v.size(), 3);
-    REQUIRE_EQ(v[0].index_, log_entry0.index_);
-    REQUIRE_EQ(v[1].index_, log_entry1.index_);
-    REQUIRE_EQ(v[2].index_, log_entry2.index_);
+    ASSERT_EQ(v.size(), 3);
+    ASSERT_EQ(v[0].index_, log_entry0.index_);
+    ASSERT_EQ(v[1].index_, log_entry1.index_);
+    ASSERT_EQ(v[2].index_, log_entry2.index_);
+}
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

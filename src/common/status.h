@@ -7,5 +7,4 @@ enum class Status {
 
     UNKNOWN_REQUEST = 100,
 };
-
 }

@@ -30,6 +30,8 @@ public:
           timer_(io_service_),
           timeout_handler_(std::move(timeout_handler)) {}
 
+    ~RepeatedTimer() { Stop(); }
+
     void Start(uint64_t timeout_ms);
 
     void Stop();
