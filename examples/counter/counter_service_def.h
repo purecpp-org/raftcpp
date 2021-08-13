@@ -94,6 +94,7 @@ std::shared_ptr<CounterRequest> CounterRequest::Deserialize1(const std::string &
         ret->Deserialize(s.substr(1, s.length() - 1));
         return ret;
     }
+    return nullptr;
 }
 
 struct CounterService {
