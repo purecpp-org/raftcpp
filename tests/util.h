@@ -223,6 +223,7 @@ public:
      * We may see the leader as source node forever?
      */
     void HandleRequestPushLogs(RpcConn conn, int64_t committed_log_index,
+                               int32_t pre_log_term_num,
                                raftcpp::LogEntry log_entry) override {}
 
 private:
