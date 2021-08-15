@@ -28,7 +28,7 @@ public:
 
     ~LeaderLogManager() { timer_manager_->StopTimer(RaftcppConstants::TIMER_PUSH_LOGS); }
 
-    std::vector<LogEntry> PullLogs(const NodeID &node_id, int64_t next_log_index);
+    void PullLogs(const NodeID &node_id, int64_t next_log_index);
 
     void Push(const TermID &term_id,
               const std::shared_ptr<raftcpp::RaftcppRequest> &request);
@@ -36,6 +36,8 @@ public:
     void Run();
 
     void Stop();
+
+    int64_t CurrLogIndex() const { return curr_log_index_; }
 
 private:
     /// Try to commit the logs asynchronously. If a log was replied

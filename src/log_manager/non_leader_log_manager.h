@@ -19,7 +19,8 @@ namespace raftcpp {
 class NonLeaderLogManager final {
 public:
     NonLeaderLogManager(
-        std::shared_ptr<StateMachine> fsm, std::function<bool()> is_leader_func,
+        const NodeID &this_node_id, std::shared_ptr<StateMachine> fsm,
+        std::function<bool()> is_leader_func,
         std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func,
         const std::shared_ptr<common::TimerManager> &timer_manager);
 
@@ -28,10 +29,12 @@ public:
     };
 
     void Run();
-
     void Stop();
+    bool IsRunning() const;
 
-    void Push(int64_t committed_log_index, LogEntry log_entry);
+    void Push(int64_t committed_log_index, int32_t pre_log_term_num, LogEntry log_entry);
+
+    int64_t CurrLogIndex() const { return next_index_ - 1; }
 
 private:
     void CommitLogs(int64_t committed_log_index);

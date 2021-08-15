@@ -14,6 +14,8 @@ void RepeatedTimer::Reset(const uint64_t timeout_ms) {
     DoSetExpired(timeout_ms);
 }
 
+bool RepeatedTimer::IsRunning() const { return is_running_.load(); }
+
 void RepeatedTimer::DoSetExpired(const uint64_t timeout_ms) {
     if (!is_running_.load()) {
         return;

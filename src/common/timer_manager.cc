@@ -39,6 +39,12 @@ void TimerManager::StopTimer(const std::string &timer_key) {
     RAFTCPP_CHECK(timers_.end() != timers_.find(timer_key));
     timers_[timer_key]->Stop();
 }
+
+bool TimerManager::IsTimerRunning(const std::string &timer_key) const {
+    RAFTCPP_CHECK(timers_.end() != timers_.find(timer_key));
+    return timers_.at(timer_key)->IsRunning();
+}
+
 void TimerManager::RegisterTimer(const std::string &timer_key,
                                  const std::function<void(void)> &handler) {
     RAFTCPP_CHECK(handler != nullptr);

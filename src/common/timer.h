@@ -38,6 +38,8 @@ public:
 
     void Reset(uint64_t timeout_ms);
 
+    bool IsRunning() const;
+
 private:
     void DoSetExpired(uint64_t timeout_ms);
 
