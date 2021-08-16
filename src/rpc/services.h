@@ -29,7 +29,7 @@ protected:
                                        int64_t next_log_index) = 0;
 
     virtual void HandleRequestPushLogs(RpcConn conn, int64_t committed_log_index,
-                                       LogEntry log_entry) = 0;
+                                       int32_t pre_log_term, LogEntry log_entry) = 0;
 };
 
 }  // namespace rpc

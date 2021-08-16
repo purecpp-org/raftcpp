@@ -62,7 +62,7 @@ public:
                                int64_t committed_log_index) override;
 
     void HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_index,
-                               LogEntry log_entry) override;
+                               int32_t pre_log_term, LogEntry log_entry) override;
 
     void RequestHeartbeat();
 
@@ -71,6 +71,15 @@ public:
     RaftState GetCurrState() {
         std::lock_guard<std::recursive_mutex> guard{mutex_};
         return curr_state_;
+    }
+
+    int64_t CurrLogIndex() const {
+        std::lock_guard<std::recursive_mutex> guard{mutex_};
+        if (curr_state_ == RaftState::LEADER) {
+            return leader_log_manager_->CurrLogIndex();
+        } else {
+            return non_leader_log_manager_->CurrLogIndex();
+        }
     }
 
 private:

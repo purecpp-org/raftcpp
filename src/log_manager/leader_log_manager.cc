@@ -27,29 +27,19 @@ LeaderLogManager::LeaderLogManager(
                                  std::bind(&LeaderLogManager::DoPushLogs, this));
 }
 
-std::vector<LogEntry> LeaderLogManager::PullLogs(const NodeID &node_id,
-                                                 int64_t next_log_index) {
+void LeaderLogManager::PullLogs(const NodeID &node_id, int64_t next_log_index) {
     std::lock_guard<std::mutex> lock(mutex_);
-    RAFTCPP_CHECK(next_log_index >= 0);
+    RAFTCPP_CHECK(next_log_index >= 0 && next_log_index <= MAX_LOG_INDEX);
 
     /// Update the next log index first.
-    next_log_indexes_[node_id] = next_log_index;
-    std::vector<LogEntry> ret;
-    if (next_log_index == 0) {
-        // First time to fetch logs.
-        if (all_log_entries_.find(next_log_index) != all_log_entries_.end()) {
-            ret = {all_log_entries_[0]};
-        } else {
-            RAFTCPP_LOG(RLL_DEBUG) << "There is no logs in this leader.";
-            ret = {};
-        }
-    } else {
-        RAFTCPP_CHECK(next_log_index >= 0 && next_log_index <= MAX_LOG_INDEX);
-        ret = {all_log_entries_[next_log_index]};
+    auto it = next_log_indexes_.find(node_id);
+    if (it != next_log_indexes_.end() && it->second >= next_log_index) {
+        return;
     }
+    next_log_indexes_[node_id] = next_log_index;
+
     TryAsyncCommitLogs(node_id, next_log_index,
                        /*done=*/[this](int64_t dumped_log_index) {});
-    return ret;
 }
 
 void LeaderLogManager::Push(const TermID &term_id,
@@ -86,11 +76,28 @@ void LeaderLogManager::DoPushLogs() {
         if (follower_node_id == this_node_id_) {
             continue;
         }
+
+        if (next_log_indexes_.find(follower_node_id) == next_log_indexes_.end()) {
+            continue;
+        }
         auto next_log_index_to_be_sent = next_log_indexes_[follower_node_id];
+
+        // get pre_log_term
+        int32_t pre_log_term_num = -1;
+        if (next_log_index_to_be_sent > 0) {
+            auto it = all_log_entries_.find(next_log_index_to_be_sent - 1);
+            if (it != all_log_entries_.end()) {
+                pre_log_term_num = it->second.term_id.getTerm();
+            }
+        }
+
+        // get log entry
         auto it = all_log_entries_.find(next_log_index_to_be_sent);
         if (it == all_log_entries_.end()) {
             continue;
         }
+
+        // do request push log
         auto &follower_rpc_client = follower.second;
         follower_rpc_client->async_call(
             RaftcppConstants::REQUEST_PUSH_LOGS,
@@ -98,6 +105,7 @@ void LeaderLogManager::DoPushLogs() {
                 //// LOG
             },
             /*committed_log_index=*/committed_log_index_,
+            /*pre_log_term_num=*/pre_log_term_num,
             /*log_entry=*/it->second);
     }
 }

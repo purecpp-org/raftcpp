@@ -33,6 +33,7 @@ public:
     void StartTimer(const std::string &timer_key, uint64_t timeout_ms);
     void ResetTimer(const std::string &timer_key, uint64_t timeout_ms);
     void StopTimer(const std::string &timer_key);
+    bool IsTimerRunning(const std::string &timer_key) const;
 
 private:
     // A separated service that runs for all timers.

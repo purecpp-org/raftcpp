@@ -16,10 +16,12 @@
 namespace raftcpp {
 
 NonLeaderLogManager::NonLeaderLogManager(
-    std::shared_ptr<StateMachine> fsm, std::function<bool()> is_leader_func,
+    const NodeID &this_node_id, std::shared_ptr<StateMachine> fsm,
+    std::function<bool()> is_leader_func,
     std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func,
     const std::shared_ptr<common::TimerManager> &timer_manager)
-    : is_leader_func_(std::move(is_leader_func)),
+    : this_node_id_(this_node_id),
+      is_leader_func_(std::move(is_leader_func)),
       is_running_(false),
       get_leader_rpc_client_func_(std::move(get_leader_rpc_client_func)),
       fsm_(std::move(fsm)),
@@ -36,17 +38,42 @@ void NonLeaderLogManager::Stop() {
     timer_manager_->StopTimer(RaftcppConstants::TIMER_PULL_LOGS);
 }
 
-void NonLeaderLogManager::Push(int64_t committed_log_index, LogEntry log_entry) {
+bool NonLeaderLogManager::IsRunning() const {
+    return timer_manager_->IsTimerRunning(RaftcppConstants::TIMER_PULL_LOGS);
+}
+
+void NonLeaderLogManager::Push(int64_t committed_log_index, int32_t pre_log_term,
+                               LogEntry log_entry) {
     RAFTCPP_CHECK(log_entry.log_index >= 0);
+
     /// Ignore if duplicated log_index.
     if (all_log_entries_.count(log_entry.log_index) > 0) {
         RAFTCPP_LOG(RLL_DEBUG) << "Duplicated log index = " << log_entry.log_index;
-        return;
     }
+
+    auto pre_log_index = log_entry.log_index - 1;
     if (log_entry.log_index > 0) {
-        RAFTCPP_CHECK(all_log_entries_.count(log_entry.log_index - 1) == 1);
+        auto it = all_log_entries_.find(pre_log_index);
+        if (it == all_log_entries_.end() ||
+            it->second.term_id.getTerm() != pre_log_term) {
+            next_index_ = pre_log_index;
+            RAFTCPP_LOG(RLL_DEBUG) << "lack of log index = " << pre_log_index;
+        }
     }
-    RAFTCPP_CHECK(all_log_entries_.count(log_entry.log_index - 1) == 1);
+
+    auto req_term = log_entry.term_id.getTerm();
+    auto it = all_log_entries_.find(log_entry.log_index);
+    if (it != all_log_entries_.end() && it->second.term_id.getTerm() != req_term) {
+        auto index = log_entry.log_index;
+        while ((it = all_log_entries_.find(index)) != all_log_entries_.end()) {
+            all_log_entries_.erase(it);
+            index++;
+        }
+
+        next_index_ = log_entry.log_index;
+        RAFTCPP_LOG(RLL_DEBUG) << "conflict at log index = " << next_index_;
+    }
+
     all_log_entries_[log_entry.log_index] = log_entry;
     if (log_entry.log_index >= next_index_) {
         next_index_ = log_entry.log_index + 1;
@@ -77,10 +104,11 @@ void NonLeaderLogManager::DoPullLogs() {
         is_running_.store(false);
         return;
     }
+
     leader_rpc_client->async_call<1>(
         RaftcppConstants::REQUEST_PULL_LOGS,
         [this](const boost::system::error_code &ec, string_view data) {},
-        /*this_node_id_str=*/this_node_id_.ToHex(),
+        /*this_node_id_str=*/this_node_id_.ToBinary(),
         /*next_index=*/next_index_);
 }
 
