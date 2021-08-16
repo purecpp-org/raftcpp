@@ -42,7 +42,7 @@ bool NonLeaderLogManager::IsRunning() const {
     return timer_manager_->IsTimerRunning(RaftcppConstants::TIMER_PULL_LOGS);
 }
 
-void NonLeaderLogManager::Push(int64_t committed_log_index, int32_t pre_log_term_num,
+void NonLeaderLogManager::Push(int64_t committed_log_index, int32_t pre_log_term,
                                LogEntry log_entry) {
     RAFTCPP_CHECK(log_entry.log_index >= 0);
 
@@ -55,15 +55,15 @@ void NonLeaderLogManager::Push(int64_t committed_log_index, int32_t pre_log_term
     if (log_entry.log_index > 0) {
         auto it = all_log_entries_.find(pre_log_index);
         if (it == all_log_entries_.end() ||
-            it->second.term_id.getTerm() != pre_log_term_num) {
+            it->second.term_id.getTerm() != pre_log_term) {
             next_index_ = pre_log_index;
             RAFTCPP_LOG(RLL_DEBUG) << "lack of log index = " << pre_log_index;
         }
     }
 
-    auto req_term_num = log_entry.term_id.getTerm();
+    auto req_term = log_entry.term_id.getTerm();
     auto it = all_log_entries_.find(log_entry.log_index);
-    if (it != all_log_entries_.end() && it->second.term_id.getTerm() != req_term_num) {
+    if (it != all_log_entries_.end() && it->second.term_id.getTerm() != req_term) {
         auto index = log_entry.log_index;
         while ((it = all_log_entries_.find(index)) != all_log_entries_.end()) {
             all_log_entries_.erase(it);

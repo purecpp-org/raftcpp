@@ -62,7 +62,7 @@ public:
                                int64_t committed_log_index) override;
 
     void HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_index,
-                               int32_t pre_log_term_num, LogEntry log_entry) override;
+                               int32_t pre_log_term, LogEntry log_entry) override;
 
     void RequestHeartbeat();
 

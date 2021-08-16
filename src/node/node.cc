@@ -388,7 +388,7 @@ void RaftNode::HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_bina
 }
 
 void RaftNode::HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_index,
-                                     int32_t pre_log_term_num, LogEntry log_entry) {
+                                     int32_t pre_log_term, LogEntry log_entry) {
     RAFTCPP_LOG(RLL_INFO) << "HandleRequestPushLogs: log_entry.term_id="
                           << log_entry.term_id.ToHex()
                           << ", committed_log_index=" << committed_log_index
@@ -408,7 +408,7 @@ void RaftNode::HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_in
             curr_term_id_.setTerm(request_term);
         }
 
-        non_leader_log_manager_->Push(committed_log_index, pre_log_term_num, log_entry);
+        non_leader_log_manager_->Push(committed_log_index, pre_log_term, log_entry);
     } else {
         // handle candidate and leader.
         // Log errors.

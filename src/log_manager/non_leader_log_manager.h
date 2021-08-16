@@ -32,7 +32,7 @@ public:
     void Stop();
     bool IsRunning() const;
 
-    void Push(int64_t committed_log_index, int32_t pre_log_term_num, LogEntry log_entry);
+    void Push(int64_t committed_log_index, int32_t pre_log_term, LogEntry log_entry);
 
     int64_t CurrLogIndex() const { return next_index_ - 1; }
 
