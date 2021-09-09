@@ -37,13 +37,9 @@ public:
     int64_t CurrLogIndex() const { return next_index_ - 1; }
 
     // attention to all_log_entries_ may be large, so as far as possible no copy
-    [[nodiscard]] std::unordered_map<int64_t, LogEntry> &Logs() {
-        return all_log_entries_;
-    }
+    std::unordered_map<int64_t, LogEntry> &Logs() { return all_log_entries_; }
 
-        [[nodiscard]] int64_t CommittedLogIndex() const {
-        return committed_log_index_;
-    }
+    int64_t CommittedLogIndex() const { return committed_log_index_; }
 
 private:
     void CommitLogs(int64_t committed_log_index);

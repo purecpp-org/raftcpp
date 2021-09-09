@@ -37,21 +37,19 @@ public:
 
     void Stop();
 
-    [[nodiscard]] int64_t CurrLogIndex() const { return curr_log_index_; }
+    int64_t CurrLogIndex() const { return curr_log_index_; }
 
-        // attention to all_log_entries_ may be large, so as far as possible no copy
-        [[nodiscard]] std::unordered_map<int64_t, LogEntry> &Logs() {
-        return all_log_entries_;
-    }
+    // attention to all_log_entries_ may be large, so as far as possible no copy
+    std::unordered_map<int64_t, LogEntry> &Logs() { return all_log_entries_; }
 
-    [[nodiscard]] int64_t CommittedLogIndex() const { return committed_log_index_; }
+    int64_t CommittedLogIndex() const { return committed_log_index_; }
 
-    private :
-        /// Try to commit the logs asynchronously. If a log was replied
-        /// by more than one half of followers, it will be async-commit,
-        /// and apply the user state machine. otherwise we don't dump it.
-        void TryAsyncCommitLogs(const NodeID &node_id, size_t next_log_index,
-                                std::function<void(int64_t)> committed_callback);
+private:
+    /// Try to commit the logs asynchronously. If a log was replied
+    /// by more than one half of followers, it will be async-commit,
+    /// and apply the user state machine. otherwise we don't dump it.
+    void TryAsyncCommitLogs(const NodeID &node_id, size_t next_log_index,
+                            std::function<void(int64_t)> committed_callback);
 
     void DoPushLogs();
 
