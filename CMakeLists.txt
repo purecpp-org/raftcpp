@@ -48,7 +48,8 @@ ADD_LIBRARY(
 		node_lib
 		src/node/node.cc
 		src/log_manager/leader_log_manager.cc
-		src/log_manager/non_leader_log_manager.cc)
+		src/log_manager/non_leader_log_manager.cc
+		src/node/no_op_request.h)
 ADD_DEPENDENCIES(node_lib asio_ep rest_rpc_ep common_lib)
 TARGET_LINK_LIBRARIES(node_lib common_lib)
 

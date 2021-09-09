@@ -21,25 +21,22 @@ LeaderLogManager::LeaderLogManager(
       this_node_id_(std::move(this_node_id)),
       get_all_rpc_clients_func_(get_all_rpc_clients_func),
       all_log_entries_(),
-      is_running_(true),
       timer_manager_(timer_manager) {
     timer_manager->RegisterTimer(RaftcppConstants::TIMER_PUSH_LOGS,
                                  std::bind(&LeaderLogManager::DoPushLogs, this));
 }
 
-void LeaderLogManager::PullLogs(const NodeID &node_id, int64_t next_log_index) {
+void LeaderLogManager::PullLogs(bool result, const NodeID &node_id,
+                                int64_t next_log_index) {
     std::lock_guard<std::mutex> lock(mutex_);
     RAFTCPP_CHECK(next_log_index >= 0 && next_log_index <= MAX_LOG_INDEX);
 
     /// Update the next log index first.
-    auto it = next_log_indexes_.find(node_id);
-    if (it != next_log_indexes_.end() && it->second >= next_log_index) {
-        return;
-    }
     next_log_indexes_[node_id] = next_log_index;
-
-    TryAsyncCommitLogs(node_id, next_log_index,
-                       /*done=*/[this](int64_t dumped_log_index) {});
+    if (result) {
+        match_log_indexes_[node_id] = next_log_index - 1;
+        TryAsyncCommitLogs(node_id, next_log_index, [this](int64_t dumped_log_index) {});
+    }
 }
 
 void LeaderLogManager::Push(const TermID &term_id,
@@ -53,7 +50,13 @@ void LeaderLogManager::Push(const TermID &term_id,
     all_log_entries_[curr_log_index_] = entry;
 }
 
-void LeaderLogManager::Run() {
+void LeaderLogManager::Run(std::unordered_map<int64_t, LogEntry> &logs,
+                           int64_t committedIndex) {
+    auto size = static_cast<int64_t>(logs.size());
+    curr_log_index_ = size - 1;
+    committed_log_index_ = committedIndex;
+    all_log_entries_.swap(logs);
+
     timer_manager_->StartTimer(RaftcppConstants::TIMER_PUSH_LOGS, 1000);
 }
 
@@ -65,6 +68,20 @@ void LeaderLogManager::TryAsyncCommitLogs(
     const NodeID &node_id, size_t next_log_index,
     std::function<void(int64_t)> committed_callback) {
     /// TODO(qwang): Trigger commit.
+
+    std::vector<int64_t> index_nums;
+    for (const auto &it : match_log_indexes_) {
+        index_nums.emplace_back(it.second);
+    }
+    index_nums.emplace_back(curr_log_index_);
+
+    std::sort(index_nums.begin(), index_nums.end());
+    auto size = index_nums.size();
+    auto i = (size % 2 == 0) ? size / 2 : size / 2 + 1;
+    int media_index = index_nums.at(i);
+    if (media_index > committed_log_index_) {
+        committed_log_index_ = media_index;
+    }
 }
 
 void LeaderLogManager::DoPushLogs() {

@@ -76,11 +76,11 @@ TEST(LogManagerTest, TestLeaderPushLog) {
             leaderFlag = i;
         }
 
-        ASSERT_EQ(nodes[i]->CurrLogIndex(), -1);
+        ASSERT_EQ(nodes[i]->CurrLogIndex(), 0);
     }
     ASSERT_NE(leaderFlag, -1);
 
-    int delta = 0;
+    int delta = 1;
     std::shared_ptr<examples::counter::IncrRequest> request =
         std::make_shared<examples::counter::IncrRequest>(delta);
     nodes[leaderFlag]->PushRequest(request);
@@ -93,6 +93,25 @@ TEST(LogManagerTest, TestLeaderPushLog) {
     for (int i = 0; i < nodeNum; ++i) {
         ASSERT_EQ(nodes[i]->CurrLogIndex(), delta);
     }
+
+    // shutdown leader
+    servers[leaderFlag] = nullptr;
+    nodes[leaderFlag].reset();
+    std::this_thread::sleep_for(std::chrono::seconds(4));
+
+    delta++;
+    for (int i = 0; i < nodeNum; ++i) {
+        if (servers[i] == nullptr) {
+            continue;
+        }
+
+        if (nodes[i]->GetCurrState() == raftcpp::RaftState::LEADER) {
+            leaderFlag = i;
+        }
+
+        ASSERT_EQ(nodes[i]->CurrLogIndex(), delta);
+    }
+    ASSERT_NE(leaderFlag, -1);
 
     // end
     std::this_thread::sleep_for(std::chrono::seconds(1));
