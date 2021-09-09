@@ -28,6 +28,8 @@ public:
 
     ~LeaderLogManager() { timer_manager_->StopTimer(RaftcppConstants::TIMER_PUSH_LOGS); }
 
+    // result for the follower handle push log, the result can be used to update
+    // match_log_indexes_ and committed_log_index_
     void PullLogs(bool result, const NodeID &node_id, int64_t next_log_index);
 
     void Push(const TermID &term_id,
