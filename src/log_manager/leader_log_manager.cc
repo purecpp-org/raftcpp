@@ -52,6 +52,7 @@ void LeaderLogManager::Push(const TermID &term_id,
 
 void LeaderLogManager::Run(std::unordered_map<int64_t, LogEntry> &logs,
                            int64_t committedIndex) {
+    std::lock_guard<std::mutex> lock(mutex_);
     auto size = static_cast<int64_t>(logs.size());
     curr_log_index_ = size - 1;
     committed_log_index_ = committedIndex;

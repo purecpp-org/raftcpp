@@ -39,12 +39,21 @@ public:
 
     void Stop();
 
-    int64_t CurrLogIndex() const { return curr_log_index_; }
+    int64_t CurrLogIndex() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return curr_log_index_;
+    }
 
     // attention to all_log_entries_ may be large, so as far as possible no copy
-    std::unordered_map<int64_t, LogEntry> &Logs() { return all_log_entries_; }
+    std::unordered_map<int64_t, LogEntry> &Logs() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return all_log_entries_;
+    }
 
-    int64_t CommittedLogIndex() const { return committed_log_index_; }
+    int64_t CommittedLogIndex() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return committed_log_index_;
+    }
 
 private:
     /// Try to commit the logs asynchronously. If a log was replied
@@ -56,7 +65,7 @@ private:
     void DoPushLogs();
 
 private:
-    std::mutex mutex_;
+    mutable std::mutex mutex_;
 
     /// The largest log index that not committed in this leader.
     int64_t curr_log_index_ = -1;

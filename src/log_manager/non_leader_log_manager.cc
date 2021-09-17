@@ -32,6 +32,7 @@ NonLeaderLogManager::NonLeaderLogManager(
 
 void NonLeaderLogManager::Run(std::unordered_map<int64_t, LogEntry> &logs,
                               int64_t committedIndex) {
+    std::lock_guard<std::mutex> lock(mutex_);
     committed_log_index_ = committedIndex;
     next_index_ = logs.size();
     all_log_entries_.swap(logs);
@@ -49,6 +50,7 @@ bool NonLeaderLogManager::IsRunning() const {
 
 void NonLeaderLogManager::Push(int64_t committed_log_index, int32_t pre_log_term,
                                LogEntry log_entry) {
+    std::lock_guard<std::mutex> lock(mutex_);
     RAFTCPP_CHECK(log_entry.log_index >= 0);
 
     /// Ignore if duplicated log_index.
