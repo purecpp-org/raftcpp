@@ -28,13 +28,27 @@ public:
         timer_manager_->StopTimer(RaftcppConstants::TIMER_PULL_LOGS);
     };
 
-    void Run();
+    void Run(std::unordered_map<int64_t, LogEntry> &logs, int64_t committedIndex);
     void Stop();
     bool IsRunning() const;
 
     void Push(int64_t committed_log_index, int32_t pre_log_term, LogEntry log_entry);
 
-    int64_t CurrLogIndex() const { return next_index_ - 1; }
+    int64_t CurrLogIndex() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return next_index_ - 1;
+    }
+
+    // attention to all_log_entries_ may be large, so as far as possible no copy
+    std::unordered_map<int64_t, LogEntry> &Logs() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return all_log_entries_;
+    }
+
+    int64_t CommittedLogIndex() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return committed_log_index_;
+    }
 
 private:
     void CommitLogs(int64_t committed_log_index);
@@ -42,13 +56,16 @@ private:
     void DoPullLogs();
 
 private:
-    std::mutex mutex_;
+    mutable std::mutex mutex_;
 
     /// The index which the leader committed.
     int64_t committed_log_index_ = -1;
 
     /// Next index to be read from leader.
     int64_t next_index_ = 0;
+
+    /// Handle push log result
+    bool push_log_result_ = true;
 
     std::unordered_map<int64_t, LogEntry> all_log_entries_;
 

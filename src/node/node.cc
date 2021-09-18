@@ -2,6 +2,7 @@
 
 #include "common/constants.h"
 #include "common/logging.h"
+#include "no_op_request.h"
 
 namespace raftcpp::node {
 
@@ -230,7 +231,10 @@ void RaftNode::OnVote(const boost::system::error_code &ec, string_view data) {
 
         this->RequestHeartbeat();
         // This node became the leader, so run the leader log manager.
-        leader_log_manager_->Run();
+        leader_log_manager_->Run(non_leader_log_manager_->Logs(),
+                                 non_leader_log_manager_->CommittedLogIndex());
+        leader_log_manager_->Push(curr_term_id_,
+                                  std::make_shared<NoOpRequest>());  // no-op
         non_leader_log_manager_->Stop();
     } else {
     }
@@ -241,7 +245,10 @@ void RaftNode::RequestHeartbeat() {
         RAFTCPP_LOG(RLL_DEBUG) << "Send a heartbeat to node.";
         item.second->async_call<0>(
             RaftcppConstants::REQUEST_HEARTBEAT,
-            /*callback=*/[](const boost::system::error_code &ec, string_view data) {},
+            /*callback=*/
+            [](const boost::system::error_code &ec, string_view data) {
+                // TODO: term_id > cur_term_id, stepdown
+            },
             curr_term_id_.getTerm(), this_node_id_.ToBinary());
     }
 }
@@ -263,8 +270,10 @@ void RaftNode::HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id,
                                        randomer_.TakeOne(1000, 2000));
         curr_term_id_.setTerm(term_id);
 
+        // only for follower first start
         if (!non_leader_log_manager_->IsRunning()) {
-            non_leader_log_manager_->Run();
+            non_leader_log_manager_->Run(leader_log_manager_->Logs(),
+                                         leader_log_manager_->CommittedLogIndex());
         }
     } else {
         if (term_id >= curr_term_id_.getTerm()) {
@@ -279,7 +288,8 @@ void RaftNode::HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id,
             timer_manager_->StopTimer(RaftcppConstants::TIMER_HEARTBEAT);
             curr_state_ = RaftState::FOLLOWER;
             leader_log_manager_->Stop();
-            non_leader_log_manager_->Run();
+            non_leader_log_manager_->Run(leader_log_manager_->Logs(),
+                                         leader_log_manager_->CommittedLogIndex());
             timer_manager_->StartTimer(RaftcppConstants::TIMER_ELECTION,
                                        RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS +
                                            randomer_.TakeOne(1000, 2000));
@@ -308,7 +318,8 @@ void RaftNode::OnHeartbeat(const boost::system::error_code &ec, string_view data
     if (term_id > curr_term_id_.getTerm()) {
         curr_state_ = RaftState::FOLLOWER;
         leader_log_manager_->Stop();
-        non_leader_log_manager_->Run();
+        non_leader_log_manager_->Run(leader_log_manager_->Logs(),
+                                     leader_log_manager_->CommittedLogIndex());
         timer_manager_->StopTimer(RaftcppConstants::TIMER_VOTE);
         timer_manager_->StartTimer(RaftcppConstants::TIMER_ELECTION,
                                    RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS +
@@ -371,16 +382,18 @@ void RaftNode::StepBack(int32_t term_id) {
 
     curr_state_ = RaftState::FOLLOWER;
     leader_log_manager_->Stop();
-    non_leader_log_manager_->Run();
+    non_leader_log_manager_->Run(leader_log_manager_->Logs(),
+                                 leader_log_manager_->CommittedLogIndex());
     curr_term_id_.setTerm(term_id);
 }
 
-void RaftNode::HandleRequestPullLogs(rpc::RpcConn conn, std::string node_id_binary,
-                                     int64_t next_log_index) {
+void RaftNode::HandleRequestPullLogs(rpc::RpcConn conn, bool result,
+                                     std::string node_id_binary, int64_t next_log_index) {
     RAFTCPP_LOG(RLL_INFO) << "HandleRequestPullLogs: next_log_index=" << next_log_index;
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     if (curr_state_ == RaftState::LEADER) {
-        leader_log_manager_->PullLogs(NodeID::FromBinary(node_id_binary), next_log_index);
+        leader_log_manager_->PullLogs(result, NodeID::FromBinary(node_id_binary),
+                                      next_log_index);
 
     } else {
         // Log errors.

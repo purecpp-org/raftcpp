@@ -28,16 +28,32 @@ public:
 
     ~LeaderLogManager() { timer_manager_->StopTimer(RaftcppConstants::TIMER_PUSH_LOGS); }
 
-    void PullLogs(const NodeID &node_id, int64_t next_log_index);
+    // result for the follower handle push log, the result can be used to update
+    // match_log_indexes_ and committed_log_index_
+    void PullLogs(bool result, const NodeID &node_id, int64_t next_log_index);
 
     void Push(const TermID &term_id,
               const std::shared_ptr<raftcpp::RaftcppRequest> &request);
 
-    void Run();
+    void Run(std::unordered_map<int64_t, LogEntry> &logs, int64_t committedIndex);
 
     void Stop();
 
-    int64_t CurrLogIndex() const { return curr_log_index_; }
+    int64_t CurrLogIndex() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return curr_log_index_;
+    }
+
+    // attention to all_log_entries_ may be large, so as far as possible no copy
+    std::unordered_map<int64_t, LogEntry> &Logs() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return all_log_entries_;
+    }
+
+    int64_t CommittedLogIndex() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return committed_log_index_;
+    }
 
 private:
     /// Try to commit the logs asynchronously. If a log was replied
@@ -49,7 +65,7 @@ private:
     void DoPushLogs();
 
 private:
-    std::mutex mutex_;
+    mutable std::mutex mutex_;
 
     /// The largest log index that not committed in this leader.
     int64_t curr_log_index_ = -1;
@@ -61,6 +77,9 @@ private:
     /// The map that contains the non-leader nodes to the next_log_index.
     std::unordered_map<NodeID, int64_t> next_log_indexes_;
 
+    /// The map that contains the non-leader nodes to follower already has max log index.
+    std::unordered_map<NodeID, int64_t> match_log_indexes_;
+
     /// The function to get all rpc clients to followers(Including this node self).
     std::function<AllRpcClientType()> get_all_rpc_clients_func_;
 
@@ -68,8 +87,6 @@ private:
     NodeID this_node_id_;
 
     boost::asio::io_service io_service_;
-
-    std::atomic_bool is_running_ = false;
 
     /// TODO(qwang): This shouldn't be hardcode.
     constexpr static size_t NODE_NUM = 3;

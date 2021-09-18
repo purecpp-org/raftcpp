@@ -30,7 +30,13 @@ NonLeaderLogManager::NonLeaderLogManager(
                                   std::bind(&NonLeaderLogManager::DoPullLogs, this));
 }
 
-void NonLeaderLogManager::Run() {
+void NonLeaderLogManager::Run(std::unordered_map<int64_t, LogEntry> &logs,
+                              int64_t committedIndex) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    committed_log_index_ = committedIndex;
+    next_index_ = logs.size();
+    all_log_entries_.swap(logs);
+
     timer_manager_->StartTimer(RaftcppConstants::TIMER_PULL_LOGS, 1000);
 }
 
@@ -44,6 +50,7 @@ bool NonLeaderLogManager::IsRunning() const {
 
 void NonLeaderLogManager::Push(int64_t committed_log_index, int32_t pre_log_term,
                                LogEntry log_entry) {
+    std::lock_guard<std::mutex> lock(mutex_);
     RAFTCPP_CHECK(log_entry.log_index >= 0);
 
     /// Ignore if duplicated log_index.
@@ -57,7 +64,10 @@ void NonLeaderLogManager::Push(int64_t committed_log_index, int32_t pre_log_term
         if (it == all_log_entries_.end() ||
             it->second.term_id.getTerm() != pre_log_term) {
             next_index_ = pre_log_index;
+            push_log_result_ = false;
+
             RAFTCPP_LOG(RLL_DEBUG) << "lack of log index = " << pre_log_index;
+            return;
         }
     }
 
@@ -78,6 +88,8 @@ void NonLeaderLogManager::Push(int64_t committed_log_index, int32_t pre_log_term
     if (log_entry.log_index >= next_index_) {
         next_index_ = log_entry.log_index + 1;
     }
+
+    push_log_result_ = true;
     CommitLogs(committed_log_index);
 }
 
@@ -108,6 +120,7 @@ void NonLeaderLogManager::DoPullLogs() {
     leader_rpc_client->async_call<1>(
         RaftcppConstants::REQUEST_PULL_LOGS,
         [this](const boost::system::error_code &ec, string_view data) {},
+        /*push_log_result=*/push_log_result_,
         /*this_node_id_str=*/this_node_id_.ToBinary(),
         /*next_index=*/next_index_);
 }

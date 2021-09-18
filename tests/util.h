@@ -211,7 +211,7 @@ public:
     }
 
     // TODO
-    void HandleRequestPullLogs(RpcConn conn, std::string node_id_binary,
+    void HandleRequestPullLogs(RpcConn conn, bool result, std::string node_id_binary,
                                int64_t next_log_index) override {
         if (IfDiscard(GetPortFromBinary(node_id_binary)) || MockNet()) {
             return;
