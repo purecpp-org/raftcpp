@@ -110,14 +110,16 @@ private:
     }
 };
 
+using term_t = int32_t;
+
 class TermID : public BaseID {
 public:
     TermID() { term_ = 0; }
 
-    explicit TermID(int32_t term) : term_(term) {
+    explicit TermID(term_t term) : term_(term) {
         data_ = "";
-        data_.resize(sizeof(int32_t));
-        memcpy(data_.data(), &term_, sizeof(int32_t));
+        data_.resize(sizeof(term_t));
+        memcpy(data_.data(), &term_, sizeof(term_t));
     }
 
     TermID(const TermID &tid) : BaseID(tid) {
@@ -132,13 +134,13 @@ public:
         return *this;
     }
 
-    int32_t getTerm() const { return term_; }
+    term_t getTerm() const { return term_; }
 
-    void setTerm(int32_t term) {
+    void setTerm(term_t term) {
         term_ = term;
         data_ = "";
-        data_.resize(sizeof(int32_t));
-        memcpy(data_.data(), &term_, sizeof(int32_t));
+        data_.resize(sizeof(term_t));
+        memcpy(data_.data(), &term_, sizeof(term_t));
     }
 
     MSGPACK_DEFINE(term_);
@@ -150,7 +152,7 @@ public:
     }
 
 private:
-    int32_t term_;
+    term_t term_;
 };
 
 }  // namespace raftcpp

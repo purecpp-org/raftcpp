@@ -355,8 +355,6 @@ void RaftNode::InitRpcHandlers() {
                                                   &RaftNode::HandleRequestVote, this);
     rpc_server_.register_handler<rest_rpc::Async>(
         RaftcppConstants::REQUEST_HEARTBEAT, &RaftNode::HandleRequestHeartbeat, this);
-    rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_PULL_LOGS,
-                                                  &RaftNode::HandleRequestPullLogs, this);
     rpc_server_.register_handler<rest_rpc::Async>(RaftcppConstants::REQUEST_PUSH_LOGS,
                                                   &RaftNode::HandleRequestPushLogs, this);
 }
@@ -387,19 +385,6 @@ void RaftNode::StepBack(int32_t term_id) {
     curr_term_id_.setTerm(term_id);
 }
 
-void RaftNode::HandleRequestPullLogs(rpc::RpcConn conn, bool result,
-                                     std::string node_id_binary, int64_t next_log_index) {
-    RAFTCPP_LOG(RLL_INFO) << "HandleRequestPullLogs: next_log_index=" << next_log_index;
-    std::lock_guard<std::recursive_mutex> guard{mutex_};
-    if (curr_state_ == RaftState::LEADER) {
-        leader_log_manager_->PullLogs(result, NodeID::FromBinary(node_id_binary),
-                                      next_log_index);
-
-    } else {
-        // Log errors.
-    }
-}
-
 void RaftNode::HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_index,
                                      int32_t pre_log_term, LogEntry log_entry) {
     RAFTCPP_LOG(RLL_INFO) << "HandleRequestPushLogs: log_entry.term_id="
@@ -410,6 +395,8 @@ void RaftNode::HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_in
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     //    non_leader_log_manager_->Push(committed_log_index, log_entry);
     if (curr_state_ == RaftState::FOLLOWER) {
+        // check sender's term
+
         /// Check log_index and term from RAFT protocol.
         auto request_term = log_entry.term_id.getTerm();
         auto cur_term = curr_term_id_.getTerm();

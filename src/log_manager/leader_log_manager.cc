@@ -2,6 +2,7 @@
 
 #include <condition_variable>
 #include <memory>
+#include <msgpack.hpp>
 #include <mutex>
 #include <queue>
 
@@ -24,19 +25,6 @@ LeaderLogManager::LeaderLogManager(
       timer_manager_(timer_manager) {
     timer_manager->RegisterTimer(RaftcppConstants::TIMER_PUSH_LOGS,
                                  std::bind(&LeaderLogManager::DoPushLogs, this));
-}
-
-void LeaderLogManager::PullLogs(bool result, const NodeID &node_id,
-                                int64_t next_log_index) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    RAFTCPP_CHECK(next_log_index >= 0 && next_log_index <= MAX_LOG_INDEX);
-
-    /// Update the next log index first.
-    next_log_indexes_[node_id] = next_log_index;
-    if (result) {
-        match_log_indexes_[node_id] = next_log_index - 1;
-        TryAsyncCommitLogs(node_id, next_log_index, [this](int64_t dumped_log_index) {});
-    }
 }
 
 void LeaderLogManager::Push(const TermID &term_id,
@@ -100,6 +88,12 @@ void LeaderLogManager::DoPushLogs() {
         }
         auto next_log_index_to_be_sent = next_log_indexes_[follower_node_id];
 
+        // get log entry
+        auto it = all_log_entries_.find(next_log_index_to_be_sent);
+        if (it == all_log_entries_.end()) {
+            continue;
+        }
+
         // get pre_log_term
         int32_t pre_log_term_num = -1;
         if (next_log_index_to_be_sent > 0) {
@@ -109,18 +103,33 @@ void LeaderLogManager::DoPushLogs() {
             }
         }
 
-        // get log entry
-        auto it = all_log_entries_.find(next_log_index_to_be_sent);
-        if (it == all_log_entries_.end()) {
-            continue;
-        }
-
         // do request push log
         auto &follower_rpc_client = follower.second;
         follower_rpc_client->async_call(
             RaftcppConstants::REQUEST_PUSH_LOGS,
-            [](boost::system::error_code ec, string_view data) {
-                //// LOG
+            [this, next_log_index_to_be_sent, follower_node_id](
+                boost::system::error_code ec, string_view data) {
+                /**
+                 * The return parameters are success and lastLogIdx
+                 * @param success if push logs successfully
+                 * @param lastLogIdx response tells the leader the last log index it has
+                 */
+                msgpack::type::tuple<bool, int64_t> response;
+                msgpack::object_handle oh = msgpack::unpack(data.data(), data.size());
+                msgpack::object obj = oh.get();
+                obj.convert(response);
+
+                bool success = response.get<0>();
+                int64_t resp_last_log_idx = response.get<1>();
+
+                std::lock_guard<std::mutex> lock(this->mutex_);
+
+                auto iter = this->next_log_indexes_.find(follower_node_id);
+                if (success) {
+                    iter->second = next_log_index_to_be_sent;
+                } else {
+                    iter->second = resp_last_log_idx;
+                }
             },
             /*committed_log_index=*/committed_log_index_,
             /*pre_log_term_num=*/pre_log_term_num,

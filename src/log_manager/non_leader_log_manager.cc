@@ -25,28 +25,13 @@ NonLeaderLogManager::NonLeaderLogManager(
       is_running_(false),
       get_leader_rpc_client_func_(std::move(get_leader_rpc_client_func)),
       fsm_(std::move(fsm)),
-      timer_manager_(timer_manager) {
-    timer_manager_->RegisterTimer(RaftcppConstants::TIMER_PULL_LOGS,
-                                  std::bind(&NonLeaderLogManager::DoPullLogs, this));
-}
+      timer_manager_(timer_manager) {}
 
-void NonLeaderLogManager::Run(std::unordered_map<int64_t, LogEntry> &logs,
-                              int64_t committedIndex) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    committed_log_index_ = committedIndex;
-    next_index_ = logs.size();
-    all_log_entries_.swap(logs);
+void NonLeaderLogManager::Run() { is_running_.store(true); }
 
-    timer_manager_->StartTimer(RaftcppConstants::TIMER_PULL_LOGS, 1000);
-}
+void NonLeaderLogManager::Stop() { is_running_.store(false); }
 
-void NonLeaderLogManager::Stop() {
-    timer_manager_->StopTimer(RaftcppConstants::TIMER_PULL_LOGS);
-}
-
-bool NonLeaderLogManager::IsRunning() const {
-    return timer_manager_->IsTimerRunning(RaftcppConstants::TIMER_PULL_LOGS);
-}
+bool NonLeaderLogManager::IsRunning() const { return is_running_.load(); }
 
 void NonLeaderLogManager::Push(int64_t committed_log_index, int32_t pre_log_term,
                                LogEntry log_entry) {
@@ -104,25 +89,6 @@ void NonLeaderLogManager::CommitLogs(int64_t committed_log_index) {
         RAFTCPP_CHECK(all_log_entries_.count(index) == 1);
         fsm_->OnApply(all_log_entries_[index].data);
     }
-}
-
-void NonLeaderLogManager::DoPullLogs() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto leader_rpc_client = get_leader_rpc_client_func_();
-    if (leader_rpc_client == nullptr) {
-        RAFTCPP_LOG(RLL_INFO) << "Failed to get leader rpc client.Is "
-                                 "this node the leader? "
-                              << is_leader_func_();
-        is_running_.store(false);
-        return;
-    }
-
-    leader_rpc_client->async_call<1>(
-        RaftcppConstants::REQUEST_PULL_LOGS,
-        [this](const boost::system::error_code &ec, string_view data) {},
-        /*push_log_result=*/push_log_result_,
-        /*this_node_id_str=*/this_node_id_.ToBinary(),
-        /*next_index=*/next_index_);
 }
 
 }  // namespace raftcpp

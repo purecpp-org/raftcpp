@@ -210,14 +210,6 @@ public:
                                    node_id_binary);
     }
 
-    // TODO
-    void HandleRequestPullLogs(RpcConn conn, bool result, std::string node_id_binary,
-                               int64_t next_log_index) override {
-        if (IfDiscard(GetPortFromBinary(node_id_binary)) || MockNet()) {
-            return;
-        }
-    }
-
     /**
      * There is no information to identify the source node.
      * We may see the leader as source node forever?
@@ -346,8 +338,6 @@ private:
         rpc_server_->register_handler<rest_rpc::Async>(
             RaftcppConstants::REQUEST_HEARTBEAT, &ProxyNode::HandleRequestHeartbeat,
             this);
-        rpc_server_->register_handler<rest_rpc::Async>(
-            RaftcppConstants::REQUEST_PULL_LOGS, &ProxyNode::HandleRequestPullLogs, this);
         rpc_server_->register_handler<rest_rpc::Async>(
             RaftcppConstants::REQUEST_PUSH_LOGS, &ProxyNode::HandleRequestPushLogs, this);
     }
