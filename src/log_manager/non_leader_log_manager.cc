@@ -27,7 +27,12 @@ NonLeaderLogManager::NonLeaderLogManager(
       fsm_(std::move(fsm)),
       timer_manager_(timer_manager) {}
 
-void NonLeaderLogManager::Run() { is_running_.store(true); }
+void NonLeaderLogManager::Run(std::unordered_map<int64_t, LogEntry> &logs, int64_t committedIndex) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    committed_log_index_ = committedIndex;
+    next_index_ = logs.size();
+    all_log_entries_.swap(logs);
+}
 
 void NonLeaderLogManager::Stop() { is_running_.store(false); }
 
