@@ -24,9 +24,7 @@ public:
         std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func,
         const std::shared_ptr<common::TimerManager> &timer_manager);
 
-    ~NonLeaderLogManager() {
-        timer_manager_->StopTimer(RaftcppConstants::TIMER_PULL_LOGS);
-    };
+    ~NonLeaderLogManager(){};
 
     void Run(std::unordered_map<int64_t, LogEntry> &logs, int64_t committedIndex);
     void Stop();
@@ -52,8 +50,6 @@ public:
 
 private:
     void CommitLogs(int64_t committed_log_index);
-
-    void DoPullLogs();
 
 private:
     mutable std::mutex mutex_;

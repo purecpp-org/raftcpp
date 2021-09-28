@@ -58,9 +58,6 @@ public:
     void HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id,
                                 std::string node_id_binary) override;
 
-    void HandleRequestPullLogs(rpc::RpcConn conn, bool result, std::string node_id_binary,
-                               int64_t committed_log_index) override;
-
     void HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_index,
                                int32_t pre_log_term, LogEntry log_entry) override;
 
