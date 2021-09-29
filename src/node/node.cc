@@ -96,6 +96,9 @@ void RaftNode::RequestPreVote() {
 
 void RaftNode::HandleRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str,
                                     int32_t term_id) {
+    const Endpoint ep(endpoint_str);
+    const NodeID sender_id(ep);
+
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     if (this->config_.GetThisEndpoint().ToString() == endpoint_str) return;
     RAFTCPP_LOG(RLL_DEBUG) << "HandleRequestPreVote this node "
@@ -119,7 +122,7 @@ void RaftNode::HandleRequestPreVote(rpc::RpcConn conn, const std::string &endpoi
         if (term_id > curr_term_id_.getTerm()) {
             RAFTCPP_LOG(RLL_DEBUG)
                 << "HandleRequestPreVote Received a RequestPreVote,now  step down";
-            StepBack(term_id);
+            StepBack(term_id, NodeID());
             if (conn_sp) {
                 conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
             }
@@ -147,6 +150,7 @@ void RaftNode::OnPreVote(const boost::system::error_code &ec, string_view data) 
                               << this->config_.GetThisEndpoint().ToString()
                               << " has became a candidate now.";
         curr_term_id_.setTerm(curr_term_id_.getTerm() + 1);
+        vote_for_ = NodeID();
         timer_manager_->StopTimer(RaftcppConstants::TIMER_ELECTION);
         timer_manager_->StartTimer(RaftcppConstants::TIMER_VOTE,
                                    RaftcppConstants::DEFAULT_VOTE_TIMER_TIMEOUT_MS);
@@ -178,29 +182,64 @@ void RaftNode::RequestVote() {
 }
 
 void RaftNode::HandleRequestVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                                 int32_t term_id) {
+                                 term_t recv_term_id) {
     RAFTCPP_LOG(RLL_DEBUG) << "Node " << this->config_.GetThisEndpoint().ToString()
                            << " response vote";
+
+    const Endpoint ep(endpoint_str);
+    const NodeID sender_id(ep);
     std::lock_guard<std::recursive_mutex> guard{mutex_};
+
+    const term_t cur_term_id = curr_term_id_.getTerm();
+
+    // ignore lower term rpc
+    if (recv_term_id < cur_term_id) {
+        return;
+    }
+
     const auto req_id = conn.lock()->request_id();
     auto conn_sp = conn.lock();
-    if (curr_state_ == RaftState::FOLLOWER) {
-        if (term_id > curr_term_id_.getTerm()) {
-            curr_term_id_.setTerm(term_id);
-            timer_manager_->ResetTimer(
-                RaftcppConstants::TIMER_ELECTION,
-                RaftcppConstants::DEFAULT_ELECTION_TIMER_TIMEOUT_MS);
-            if (conn_sp) {
-                conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
-            }
+
+    if (recv_term_id > cur_term_id) {
+        // find a newer term, always step back
+        StepBack(recv_term_id, NodeID());
+
+        // TODO check if requester's logs are stale
+        bool stale = false;
+        if (stale) {
+            // TODO run for leader immediately
+            return;
         }
-    } else if (curr_state_ == RaftState::CANDIDATE || curr_state_ == RaftState::LEADER) {
-        // TODO(qwang):
-        if (term_id > curr_term_id_.getTerm()) {
-            StepBack(term_id);
-            if (conn_sp) {
-                conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
-            }
+
+        vote_for_ = sender_id;
+        if (conn_sp) {
+            conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
+        }
+    } else {
+        if (curr_state_ == RaftState::LEADER) {
+            // leader should ignore vote request from the same term
+            return;
+        }
+
+        if (curr_state_ == RaftState::CANDIDATE) {
+            // TODO when find a server with newer logs than us, we should reset
+            // the timer to wait a moment for speeding up the election
+
+            // if find a server with newer logs -> wait a moment
+            // else -> ignore it
+            return;
+        }
+
+        if (vote_for_ == sender_id) {
+            // We have voted for this server and do not vote for it again
+            return;
+        }
+
+        // vote for it
+        vote_for_ = sender_id;
+        curr_term_id_.setTerm(recv_term_id);
+        if (conn_sp) {
+            conn_sp->response(req_id, config_.GetThisEndpoint().ToString());
         }
     }
 }
@@ -372,7 +411,7 @@ void RaftNode::InitTimers() {
     timer_manager_->Run();
 }
 
-void RaftNode::StepBack(int32_t term_id) {
+void RaftNode::StepBack(int32_t term_id, const NodeID &id) {
     timer_manager_->StopTimer(RaftcppConstants::TIMER_HEARTBEAT);
     timer_manager_->StopTimer(RaftcppConstants::TIMER_VOTE);
     timer_manager_->ResetTimer(RaftcppConstants::TIMER_ELECTION,
@@ -382,6 +421,10 @@ void RaftNode::StepBack(int32_t term_id) {
     leader_log_manager_->Stop();
     non_leader_log_manager_->Run(leader_log_manager_->Logs(),
                                  leader_log_manager_->CommittedLogIndex());
+
+    if (curr_term_id_.getTerm() != term_id) {
+        vote_for_ = id;
+    }
     curr_term_id_.setTerm(term_id);
 }
 

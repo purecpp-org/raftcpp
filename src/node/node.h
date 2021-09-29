@@ -84,7 +84,7 @@ private:
 
     void InitRpcHandlers();
 
-    void StepBack(int32_t term_id);
+    void StepBack(int32_t term_id, const NodeID &id);
 
     void InitTimers();
 
@@ -94,6 +94,9 @@ private:
 
     // Current term id in this node local view.
     TermID curr_term_id_;
+
+    // the server we vote in curr_term_id_
+    NodeID vote_for_;
 
     // The rpc server on this node to be connected from all other node in this raft group.
     rest_rpc::rpc_service::rpc_server &rpc_server_;
