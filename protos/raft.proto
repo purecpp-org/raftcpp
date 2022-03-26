@@ -1,0 +1,29 @@
+syntax = "proto3";
+package raftcpp;
+
+message RequestPreVote {
+    string endpoint = 1;
+    int32 termid = 2;
+}
+
+message RequestVote {
+    string endpoint = 1;
+    int32 termid = 2;
+}
+
+message RequestHeartbeat {
+    int32 termid = 1;
+    string node_id = 2;
+}
+
+message LogEntry {
+    int32 termid = 1;
+    uint64 log_index = 2;
+    string data = 3;
+}
+
+message RequestPushLogs {
+    int64 commited_log_index = 1;
+    int32 pre_log_term = 2;
+    LogEntry log = 3;
+}

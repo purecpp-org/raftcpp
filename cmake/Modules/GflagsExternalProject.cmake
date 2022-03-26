@@ -1,8 +1,6 @@
-set(GFLAGS_VERSION        "v2.2.2")
 set(GFLAGS_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/external/gflags-install")
 set(GFLAGS_INSTALL_DIR ${GFLAGS_PREFIX}/gflags)
 set(GFLAGS_INCLUDE_DIR "${GFLAGS_INSTALL_DIR}/include" CACHE PATH "gflags include directory." FORCE)
-set(GFLAGS_URL https://github.com/gflags/gflags/archive/${GFLAGS_VERSION}.zip)
 
 
 if(MSVC)
@@ -12,10 +10,12 @@ else(MSVC)
 endif(MSVC)
 
 include_directories(SYSTEM ${GFLAGS_INCLUDE_DIR})
-ExternalProject_Add(
-    gflags_ep
-    ${EXTERNAL_PROJECT_LOG_ARGS}      
-    URL ${GFLAGS_URL}
+ExternalProject_Add( gflags_ep
+    ${EXTERNAL_PROJECT_LOG_ARGS}
+        GIT_REPOSITORY https://github.com/gflags/gflags.git
+        GIT_TAG e171aa2d15ed9eb17054558e0b3a6a413bb01067
+        GIT_REMOTE_UPDATE_STRATEGY REBASE
+        UPDATE_DISCONNECTED 1
     PREFIX          ${GFLAGS_PREFIX}
     UPDATE_COMMAND  ""
     CMAKE_ARGS      -DCMAKE_INSTALL_PREFIX=${GFLAGS_INSTALL_DIR}

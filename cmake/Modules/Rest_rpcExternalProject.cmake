@@ -6,18 +6,15 @@
 #  - REST_RPC_INCLUDE_DIR
 #  - MSGPACK_INCLUDE_DIR
 
-set(REST_RPC_VERSION "0.11")
-
 set(REST_RPC_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/external/rest-rpc-install")
 set(REST_RPC_INCLUDE_DIR "${REST_RPC_PREFIX}/include")
 set(MSGPACK_INCLUDE_DIR "${REST_RPC_PREFIX}/third/msgpack/include")
 
-set(REST_RPC_URL_MD5 "4ca191007548149ba6803ba9558925de")
-
 ExternalProject_Add(rest_rpc_ep
         PREFIX external/rest-rpc
-        URL "https://github.com/qicosmos/rest_rpc/archive/V${REST_RPC_VERSION}.tar.gz"
-        URL_MD5 ${REST_RPC_URL_MD5}
+        GIT_REPOSITORY https://github.com/qicosmos/rest_rpc.git
+        GIT_TAG 98262e4b0aa77c448c6e5608b77bfbc2c1ef0c1c
+        GIT_REMOTE_UPDATE_STRATEGY REBASE
         BUILD_IN_SOURCE 1
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""

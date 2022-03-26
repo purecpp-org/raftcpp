@@ -36,13 +36,14 @@ set(GMOCK_MAIN_STATIC_LIB
 set(GTEST_CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX=${GTEST_PREFIX} -DCMAKE_INSTALL_LIBDIR=${GTEST_PREFIX}/lib)
 
-set(GTEST_URL_MD5 "e8a8df240b6938bb6384155d4c37d937")
 set(GTEST_LANG_CXX11 1)
 
 ExternalProject_Add(googletest_ep
         PREFIX external/googletest
-        URL "https://github.com/google/googletest/archive/release-${GTEST_VERSION}.tar.gz"
-        URL_MD5 ${GTEST_URL_MD5}
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG e2239ee6043f73722e7aa812a459f54a28552929
+        GIT_REMOTE_UPDATE_STRATEGY REBASE
+        UPDATE_DISCONNECTED 1
         BUILD_BYPRODUCTS ${GTEST_STATIC_LIB} ${GTEST_MAIN_STATIC_LIB} ${GMOCK_MAIN_STATIC_LIB}
         CMAKE_ARGS ${GTEST_CMAKE_ARGS}
         CMAKE_ARGS -Dgtest_force_shared_crt=ON        
