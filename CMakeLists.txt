@@ -1,6 +1,6 @@
-﻿CMAKE_MINIMUM_REQUIRED(VERSION 3.11)
+﻿CMAKE_MINIMUM_REQUIRED(VERSION 3.19)
 SET(project_name raftcpp)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 PROJECT(${project_name})
 
@@ -19,6 +19,7 @@ INCLUDE(ExternalProject)
 INCLUDE(GtestExternalProject)
 INCLUDE(AsioExternalProject)
 INCLUDE(Rest_rpcExternalProject)
+INCLUDE(GrpcExternal)
 INCLUDE(GflagsExternalProject)
 INCLUDE(CustomeFunctions)
 INCLUDE(SpdlogExternalProject)
@@ -29,9 +30,12 @@ INCLUDE_DIRECTORIES(
 		SYSTEM ${GTEST_INCLUDE_DIR}
 		SYSTEM ${ASIO_INCLUDE_DIR}
 		SYSTEM ${REST_RPC_INCLUDE_DIR}
+		SYSTEM ${PROTOBUF_INCLUDE_DIR}
+		SYSTEM ${GRPC_INCLUDE_DIR}
 		SYSTEM ${MSGPACK_INCLUDE_DIR}
 		SYSTEM ${GFLAGS_INCLUDE_DIR}
 		SYSTEM ${SPDLOG_INCLUDE_DIR}
+		SYSTEM ${PROTO_SRC_DIR}
 )
 
 # common library
@@ -41,7 +45,7 @@ ADD_LIBRARY(common_lib
 		src/common/timer_manager.cc
 		src/common/file.cc
 		src/common/logging.cc)
-ADD_DEPENDENCIES(common_lib asio_ep rest_rpc_ep spdlog_ep )
+ADD_DEPENDENCIES(common_lib asio_ep rest_rpc_ep grpc_ep protobuf_ep spdlog_ep)
 
 # node library
 ADD_LIBRARY(
@@ -49,8 +53,18 @@ ADD_LIBRARY(
 		src/node/node.cc
 		src/log_manager/leader_log_manager.cc
 		src/log_manager/non_leader_log_manager.cc)
-ADD_DEPENDENCIES(node_lib asio_ep rest_rpc_ep common_lib)
-TARGET_LINK_LIBRARIES(node_lib common_lib)
+ADD_DEPENDENCIES(node_lib asio_ep rest_rpc_ep grpc_ep protobuf_ep common_lib)
+
+
+# grpc library
+ADD_LIBRARY(
+		rpc_lib
+		src/rpc/proto.cc
+		${PROTO_HDRS}
+		${GRPC_HDRS}
+)
+ADD_DEPENDENCIES(rpc_lib common_lib asio_ep grpc_ep protobuf_ep)
+TARGET_LINK_LIBRARIES(node_lib rpc_lib common_lib)
 
 
 # Test targets
