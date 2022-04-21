@@ -4,7 +4,7 @@
 #include <mutex>
 #include <queue>
 
-#include "log_manager/blocking_queue_interface.h"
+#include "blocking_queue_interface.h"
 
 namespace raftcpp {
 
@@ -67,7 +67,7 @@ std::vector<LogEntryType> BlockingQueueMutexImpl<LogEntryType>::MostFront(
     if (queue_.size() < mostFrontNumber) {
         mostFrontNumber = queue_.size();
     }
-
+    // TODO: Just copy a vector form the queue.
     while (!queue_.empty()) {
         v.push_back(queue_.front());
         queue_.pop();

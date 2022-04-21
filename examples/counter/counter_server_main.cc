@@ -5,10 +5,6 @@
 #include "common/config.h"
 #include "counter_state_machine.h"
 #include "node/node.h"
-#include "rest_rpc/rpc_server.h"
-
-using namespace rest_rpc;
-using namespace rpc_service;
 
 using namespace examples;
 using namespace examples::counter;
@@ -53,9 +49,11 @@ int main(int argc, char *argv[]) {
         conf_str = FLAGS_conf;
         gflags::ShutDownCommandLineFlags();
     }
-//    RAFTCPP_CHECK(!conf_str.empty()) << "Failed to start counter server with empty config string.";
+    //    RAFTCPP_CHECK(!conf_str.empty()) << "Failed to start counter server with empty
+    //    config string.";
     if (conf_str.empty()) {
-        RAFTCPP_LOG(RLL_INFO) << "Failed to start counter server with empty config string.";
+        RAFTCPP_LOG(RLL_INFO)
+            << "Failed to start counter server with empty config string.";
         return -1;
     }
     const auto config = raftcpp::common::Config::From(conf_str);

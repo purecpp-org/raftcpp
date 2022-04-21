@@ -1,6 +1,6 @@
 #include "common/file.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 TEST(FileTest, TestWriteToFile) {
     using namespace raftcpp;

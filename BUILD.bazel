@@ -1,0 +1,197 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_proto_library", "cc_test")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@com_github_grpc_grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
+
+cc_library(
+    name = "common_lib",
+    srcs = glob(["src/common/*.cc"]),
+    hdrs = glob(["src/common/*.h"]),
+    strip_include_prefix = "//src",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@asio",
+        "@com_github_spdlog//:spdlog",
+    ],
+)
+
+cc_grpc_library(
+    name = "raft_cc_grpc",
+    srcs = ["//protos:raft_proto"],
+    grpc_only = True,
+    deps = [
+        "//protos:raft_cc_proto",
+    ],
+)
+
+cc_library(
+    name = "node_lib",
+    srcs = glob([
+        "src/node/*.cc",
+        "src/log_manager/*.cc",
+    ]),
+    hdrs = glob([
+        "src/node/*.h",
+        "src/log_manager/*.h",
+        "src/statemachine/*.h",
+    ]),
+    strip_include_prefix = "//src",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":common_lib",
+        ":raft_cc_grpc",
+        ":rpc_lib",
+        "@asio",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_github_spdlog//:spdlog",
+    ],
+)
+
+cc_library(
+    name = "rpc_lib",
+    srcs = glob(["src/rpc/*.cc"]),
+    hdrs = glob(["src/rpc/*.h"]),
+    strip_include_prefix = "//src",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":common_lib",
+        ":raft_cc_grpc",
+        "@asio",
+        "@com_github_grpc_grpc//:grpc++",
+    ],
+)
+
+# TODO: (luhuanbing) rebuild examples.
+#cc_test(
+#    name = "example_counter_client_main",
+#    srcs = glob([
+#        "examples/counter/counter_client_main.cc",
+#    ]),
+#    deps = [
+#        ":common_lib",
+#        "@com_github_gflags_gflags//:gflags",
+#        "@com_google_googletest//:gtest_main",
+#    ],
+#)
+#
+#cc_test(
+#    name = "example_counter_server_main",
+#    srcs = glob([
+#        "examples/counter/counter_server_main.cc",
+#    ]),
+#    deps = [
+#        ":node_lib",
+#        "@com_github_gflags_gflags//:gflags",
+#        "@com_google_googletest//:gtest_main",
+#    ],
+#)
+
+cc_test(
+    name = "test_timer",
+    srcs = glob([
+        "tests/unit_tests/timer_test.cc",
+    ]),
+    deps = [
+        ":common_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "test_config",
+    srcs = glob([
+        "tests/unit_tests/config_test.cc",
+    ]),
+    deps = [
+        ":common_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "test_logging",
+    srcs = glob([
+        "tests/unit_tests/logging_test.cc",
+    ]),
+    deps = [
+        ":common_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "test_file",
+    srcs = glob([
+        "tests/unit_tests/file_test.cc",
+    ]),
+    deps = [
+        ":common_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "test_log_manager",
+    srcs = glob([
+        "tests/unit_tests/blocking_queue_test.cc",
+    ]),
+    deps = [
+        ":common_lib",
+        ":node_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "test_node_id",
+    srcs = glob([
+        "tests/unit_tests/nodeid_test.cc",
+    ]),
+    deps = [
+        ":common_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "logging_check_test",
+    srcs = glob([
+        "tests/unit_tests/logging_check_test.cc",
+    ]),
+    deps = [
+        ":common_lib",
+        ":node_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+# TODO: (luhuanbing) repair the log mannager test
+#cc_test(
+#    name = "logger_manager_test",
+#    srcs = glob([
+#        "tests/unit_tests/log_manager_test.cc",
+#        "tests/unit_tests/util.cc",
+#        "tests/unit_tests/util.h",
+#    ]),
+#    deps = [
+#        ":common_lib",
+#        ":node_lib",
+#        "@com_github_grpc_grpc//:grpc++",
+#        "@com_google_googletest//:gtest_main",
+#    ],
+#)
+
+cc_test(
+    name = "select_test",
+    srcs = glob([
+        "tests/unit_tests/select_test.cc",
+        "tests/unit_tests/util.cc",
+        "tests/unit_tests/util.h",
+    ]),
+    deps = [
+        ":common_lib",
+        ":node_lib",
+        ":raft_cc_grpc",
+        ":rpc_lib",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

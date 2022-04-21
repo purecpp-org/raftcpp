@@ -9,7 +9,7 @@ namespace raftcpp {
 template <typename LogEntryType>
 class BlockingQueueInterface {
 public:
-    virtual ~BlockingQueueInterface() {}
+    virtual ~BlockingQueueInterface() = default;
 
     /**
      * Pop the front element from blocking queue. Note that

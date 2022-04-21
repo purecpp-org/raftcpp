@@ -1,37 +1,39 @@
 #pragma once
 
+#include <grpcpp/client_context.h>
+
 #include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
 
-#include "common/config.h"
-#include "common/endpoint.h"
-#include "common/id.h"
-#include "common/logging.h"
-#include "common/timer.h"
-#include "common/timer_manager.h"
-#include "common/type_def.h"
-#include "log_manager/blocking_queue_interface.h"
-#include "log_manager/blocking_queue_mutex_impl.h"
-#include "log_manager/leader_log_manager.h"
-#include "log_manager/log_entry.h"
-#include "log_manager/non_leader_log_manager.h"
-#include "rest_rpc/rpc_client.hpp"
-#include "rest_rpc/rpc_server.h"
-#include "rpc/common.h"
-#include "rpc/services.h"
-#include "statemachine/state_machine.h"
+#include "protos/raft.grpc.pb.h"
+#include "protos/raft.pb.h"
+#include "src/common/config.h"
+#include "src/common/endpoint.h"
+#include "src/common/id.h"
+#include "src/common/logging.h"
+#include "src/common/timer.h"
+#include "src/common/timer_manager.h"
+#include "src/common/type_def.h"
+#include "src/log_manager/blocking_queue_interface.h"
+#include "src/log_manager/blocking_queue_mutex_impl.h"
+#include "src/log_manager/leader_log_manager.h"
+#include "src/log_manager/non_leader_log_manager.h"
+#include "src/statemachine/state_machine_impl.h"
 
 namespace raftcpp {
 namespace node {
 
-class RaftNode : public rpc::NodeService, public std::enable_shared_from_this<RaftNode> {
+class RaftNode : public raftrpc::Service, public std::enable_shared_from_this<RaftNode> {
 public:
     RaftNode(
-        std::shared_ptr<StateMachine> state_machine,
-        rest_rpc::rpc_service::rpc_server &rpc_server, const common::Config &config,
+        std::shared_ptr<RaftStateMachine> state_machine,
+        // std::unique_ptr<grpc::Server> rpc_server,
+        const common::Config &config,
         const raftcpp::RaftcppLogLevel severity = raftcpp::RaftcppLogLevel::RLL_DEBUG);
+
+    // explicit RaftNode() = default;
 
     ~RaftNode();
 
@@ -39,31 +41,35 @@ public:
 
     bool IsLeader() const;
 
-    void PushRequest(const std::shared_ptr<raftcpp::RaftcppRequest> &request);
+    void PushRequest(const std::shared_ptr<PushLogsRequest> &request);
 
     void RequestPreVote();
 
-    void HandleRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                              int32_t term_id) override;
+    grpc::Status HandleRequestPreVote(::grpc::ServerContext *context,
+                                      const ::raftcpp::PreVoteRequest *request,
+                                      ::raftcpp::PreVoteResponse *response);
 
-    void OnPreVote(const boost::system::error_code &ec, string_view data);
+    void OnPreVote(const asio::error_code &ec, std::string_view data);
 
     void RequestVote();
 
-    void HandleRequestVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                           int32_t term_id) override;
+    grpc::Status HandleRequestVote(::grpc::ServerContext *context,
+                                   const ::raftcpp::VoteRequest *request,
+                                   ::raftcpp::VoteResponse *response);
 
-    void OnVote(const boost::system::error_code &ec, string_view data);
+    void OnVote(const asio::error_code &ec, std::string_view data);
 
-    void HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id,
-                                std::string node_id_binary) override;
+    grpc::Status HandleRequestHeartbeat(::grpc::ServerContext *context,
+                                        const ::raftcpp::HeartbeatRequest *request,
+                                        ::raftcpp::HeartbeatResponse *response);
 
-    void HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_index,
-                               int32_t pre_log_term, LogEntry log_entry) override;
+    grpc::Status HandleRequestPushLogs(::grpc::ServerContext *context,
+                                       const ::raftcpp::PushLogsRequest *request,
+                                       ::google::protobuf::Empty *response);
 
     void RequestHeartbeat();
 
-    void OnHeartbeat(const boost::system::error_code &ec, string_view data);
+    void OnHeartbeat(const asio::error_code &ec, std::string_view data);
 
     RaftState GetCurrState() {
         std::lock_guard<std::recursive_mutex> guard{mutex_};
@@ -82,7 +88,7 @@ public:
 private:
     void ConnectToOtherNodes();
 
-    void InitRpcHandlers();
+    // void InitRpcHandlers();
 
     void StepBack(int32_t term_id);
 
@@ -96,10 +102,10 @@ private:
     TermID curr_term_id_;
 
     // The rpc server on this node to be connected from all other node in this raft group.
-    rest_rpc::rpc_service::rpc_server &rpc_server_;
+    // std::unique_ptr<grpc::Server> rpc_server_;
 
     // The rpc clients to all other nodes.
-    std::unordered_map<NodeID, std::shared_ptr<rest_rpc::rpc_client>> all_rpc_clients_;
+    std::unordered_map<NodeID, std::shared_ptr<raftrpc::Stub>> all_rpc_clients_;
 
     common::Config config_;
 
@@ -122,6 +128,7 @@ private:
     NodeID this_node_id_;
 
     std::shared_ptr<StateMachine> state_machine_;
+
     std::unique_ptr<NodeID> leader_node_id_ = nullptr;
 
     std::shared_ptr<common::TimerManager> timer_manager_;

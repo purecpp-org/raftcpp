@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <cstdlib>
 
 namespace raftcpp {
 namespace common {

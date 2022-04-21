@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rpc/common.h"
+#include <string>
 
 namespace raftcpp {
 
@@ -14,7 +14,7 @@ public:
 
     //    virtual RaftcppResponse OnApply(RaftcppRequest &request) = 0;
 
-    virtual RaftcppResponse OnApply(const std::string &serialized) = 0;
+    virtual bool OnApply(const std::string &serialized) = 0;
 
 private:
 };

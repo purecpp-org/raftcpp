@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: CPP CI
 
 on:
   push:
@@ -22,7 +22,8 @@ jobs:
         GITHUB_CONTEXT: ${{ toJson(github) }}
       run: ./check-git-clang-format-output.sh
 
-  build:
+  build-with-bazel:
+    timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -30,17 +31,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: build
+    - name: BUILD
       run: ./build.sh
-    - name: run test
-      run: cd build && ../run_all_tests.sh 
-      
-#  build_on_windows:
-#    runs-on: windows-latest
-#    steps:
-#    - uses: actions/checkout@v2
-#    - name: build
-#      run: |
-#        cmake . -Bbuild -G"Visual Studio 16 2019" -DCMAKE_GENERATOR_PLATFORM=x64
-#        cmake --build build --target ALL_BUILD --config Release
-#TODO(qwang): Add run_all_tests.sh to windows ci.
+    - name: TEST
+      run:  bazel test //:all --jobs=4
