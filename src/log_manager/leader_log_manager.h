@@ -1,23 +1,26 @@
 #pragma once
 
+#include <raft.pb.h>
+
 #include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <queue>
 
 #include "common/constants.h"
+#include "common/id.h"
 #include "common/timer.h"
 #include "common/timer_manager.h"
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
-#include "log_manager/log_entry.h"
-#include "rest_rpc.hpp"
-#include "rpc/common.h"
+#include "rpc/client.h"
+// #include "log_manager/log_entry.h"
+// #include "rest_rpc.hpp"
+// #include "rpc/common.h"
 
 namespace raftcpp {
 
-using AllRpcClientType =
-    std::unordered_map<NodeID, std::shared_ptr<rest_rpc::rpc_client>>;
+using AllRpcClientType = std::unordered_map<NodeID, std::shared_ptr<raftclient>>;
 
 /// TODO(qwang): Should clean all inmemory data once this is Ran().
 class LeaderLogManager final {
@@ -28,8 +31,7 @@ public:
 
     ~LeaderLogManager() { timer_manager_->StopTimer(RaftcppConstants::TIMER_PUSH_LOGS); }
 
-    void Push(const TermID &term_id,
-              const std::shared_ptr<raftcpp::RaftcppRequest> &request);
+    void Push(const TermID &term_id, const std::shared_ptr<PushLogsRequest> &request);
 
     void Run(std::unordered_map<int64_t, LogEntry> &logs, int64_t committedIndex);
 
@@ -82,7 +84,7 @@ private:
     /// ID of this node.
     NodeID this_node_id_;
 
-    boost::asio::io_service io_service_;
+    asio::io_service io_service_;
 
     /// TODO(qwang): This shouldn't be hardcode.
     constexpr static size_t NODE_NUM = 3;

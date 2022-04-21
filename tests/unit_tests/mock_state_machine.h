@@ -2,11 +2,11 @@
 
 #include "statemachine/state_machine.h"
 
-class MockResponse : public raftcpp::RaftcppResponse {
+class MockResponse {
 public:
     MockResponse() {}
 
-    ~MockResponse() override {}
+    ~MockResponse()  {}
 };
 
 class MockStateMachine : public raftcpp::StateMachine {
@@ -17,9 +17,9 @@ public:
 
     void LoadSnapshot() override{};
 
-    virtual raftcpp::RaftcppResponse OnApply(const std::string &serialized) override {
-        return MockResponse();
-    };
+    // virtual raftcpp::RaftcppResponse OnApply(const std::string &serialized) override {
+    //     return MockResponse();
+    // };
 
 private:
 };

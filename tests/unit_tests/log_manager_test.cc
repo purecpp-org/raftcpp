@@ -1,13 +1,11 @@
 #include <thread>
 #include <vector>
 
-#include "../examples/counter/counter_state_machine.h"
 #include "common/config.h"
 #include "common/logging.h"
 #include "gtest/gtest.h"
 #include "mock_state_machine.h"
 #include "node/node.h"
-#include "rest_rpc/rpc_server.h"
 
 std::string init_config(std::string address, int basePort, int nodeNum, int thisNode) {
     std::vector<std::string> addr;

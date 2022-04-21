@@ -67,7 +67,7 @@ std::vector<LogEntryType> BlockingQueueMutexImpl<LogEntryType>::MostFront(
     if (queue_.size() < mostFrontNumber) {
         mostFrontNumber = queue_.size();
     }
-
+    // TODO: Just copy a vector form the queue.
     while (!queue_.empty()) {
         v.push_back(queue_.front());
         queue_.pop();

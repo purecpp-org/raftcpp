@@ -1,16 +1,16 @@
-#pragma once
+// #pragma once
 
-#include <string>
+// #include <string>
 
-#include "rpc/common.h"
+// #include "rpc/common.h"
 
-namespace raftcpp::node {
+// namespace raftcpp::node {
 
-class NoOpRequest : public RaftcppRequest {
-public:
-    std::string Serialize() override { return ""; };
+// class NoOpRequest : public RaftcppRequest {
+// public:
+//     std::string Serialize() override { return ""; };
 
-    void Deserialize(const std::string &s) override{};
-};
+//     void Deserialize(const std::string &s) override{};
+// };
 
-}  // namespace raftcpp::node
+// }  // namespace raftcpp::node

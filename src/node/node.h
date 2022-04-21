@@ -1,7 +1,12 @@
 #pragma once
 
+#include <grpcpp/client_context.h>
+#include <raft.grpc.pb.h>
+#include <raft.pb.h>
+
 #include <iostream>
 #include <memory>
+#include <rest_rpc/use_asio.hpp>
 #include <string>
 #include <unordered_map>
 
@@ -17,20 +22,16 @@
 #include "log_manager/leader_log_manager.h"
 #include "log_manager/log_entry.h"
 #include "log_manager/non_leader_log_manager.h"
-#include "rest_rpc/rpc_client.hpp"
-#include "rest_rpc/rpc_server.h"
-#include "rpc/common.h"
-#include "rpc/services.h"
 #include "statemachine/state_machine.h"
 
 namespace raftcpp {
 namespace node {
 
-class RaftNode : public rpc::NodeService, public std::enable_shared_from_this<RaftNode> {
+class RaftNode : public raftrpc::Service, public std::enable_shared_from_this<RaftNode> {
 public:
     RaftNode(
-        std::shared_ptr<StateMachine> state_machine,
-        rest_rpc::rpc_service::rpc_server &rpc_server, const common::Config &config,
+        std::shared_ptr<StateMachine> state_machine, grpc::Server &rpc_server,
+        const common::Config &config,
         const raftcpp::RaftcppLogLevel severity = raftcpp::RaftcppLogLevel::RLL_DEBUG);
 
     ~RaftNode();
@@ -39,27 +40,31 @@ public:
 
     bool IsLeader() const;
 
-    void PushRequest(const std::shared_ptr<raftcpp::RaftcppRequest> &request);
+    void PushRequest(const std::shared_ptr<PushLogsRequest> &request);
 
     void RequestPreVote();
 
-    void HandleRequestPreVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                              int32_t term_id) override;
+    grpc::Status HandleRequestPreVote(::grpc::ServerContext *context,
+                                      const ::raftcpp::PreVoteRequest *request,
+                                      ::raftcpp::PreVoteResponse *response);
 
     void OnPreVote(const boost::system::error_code &ec, string_view data);
 
     void RequestVote();
 
-    void HandleRequestVote(rpc::RpcConn conn, const std::string &endpoint_str,
-                           int32_t term_id) override;
+    grpc::Status HandleRequestVote(::grpc::ServerContext *context,
+                                   const ::raftcpp::VoteRequest *request,
+                                   ::raftcpp::VoteResponse *response);
 
     void OnVote(const boost::system::error_code &ec, string_view data);
 
-    void HandleRequestHeartbeat(rpc::RpcConn conn, int32_t term_id,
-                                std::string node_id_binary) override;
+    grpc::Status HandleRequestHeartbeat(::grpc::ServerContext *context,
+                                        const ::raftcpp::HeartbeatRequest *request,
+                                        ::raftcpp::HeartbeatResponse *response);
 
-    void HandleRequestPushLogs(rpc::RpcConn conn, int64_t committed_log_index,
-                               int32_t pre_log_term, LogEntry log_entry) override;
+    grpc::Status HandleRequestPushLogs(::grpc::ServerContext *context,
+                                       const ::raftcpp::PushLogsRequest *request,
+                                       ::google::protobuf::Empty *response);
 
     void RequestHeartbeat();
 
@@ -82,7 +87,7 @@ public:
 private:
     void ConnectToOtherNodes();
 
-    void InitRpcHandlers();
+    // void InitRpcHandlers();
 
     void StepBack(int32_t term_id);
 
@@ -96,10 +101,10 @@ private:
     TermID curr_term_id_;
 
     // The rpc server on this node to be connected from all other node in this raft group.
-    rest_rpc::rpc_service::rpc_server &rpc_server_;
+    grpc::Server &rpc_server_;
 
     // The rpc clients to all other nodes.
-    std::unordered_map<NodeID, std::shared_ptr<rest_rpc::rpc_client>> all_rpc_clients_;
+    std::unordered_map<NodeID, std::shared_ptr<raftclient>> all_rpc_clients_;
 
     common::Config config_;
 

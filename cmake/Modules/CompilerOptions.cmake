@@ -1,5 +1,9 @@
 if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang"))
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -pthread -std=c++17")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -pthread -std=c++20 ")
+    #add_compile_options(-Wall -Wextra -pedantic -Werror)
+    add_compile_options(-O3)
+    set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fno-optimize-sibling-calls")
+    set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fno-optimize-sibling-calls")
     # The major alternative compiler to GCC/Clang is Microsoft's Visual C++ compiler, only available on Windows.
 elseif (MSVC)
 
@@ -20,7 +24,7 @@ elseif (MSVC)
     add_compile_options(-DMINIUPNP_STATICLIB)        # define miniupnp static library
     add_compile_options(/utf-8)
     add_compile_options(/Zc:strictStrings-)
-    add_compile_options(/std:c++17)
+    add_compile_options(/std:c++20)
 
     # Always use Release variant of C++ runtime.
     # We don't want to provide Debug variants of all dependencies. Some default

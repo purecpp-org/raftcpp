@@ -1,5 +1,8 @@
 #pragma once
 
+#include <grpcpp/server.h>
+#include <grpcpp/server_context.h>
+#include <raft.grpc.pb.h>
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -17,13 +20,14 @@
 #include "log_manager/log_entry.h"
 #include "mock_state_machine.h"
 #include "node/node.h"
-#include "rest_rpc/rpc_server.h"
-#include "rpc/services.h"
+#include "rpc/client.h"
+// #include "rest_rpc/rpc_server.h"
+// #include "rpc/services.h"
 
 const int DEFAULT_MAX_DELAY_MS = 3000;  // ms
 
-using RpcServ = rest_rpc::rpc_service::rpc_server;
-using RpcConn = rest_rpc::rpc_service::rpc_conn;
+// using RpcServ = rest_rpc::rpc_service::rpc_server;
+// using RpcConn = rest_rpc::rpc_service::rpc_conn;
 using RaftNode = raftcpp::node::RaftNode;
 using RaftcppConstants = raftcpp::RaftcppConstants;
 
@@ -127,10 +131,10 @@ private:
     std::shared_mutex rwlock;
 };
 
-class ProxyNode : public raftcpp::rpc::NodeService,
+class ProxyNode : public raftcpp::raftrpc::Service,
                   public std::enable_shared_from_this<ProxyNode> {
 public:
-    ProxyNode(std::shared_ptr<RpcServ> rpc_server, raftcpp::common::Config config,
+    ProxyNode(std::shared_ptr<grpc::Server> rpc_server, raftcpp::common::Config config,
               int peer_node, std::shared_ptr<NetworkConfig> net_cfg)
         : rpc_server_(rpc_server),
           config_(config),
@@ -141,22 +145,22 @@ public:
         ConnectToOtherNodes();
     }
 
-    void HandleRequestPreVote(RpcConn conn, const std::string &endpoint_str,
-                              int32_t term_id) override;
+    // void HandleRequestPreVote(RpcConn conn, const std::string &endpoint_str,
+    //                           int32_t term_id) override;
 
-    void HandleRequestVote(RpcConn conn, const std::string &endpoint_str,
-                           int32_t term_id) override;
+    // void HandleRequestVote(RpcConn conn, const std::string &endpoint_str,
+    //                        int32_t term_id) override;
 
-    void HandleRequestHeartbeat(RpcConn conn, int32_t term_id,
-                                std::string node_id_binary) override;
+    // void HandleRequestHeartbeat(RpcConn conn, int32_t term_id,
+    //                             std::string node_id_binary) override;
 
-    /**
-     * There is no information to identify the source node.
-     * We may see the leader as source node forever?
-     */
-    void HandleRequestPushLogs(RpcConn conn, int64_t committed_log_index,
-                               int32_t pre_log_term,
-                               raftcpp::LogEntry log_entry) override {}
+    // /**
+    //  * There is no information to identify the source node.
+    //  * We may see the leader as source node forever?
+    //  */
+    // void HandleRequestPushLogs(RpcConn conn, int64_t committed_log_index,
+    //                            int32_t pre_log_term,
+    //                            raftcpp::LogEntry log_entry) override {}
 
 private:
     uint16_t GetPortFromBinary(const std::string &binary_addr);
@@ -176,14 +180,14 @@ private:
      */
     bool IfDiscard(uint16_t source_port);
 
-    std::string GetRemoteNodePort(const RpcConn &conn);
+    //std::string GetRemoteNodePort(const RpcConn &conn);
 
     void ConnectToOtherNodes();
 
     void InitRpcHandlers();
 
     std::shared_ptr<NetworkConfig> net_cfg_;
-    std::shared_ptr<RpcServ> rpc_server_;
+    std::shared_ptr<grpc::Server> rpc_server_;
 
     raftcpp::common::Config config_;
     raftcpp::NodeID node_id_;
@@ -195,7 +199,7 @@ private:
 
     raftcpp::Randomer rand_;
 
-    std::shared_ptr<rest_rpc::rpc_client> rpc_client_;
+    std::shared_ptr<raftcpp::raftclient> rpc_client_;
 };
 
 // TODO Node failure should be considered which is different from blocking nodes
@@ -241,14 +245,14 @@ public:
             auto ip_port = addr.front();
             proxy_node_addr.push_back(ip_port.first + ":" + ip_port.second);
             addr.pop_front();
-            proxy_servers_.push_back(std::make_shared<RpcServ>(
+            proxy_servers_.push_back(std::make_shared<grpc::Server>(
                 std::stoi(ip_port.second), std::thread::hardware_concurrency()));
 
             // allocate for nodes
             ip_port = addr.front();
             node_addr.push_back(ip_port.first + ":" + ip_port.second);
             addr.pop_front();
-            node_servers_.push_back(std::make_shared<RpcServ>(
+            node_servers_.push_back(std::make_shared<grpc::Server>(
                 std::stoi(ip_port.second), std::thread::hardware_concurrency()));
             port_to_node_.insert(std::make_pair(ip_port.second, i));
         }
@@ -435,7 +439,7 @@ private:
         self->proxy_nodes_.push_back(std::make_shared<ProxyNode>(
             self->proxy_servers_[peer_node], config, peer_node, self->net_cfg_));
         cond.notify_all();
-        self->proxy_servers_[peer_node]->run();
+        // self->proxy_servers_[peer_node]->run(); //TODO: Start Server
     }
 
     static void NodeRun(Cluster *self, raftcpp::common::Config config, int idx,
@@ -446,7 +450,7 @@ private:
         node->Init();
         self->nodes_.push_back(std::move(node));
         cond.notify_all();
-        self->node_servers_[idx]->run();
+        // self->node_servers_[idx]->run(); //TODO: Start Server
     }
 
     int node_num_;
@@ -455,14 +459,14 @@ private:
     std::mutex mu;
 
     std::vector<std::shared_ptr<raftcpp::node::RaftNode>> nodes_;
-    std::vector<std::shared_ptr<RpcServ>> node_servers_;
+    std::vector<std::shared_ptr<grpc::Server>> node_servers_;
     std::vector<std::thread> node_threads_;
 
     // help the proxy node find the rpc caller node
     std::map<std::string, int> port_to_node_;
 
     std::vector<std::shared_ptr<ProxyNode>> proxy_nodes_;
-    std::vector<std::shared_ptr<RpcServ>> proxy_servers_;
+    std::vector<std::shared_ptr<grpc::Server>> proxy_servers_;
     std::vector<std::thread> proxy_threads_;
 
     std::shared_ptr<NetworkConfig> net_cfg_;

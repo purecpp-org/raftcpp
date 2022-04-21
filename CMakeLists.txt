@@ -60,6 +60,7 @@ ADD_DEPENDENCIES(node_lib asio_ep rest_rpc_ep grpc_ep protobuf_ep common_lib)
 ADD_LIBRARY(
 		rpc_lib
 		src/rpc/proto.cc
+		src/rpc/client.cc
 		${PROTO_HDRS}
 		${GRPC_HDRS}
 )
@@ -78,15 +79,15 @@ if(WIN32)
 	ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN)
 endif()
 
-RAFTCPP_DEFINE_TEST(example_counter_client_main SRC_FILES examples/counter/counter_client_main.cc LINKS common_lib gflags)
-RAFTCPP_DEFINE_TEST(example_counter_server_main SRC_FILES examples/counter/counter_server_main.cc LINKS node_lib gflags)
+# RAFTCPP_DEFINE_TEST(example_counter_client_main SRC_FILES examples/counter/counter_client_main.cc LINKS common_lib gflags)
+# RAFTCPP_DEFINE_TEST(example_counter_server_main SRC_FILES examples/counter/counter_server_main.cc LINKS node_lib gflags)
 RAFTCPP_DEFINE_TEST(test_timer SRC_FILES tests/unit_tests/util.cc tests/unit_tests/timer_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_config SRC_FILES tests/unit_tests/util.cc tests/unit_tests/config_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_logging SRC_FILES tests/unit_tests/util.cc tests/unit_tests/logging_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_file SRC_FILES tests/unit_tests/util.cc tests/unit_tests/file_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_log_manager SRC_FILES tests/unit_tests/util.cc tests/unit_tests/blocking_queue_test.cc LINKS common_lib)
 RAFTCPP_DEFINE_TEST(test_nodeid SRC_FILES tests/unit_tests/util.cc tests/unit_tests/nodeid_test.cc LINKS common_lib)
-RAFTCPP_DEFINE_TEST(test_node_elect SRC_FILES tests/unit_tests/util.cc tests/unit_tests/node_elect_test.cc LINKS common_lib node_lib)
+# RAFTCPP_DEFINE_TEST(test_node_elect SRC_FILES tests/unit_tests/util.cc tests/unit_tests/node_elect_test.cc LINKS common_lib node_lib)
 RAFTCPP_DEFINE_TEST(logging_check_test SRC_FILES tests/unit_tests/util.cc tests/unit_tests/logging_check_test.cc LINKS common_lib node_lib)
-RAFTCPP_DEFINE_TEST(cluster_test SRC_FILES tests/unit_tests/util.cc tests/unit_tests/cluster_test.cc LINKS common_lib node_lib)
-RAFTCPP_DEFINE_TEST(log_manager_test SRC_FILES tests/unit_tests/util.cc tests/unit_tests/log_manager_test.cc LINKS common_lib node_lib)
+#RAFTCPP_DEFINE_TEST(cluster_test SRC_FILES tests/unit_tests/util.cc tests/unit_tests/cluster_test.cc LINKS common_lib node_lib)
+#RAFTCPP_DEFINE_TEST(log_manager_test SRC_FILES tests/unit_tests/util.cc tests/unit_tests/log_manager_test.cc LINKS common_lib node_lib)

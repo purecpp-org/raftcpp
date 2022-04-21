@@ -4,7 +4,7 @@
 #include <msgpack.hpp>
 #include <sstream>
 
-#include "common/endpoint.h"
+#include "endpoint.h"
 
 namespace raftcpp {
 
@@ -18,6 +18,7 @@ public:
 
     std::string ToBinary() const { return data_; }
 
+    // TODO: better way ?
     std::string ToHex() const {
         std::string result;
         result.resize(data_.length() * 2);

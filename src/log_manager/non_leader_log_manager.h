@@ -1,17 +1,21 @@
 #pragma once
 
+#include <raft.pb.h>
+
 #include <condition_variable>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <queue>
 
 #include "common/constants.h"
+#include "common/id.h"
 #include "common/timer.h"
 #include "common/timer_manager.h"
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
 #include "log_manager/log_entry.h"
-#include "rest_rpc.hpp"
+#include "rpc/client.h"
 #include "statemachine/state_machine.h"
 
 namespace raftcpp {
@@ -21,7 +25,7 @@ public:
     NonLeaderLogManager(
         const NodeID &this_node_id, std::shared_ptr<StateMachine> fsm,
         std::function<bool()> is_leader_func,
-        std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func,
+        std::function<std::shared_ptr<raftclient>()> get_leader_rpc_client_func,
         const std::shared_ptr<common::TimerManager> &timer_manager);
 
     ~NonLeaderLogManager(){};
@@ -65,12 +69,12 @@ private:
 
     std::unordered_map<int64_t, LogEntry> all_log_entries_;
 
-    boost::asio::io_service io_service_;
+    asio::io_service io_service_;
 
     std::unique_ptr<std::thread> committing_thread_;
 
     /// The function to get leader rpc client.
-    std::function<std::shared_ptr<rest_rpc::rpc_client>()> get_leader_rpc_client_func_;
+    std::function<std::shared_ptr<raftclient>()> get_leader_rpc_client_func_;
 
     std::function<bool()> is_leader_func_ = nullptr;
 

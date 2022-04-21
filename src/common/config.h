@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "common/endpoint.h"
+#include "endpoint.h"
 
 namespace raftcpp {
 namespace common {
@@ -12,8 +12,8 @@ namespace common {
 class Config final {
 public:
     Config(Config &&c)
-        : this_endpoint_(std::move(c.this_endpoint_)),
-          other_endpoints_(std::move(c.other_endpoints_)) {}
+        : other_endpoints_(std::move(c.other_endpoints_)),
+          this_endpoint_(std::move(c.this_endpoint_)) {}
 
     static Config From(const std::string &config_str);
 
@@ -32,7 +32,7 @@ public:
         for (const auto &e : other_endpoints_) {
             s.append("," + e.ToString());
         }
-        return std::move(s);
+        return s;
     }
 
     Config &operator=(const Config &c) {

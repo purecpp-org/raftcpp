@@ -9,7 +9,7 @@
 #include "common/logging.h"
 #include "gtest/gtest.h"
 #include "node/node.h"
-#include "rest_rpc/rpc_server.h"
+//#include "rest_rpc/rpc_server.h"
 
 class MockResponse : public raftcpp::RaftcppResponse {
 public:
