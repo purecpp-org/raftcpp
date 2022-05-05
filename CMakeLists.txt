@@ -31,11 +31,11 @@ INCLUDE_DIRECTORIES(
 		SYSTEM ${ASIO_INCLUDE_DIR}
 		SYSTEM ${REST_RPC_INCLUDE_DIR}
 		SYSTEM ${PROTOBUF_INCLUDE_DIR}
-		SYSTEM ${GRPC_INCLUDE_DIR}
+		# SYSTEM ${GRPC_INCLUDE_DIR}
 		SYSTEM ${MSGPACK_INCLUDE_DIR}
 		SYSTEM ${GFLAGS_INCLUDE_DIR}
 		SYSTEM ${SPDLOG_INCLUDE_DIR}
-		SYSTEM ${PROTO_SRC_DIR}
+		#SYSTEM ${PROTO_SRC_DIR}
 )
 
 # common library
@@ -53,19 +53,18 @@ ADD_LIBRARY(
 		src/node/node.cc
 		src/log_manager/leader_log_manager.cc
 		src/log_manager/non_leader_log_manager.cc)
-ADD_DEPENDENCIES(node_lib asio_ep rest_rpc_ep grpc_ep protobuf_ep common_lib)
-
+ADD_DEPENDENCIES(node_lib asio_ep rest_rpc_ep grpc_ep protobuf_ep common_lib rpc_lib)
 
 # grpc library
 ADD_LIBRARY(
-		rpc_lib
-		src/rpc/proto.cc
-		src/rpc/client.cc
-		${PROTO_HDRS}
-		${GRPC_HDRS}
+	rpc_lib
+	${raft_proto_srcs}
+	${raft_proto_hdrs}
+	${raft_grpc_srcs}
+	${raft_grpc_hdrs}
 )
 ADD_DEPENDENCIES(rpc_lib common_lib asio_ep grpc_ep protobuf_ep)
-TARGET_LINK_LIBRARIES(node_lib rpc_lib common_lib)
+TARGET_LINK_LIBRARIES(rpc_lib GRPC_GRPC++_LIBRARY GRPC_GRPC++_REFLECTION_LIBRARY PROTOBUF_LIBPROTOBUF)
 
 
 # Test targets
@@ -81,13 +80,14 @@ endif()
 
 # RAFTCPP_DEFINE_TEST(example_counter_client_main SRC_FILES examples/counter/counter_client_main.cc LINKS common_lib gflags)
 # RAFTCPP_DEFINE_TEST(example_counter_server_main SRC_FILES examples/counter/counter_server_main.cc LINKS node_lib gflags)
-RAFTCPP_DEFINE_TEST(test_timer SRC_FILES tests/unit_tests/util.cc tests/unit_tests/timer_test.cc LINKS common_lib)
-RAFTCPP_DEFINE_TEST(test_config SRC_FILES tests/unit_tests/util.cc tests/unit_tests/config_test.cc LINKS common_lib)
-RAFTCPP_DEFINE_TEST(test_logging SRC_FILES tests/unit_tests/util.cc tests/unit_tests/logging_test.cc LINKS common_lib)
-RAFTCPP_DEFINE_TEST(test_file SRC_FILES tests/unit_tests/util.cc tests/unit_tests/file_test.cc LINKS common_lib)
-RAFTCPP_DEFINE_TEST(test_log_manager SRC_FILES tests/unit_tests/util.cc tests/unit_tests/blocking_queue_test.cc LINKS common_lib)
-RAFTCPP_DEFINE_TEST(test_nodeid SRC_FILES tests/unit_tests/util.cc tests/unit_tests/nodeid_test.cc LINKS common_lib)
+# RAFTCPP_DEFINE_TEST(test_timer SRC_FILES tests/unit_tests/util.cc tests/unit_tests/timer_test.cc LINKS common_lib)
+# RAFTCPP_DEFINE_TEST(test_config SRC_FILES tests/unit_tests/util.cc tests/unit_tests/config_test.cc LINKS common_lib)
+# RAFTCPP_DEFINE_TEST(test_logging SRC_FILES tests/unit_tests/util.cc tests/unit_tests/logging_test.cc LINKS common_lib)
+# RAFTCPP_DEFINE_TEST(test_file SRC_FILES tests/unit_tests/util.cc tests/unit_tests/file_test.cc LINKS common_lib)
+# RAFTCPP_DEFINE_TEST(test_log_manager SRC_FILES tests/unit_tests/util.cc tests/unit_tests/blocking_queue_test.cc LINKS common_lib)
+# RAFTCPP_DEFINE_TEST(test_nodeid SRC_FILES tests/unit_tests/util.cc tests/unit_tests/nodeid_test.cc LINKS common_lib)
 # RAFTCPP_DEFINE_TEST(test_node_elect SRC_FILES tests/unit_tests/util.cc tests/unit_tests/node_elect_test.cc LINKS common_lib node_lib)
-RAFTCPP_DEFINE_TEST(logging_check_test SRC_FILES tests/unit_tests/util.cc tests/unit_tests/logging_check_test.cc LINKS common_lib node_lib)
+# RAFTCPP_DEFINE_TEST(logging_check_test SRC_FILES tests/unit_tests/util.cc tests/unit_tests/logging_check_test.cc LINKS common_lib node_lib)
+RAFTCPP_DEFINE_TEST(paper_test SRC_FILES tests/unit_tests/util.cc tests/unit_tests/paper_test.cc LINKS common_lib node_lib rpc_lib GRPC_GRPC++_LIBRARY GRPC_GRPC++_REFLECTION_LIBRARY PROTOBUF_LIBPROTOBUF)
 #RAFTCPP_DEFINE_TEST(cluster_test SRC_FILES tests/unit_tests/util.cc tests/unit_tests/cluster_test.cc LINKS common_lib node_lib)
 #RAFTCPP_DEFINE_TEST(log_manager_test SRC_FILES tests/unit_tests/util.cc tests/unit_tests/log_manager_test.cc LINKS common_lib node_lib)
