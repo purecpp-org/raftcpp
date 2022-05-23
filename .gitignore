@@ -26,3 +26,6 @@ bazel-testlogs
 
 // logs
 log
+
+# MacOS
+.DS_Store
