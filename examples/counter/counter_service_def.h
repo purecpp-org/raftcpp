@@ -1,12 +1,14 @@
 #pragma once
 
-#include "common/status.h"
-#include "rest_rpc/rpc_server.h"
-#include "rpc/common.h"
-#include "rest_rpc/codec.h"
+#include <raft.grpc.pb.h>
 
-using namespace rest_rpc;
-using namespace rpc_service;
+#include "common/status.h"
+// #include "rest_rpc/rpc_server.h"
+// #include "rpc/common.h"
+// #include "rest_rpc/codec.h"
+
+// using namespace rest_rpc;
+// using namespace rpc_service;
 
 namespace examples {
 namespace counter {
@@ -16,7 +18,7 @@ enum class CounterRequestType {
     INCR,
 };
 
-class CounterRequest : public raftcpp::RaftcppRequest {
+class CounterRequest : public raftcpp::countrpc::Service {
 public:
     ~CounterRequest() override {}
 
@@ -25,12 +27,11 @@ public:
     virtual std::string Serialize() override = 0;
 
     static std::shared_ptr<CounterRequest> Deserialize1(const std::string &s);
-
 };
 
 class IncrRequest : public CounterRequest {
 public:
-    explicit IncrRequest(uint64_t delta):delta_(delta) {}
+    explicit IncrRequest(uint64_t delta) : delta_(delta) {}
 
     IncrRequest() = default;
 

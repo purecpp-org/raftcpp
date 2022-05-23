@@ -1,10 +1,10 @@
 #pragma once
 
+#include <cstring>
 #include <iostream>
-#include <msgpack.hpp>
 #include <sstream>
 
-#include "common/endpoint.h"
+#include "endpoint.h"
 
 namespace raftcpp {
 
@@ -18,6 +18,7 @@ public:
 
     std::string ToBinary() const { return data_; }
 
+    // TODO: better way ?
     std::string ToHex() const {
         std::string result;
         result.resize(data_.length() * 2);
@@ -50,8 +51,8 @@ public:
         data_.resize(sizeof(uint32_t) + sizeof(uint16_t));
         uint32_t inet = ip2uint(endpoint_id.GetHost());
         uint16_t port = endpoint_id.GetPort();
-        memcpy(data_.data(), &inet, sizeof(uint32_t));
-        memcpy(data_.data() + sizeof(uint32_t), &port, sizeof(uint16_t));
+        std::memcpy((void *)data_.data(), &inet, sizeof(uint32_t));
+        std::memcpy((void *)(data_.data() + sizeof(uint32_t)), &port, sizeof(uint16_t));
     }
 
     NodeID(const NodeID &nid) : BaseID(nid) { data_ = nid.data_; }
@@ -119,7 +120,7 @@ public:
     explicit TermID(term_t term) : term_(term) {
         data_ = "";
         data_.resize(sizeof(term_t));
-        memcpy(data_.data(), &term_, sizeof(term_t));
+        std::memcpy((void *)data_.data(), &term_, sizeof(term_t));
     }
 
     TermID(const TermID &tid) : BaseID(tid) {
@@ -140,10 +141,10 @@ public:
         term_ = term;
         data_ = "";
         data_.resize(sizeof(term_t));
-        memcpy(data_.data(), &term_, sizeof(term_t));
+        std::memcpy((void *)data_.data(), &term_, sizeof(term_t));
     }
 
-    MSGPACK_DEFINE(term_);
+    // MSGPACK_DEFINE(term_);
 
     std::ostream &operator<<(std::ostream &os) {
         os << "{\n"

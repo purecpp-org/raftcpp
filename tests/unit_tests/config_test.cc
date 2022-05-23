@@ -1,4 +1,4 @@
-#include "../src/common/config.h"
+#include "src/common/config.h"
 
 #include <fstream>
 #include <unordered_map>

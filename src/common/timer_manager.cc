@@ -1,7 +1,6 @@
 #include "timer_manager.h"
 
-#include "common/logging.h"
-#include "common/util.h"
+#include "src/common/logging.h"
 
 namespace raftcpp {
 namespace common {

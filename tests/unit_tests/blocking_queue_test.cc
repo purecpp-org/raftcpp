@@ -2,7 +2,7 @@
 #include <thread>
 
 #include "gtest/gtest.h"
-#include "log_manager/blocking_queue_mutex_impl.h"
+#include "src/log_manager/blocking_queue_mutex_impl.h"
 
 using namespace raftcpp;
 

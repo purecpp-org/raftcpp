@@ -1,14 +1,9 @@
 
-#include "rest_rpc/rpc_client.hpp"
 #include "common/logging.h"
+//#include "rpc/client.h"
 
 int main(int argc, char *argv[]) {
-    auto rpc_client = std::make_shared<rest_rpc::rpc_client>("127.0.0.1", 10001);
-    bool connected = rpc_client->connect();
-    if (!connected) {
-        RAFTCPP_LOG(RLL_DEBUG)
-            << "Failed to connect to the node: ";
-    }
+    auto rpc_client = std::make_shared<raftcpp::raftclient>("127.0.0.1:10001");
     rpc_client->enable_auto_heartbeat();
     RAFTCPP_LOG(RLL_DEBUG) << "Counter client connected to the server.";
 
