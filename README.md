@@ -1,26 +1,34 @@
 # raftcpp
-A Raft implementation to help build your Raft service in 1 minute.  
+A RAFT implementation to help build your RAFT service in 1 minute.  
 [Note that this project is now WORKING IN PROGRESS. We are going to release 0.1.0 soon.]
 
 ## Main dependencies
-- asio
-- rest_rpc
-- doctest
-- gflags
+- bazel: for building tool
+- asio: for asynchronous eventloop and IO
+- grpc: for RPC framework
+- protobuf: for serialization framework
+- gtest: for test framework
+- spdlog: for logging tool
+- gflags: for command line tool
 
 ## Quick Start
+### Install Building Tool
+We are now using bazel 5.1.1 for building `raftcpp` project, please make sure you have installed bazel. If you don't have installed it, you could install it via the following command:
+```shell script
+./scripts/install-bazel.sh
+```
+
 ### Build
 ```shell script
-./build.sh
+bazel build //:all
 ```
 ### Test
 ```shell script
-cd build
-./xxx_text
+bazel test //:all
 ```
-or run all tests with the following command:
+or test one specific test case in following command:
 ```shell script
-./run_all_tests.sh
+bazel test //:xxxx_test
 ```
 
 ## Get Involved
