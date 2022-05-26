@@ -86,7 +86,7 @@ cc_library(
 #)
 
 cc_test(
-    name = "test_timer",
+    name = "timer_test",
     srcs = glob([
         "tests/unit_tests/timer_test.cc",
     ]),
@@ -97,7 +97,7 @@ cc_test(
 )
 
 cc_test(
-    name = "test_config",
+    name = "config_test",
     srcs = glob([
         "tests/unit_tests/config_test.cc",
     ]),
@@ -108,7 +108,7 @@ cc_test(
 )
 
 cc_test(
-    name = "test_logging",
+    name = "logging_test",
     srcs = glob([
         "tests/unit_tests/logging_test.cc",
     ]),
@@ -119,7 +119,7 @@ cc_test(
 )
 
 cc_test(
-    name = "test_file",
+    name = "file_test",
     srcs = glob([
         "tests/unit_tests/file_test.cc",
     ]),
@@ -130,7 +130,7 @@ cc_test(
 )
 
 cc_test(
-    name = "test_log_manager",
+    name = "log_manager_test",
     srcs = glob([
         "tests/unit_tests/blocking_queue_test.cc",
     ]),
@@ -142,7 +142,7 @@ cc_test(
 )
 
 cc_test(
-    name = "test_node_id",
+    name = "node_id_test",
     srcs = glob([
         "tests/unit_tests/nodeid_test.cc",
     ]),
