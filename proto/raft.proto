@@ -1,0 +1,52 @@
+syntax = "proto3";
+package raftcpp;
+
+import "google/protobuf/empty.proto";
+
+service raftrpc {
+    rpc HandleRequestPreVote(PreVoteRequest) returns (PreVoteResponse) {}
+    rpc HandleRequestVote(VoteRequest) returns (VoteResponse) {}
+    rpc HandleRequestHeartbeat(HeartbeatRequest) returns (HeartbeatResponse) {}
+    rpc HandleRequestPushLogs(PushLogsRequest) returns (google.protobuf.Empty) {}
+}
+
+message PreVoteRequest {
+    string endpoint = 1;
+    int32 termid = 2;
+}
+
+message PreVoteResponse {
+    string endpoint = 1;
+    string data = 2;
+}
+
+message VoteRequest {
+    string endpoint = 1;
+    int32 termid = 2;
+}
+
+message VoteResponse {
+    string endpoint = 1;
+    string data = 2;
+}
+
+message HeartbeatRequest {
+    int32 termid = 1;
+    string node_id = 2;
+}
+
+message HeartbeatResponse {
+    int32 termid = 1;
+}
+
+message LogEntry {
+    int32 termid = 1;
+    uint64 log_index = 2;
+    string data = 3;
+}
+
+message PushLogsRequest {
+    int64 commited_log_index = 1;
+    int32 pre_log_term = 2;
+    LogEntry log = 3;
+}
