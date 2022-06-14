@@ -18,7 +18,7 @@ message getResponse {
     int32 value = 2;
 }
 
-service raftrpc {
+service CounterService {
     rpc Incr(IncrRequest) returns (IncrResponse) {}
     rpc Get(GetRequest) returns (getResponse) {}
 }

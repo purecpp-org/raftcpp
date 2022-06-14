@@ -5,7 +5,6 @@
 
 #include "common/file.h"
 #include "common/status.h"
-#include "counter_service_def.h"
 #include "statemachine/state_machine.h"
 
 namespace examples {

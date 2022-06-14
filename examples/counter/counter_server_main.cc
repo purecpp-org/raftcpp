@@ -12,12 +12,20 @@ using namespace examples::counter;
 DEFINE_string(conf, "", "The configurations of this raft group.");
 // DEFINE_string(this_addr, "", "This address of this instance listening on.");
 
-class CounterServiceImpl {
+class CounterServiceImpl: public CounterService::Service, public std::enable_shared_from_this<CounterServiceImpl> {
 public:
     // TODO(qwang): Are node and fsm uncopyable?
     CounterServiceImpl(std::shared_ptr<raftcpp::node::RaftNode> node,
                        std::shared_ptr<CounterStateMachine> &fsm)
         : node_(std::move(node)), fsm_(std::move(fsm)) {}
+
+
+
+    grpc::Status Incr(::grpc::ServerContext *context,
+                                        const ::CounterService::IncrRequest *request,
+                                        ::CounterService::IncrResponse *response) {
+
+    }
 
     void Incr(rpc_conn conn, int delta) {
         // CHECK is leader.

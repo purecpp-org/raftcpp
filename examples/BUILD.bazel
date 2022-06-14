@@ -27,19 +27,23 @@ cc_grpc_library(
     ],
 )
 
-# cc_binary(
-#     name = "rpexample_counter_server_mainc_lib",
-#     srcs = glob(["src/rpc/*.cc"]),
-#     hdrs = glob(["src/rpc/*.h"]),
-#     strip_include_prefix = "//src",
-#     visibility = ["//visibility:public"],
-#     deps = [
-#         ":common_lib",
-#         ":raft_cc_grpc",
-#         "@asio",
-#         "@com_github_grpc_grpc//:grpc++",
-#     ],
-# )
+cc_library(
+    name = "example_counter_server_main_lib",
+    srcs = glob([
+        "counter/counter_server_main.cc",
+    ]),
+    hdrs = glob(["counter/*.h"]),
+    strip_include_prefix = "//examples",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_purecpp_raftcpp//:node_lib",
+        ":counter_cc_grpc",
+        "@asio",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
 
 # cc_binary(
 #    name = "example_counter_server_main",
