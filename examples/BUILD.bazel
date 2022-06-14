@@ -56,17 +56,30 @@ cc_binary(
    ],
 )
 
+# cc_library(
+#     name = "example_counter_client_lib",
+#     srcs = glob([
+#         "examples/counter/counter_client.cc",
+#     ]),
+#     hdrs = glob(["counter/*.h"]),
+#     strip_include_prefix = "//examples",
+#     visibility = ["//visibility:public"],
+#     deps = [
+#         "@com_github_purecpp_raftcpp//:node_lib",
+#         ":counter_cc_grpc",
+#         "@asio",
+#         "@com_github_grpc_grpc//:grpc++",
+#         "@com_github_gflags_gflags//:gflags",
+#         "@com_google_googletest//:gtest_main",
+#     ],
+# )
 
-# TODO: (luhuanbing) rebuild examples.
-#cc_test(
-#    name = "example_counter_client_main",
+# cc_binary(
+#    name = "counter_client_main",
 #    srcs = glob([
-#        "examples/counter/counter_client_main.cc",
+#        "counter/counter_client_main.cc",
 #    ]),
 #    deps = [
-#        ":common_lib",
-#        "@com_github_gflags_gflags//:gflags",
-#        "@com_google_googletest//:gtest_main",
+#        ":example_counter_client_lib",
 #    ],
-#)
-#
+# )

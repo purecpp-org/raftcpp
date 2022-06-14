@@ -42,7 +42,7 @@ public:
     }
 
     bool OnApply(const std::string &serialized) override {
-        // received_requests_num_.fetch_add(1);
+        received_requests_num_.fetch_add(1);
 
         // /// serialized to Request.
         // auto counter_request = CounterRequest::Deserialize1(serialized);
