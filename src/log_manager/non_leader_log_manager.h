@@ -12,8 +12,8 @@
 #include "common/timer_manager.h"
 #include "log_manager/blocking_queue_interface.h"
 #include "log_manager/blocking_queue_mutex_impl.h"
-#include "protos/raft.grpc.pb.h"
-#include "protos/raft.pb.h"
+#include "proto/raft.grpc.pb.h"
+#include "proto/raft.pb.h"
 #include "statemachine/state_machine.h"
 
 namespace raftcpp {

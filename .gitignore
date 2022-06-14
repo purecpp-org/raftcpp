@@ -20,7 +20,7 @@ Cargo.lock
 
 //bazel related
 bazel-bin
-bazel-metable
+bazel-raftcpp
 bazel-out
 bazel-testlogs
 
