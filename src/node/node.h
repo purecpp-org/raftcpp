@@ -20,7 +20,7 @@
 #include "src/log_manager/blocking_queue_mutex_impl.h"
 #include "src/log_manager/leader_log_manager.h"
 #include "src/log_manager/non_leader_log_manager.h"
-#include "src/statemachine/state_machine_impl.h"
+#include "src/statemachine/state_machine.h"
 
 namespace raftcpp {
 namespace node {
@@ -28,7 +28,7 @@ namespace node {
 class RaftNode : public raftrpc::Service, public std::enable_shared_from_this<RaftNode> {
 public:
     RaftNode(
-        std::shared_ptr<RaftStateMachine> state_machine,
+        std::shared_ptr<StateMachine> state_machine,
         // std::unique_ptr<grpc::Server> rpc_server,
         const common::Config &config,
         const raftcpp::RaftcppLogLevel severity = raftcpp::RaftcppLogLevel::RLL_DEBUG);

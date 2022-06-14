@@ -1,0 +1,85 @@
+load("@com_github_grpc_grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_proto_grpc//cpp:defs.bzl", "cpp_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_proto_library", "cc_test")
+load("@rules_proto_grpc//python:defs.bzl", "python_grpc_compile")
+
+proto_library(
+    name = "counter_proto",
+    srcs = ["proto/counter.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_protobuf//:empty_proto",
+    ],
+)
+    
+cc_proto_library(
+    name = "counter_cc_proto",
+    deps = [":counter_proto"],
+)
+
+cc_grpc_library(
+    name = "counter_cc_grpc",
+    srcs = [":counter_proto"],
+    grpc_only = True,
+    deps = [
+        ":counter_cc_proto",
+    ],
+)
+
+
+cc_library(
+    name = "example_counter_server_lib",
+    srcs = glob([
+        "counter/counter_server.cc",
+    ]),
+    hdrs = glob(["counter/*.h"]),
+    strip_include_prefix = "//examples",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_purecpp_raftcpp//:node_lib",
+        ":counter_cc_grpc",
+        "@asio",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_binary(
+   name = "counter_server_main",
+   srcs = glob([
+       "counter/counter_server_main.cc",
+   ]),
+   deps = [
+       ":example_counter_server_lib",
+   ],
+)
+
+# cc_library(
+#     name = "example_counter_client_lib",
+#     srcs = glob([
+#         "examples/counter/counter_client.cc",
+#     ]),
+#     hdrs = glob(["counter/*.h"]),
+#     strip_include_prefix = "//examples",
+#     visibility = ["//visibility:public"],
+#     deps = [
+#         "@com_github_purecpp_raftcpp//:node_lib",
+#         ":counter_cc_grpc",
+#         "@asio",
+#         "@com_github_grpc_grpc//:grpc++",
+#         "@com_github_gflags_gflags//:gflags",
+#         "@com_google_googletest//:gtest_main",
+#     ],
+# )
+
+# cc_binary(
+#    name = "counter_client_main",
+#    srcs = glob([
+#        "counter/counter_client_main.cc",
+#    ]),
+#    deps = [
+#        ":example_counter_client_lib",
+#    ],
+# )

@@ -5,7 +5,6 @@
 
 #include "common/file.h"
 #include "common/status.h"
-#include "counter_service_def.h"
 #include "statemachine/state_machine.h"
 
 namespace examples {
@@ -23,6 +22,9 @@ using Status = raftcpp::Status;
  */
 class CounterStateMachine : public raftcpp::StateMachine {
 public:
+    CounterStateMachine() {}
+
+    
     // We should do snapshot for every 3 requests.
     bool ShouldDoSnapshot() override { return received_requests_num_.load() % 3; }
 
@@ -39,22 +41,23 @@ public:
         atomic_value_.store(static_cast<int64_t>(std::stoi(value)));
     }
 
-    raftcpp::RaftcppResponse OnApply(const std::string &serialized) override {
+    bool OnApply(const std::string &serialized) override {
         received_requests_num_.fetch_add(1);
 
-        /// serialized to Request.
-        auto counter_request = CounterRequest::Deserialize1(serialized);
-        if (counter_request->GetType() == CounterRequestType::INCR) {
-            counter_request.get();
-            auto *incr_request = dynamic_cast<IncrRequest *>(counter_request.get());
-            atomic_value_.fetch_add(incr_request->GetDelta());
-            return IncrResponse(Status::OK);
-        } else if (counter_request->GetType() == CounterRequestType::GET) {
-            auto *get_request = dynamic_cast<GetRequest *>(counter_request.get());
-            return GetResponse(atomic_value_.load());
-        }
+        // /// serialized to Request.
+        // auto counter_request = CounterRequest::Deserialize1(serialized);
+        // if (counter_request->GetType() == CounterRequestType::INCR) {
+        //     counter_request.get();
+        //     auto *incr_request = dynamic_cast<IncrRequest *>(counter_request.get());
+        //     atomic_value_.fetch_add(incr_request->GetDelta());
+        //     return IncrResponse(Status::OK);
+        // } else if (counter_request->GetType() == CounterRequestType::GET) {
+        //     auto *get_request = dynamic_cast<GetRequest *>(counter_request.get());
+        //     return GetResponse(atomic_value_.load());
+        // }
 
-        return CounterResponse(Status::UNKNOWN_REQUEST);
+        // return CounterResponse(Status::UNKNOWN_REQUEST);
+        return false;
     }
 
     int64_t GetValue() const { return atomic_value_.load(); }

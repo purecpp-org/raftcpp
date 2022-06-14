@@ -17,10 +17,11 @@
 
 namespace raftcpp::node {
 
-RaftNode::RaftNode(std::shared_ptr<RaftStateMachine> state_machine,
+RaftNode::RaftNode(std::shared_ptr<StateMachine> state_machine,
                    // std::unique_ptr<grpc::Server> rpc_server,
                    const common::Config &config, RaftcppLogLevel severity)
     :  // rpc_server_(std::move(rpc_server)),
+      raftrpc::Service(),
       config_(config),
       this_node_id_(config.GetThisEndpoint()),
       timer_manager_(std::make_shared<common::TimerManager>()),

@@ -13,7 +13,7 @@ proto_library(
         "@com_google_protobuf//:empty_proto",
     ],
 )
-
+    
 cc_proto_library(
     name = "raft_cc_proto",
     deps = [":raft_proto"],
