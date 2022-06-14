@@ -1,0 +1,24 @@
+syntax = "proto3";
+package examples.counter;
+
+import "google/protobuf/empty.proto";
+
+message IncrRequest {
+    int32 detla = 1;
+}
+
+message IncrResponse {
+    bool ok = 1;
+}
+
+message GetRequest { }
+
+message getResponse {
+    bool ok = 1;
+    int32 value = 2;
+}
+
+service raftrpc {
+    rpc Incr(IncrRequest) returns (IncrResponse) {}
+    rpc Get(GetRequest) returns (getResponse) {}
+}

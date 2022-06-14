@@ -39,26 +39,26 @@ cc_library(
     deps = [
         ":common_lib",
         ":raft_cc_grpc",
-        ":rpc_lib",
+        # ":rpc_lib",
         "@asio",
         "@com_github_grpc_grpc//:grpc++",
         "@com_github_spdlog//:spdlog",
     ],
 )
 
-cc_library(
-    name = "rpc_lib",
-    srcs = glob(["src/rpc/*.cc"]),
-    hdrs = glob(["src/rpc/*.h"]),
-    strip_include_prefix = "//src",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":common_lib",
-        ":raft_cc_grpc",
-        "@asio",
-        "@com_github_grpc_grpc//:grpc++",
-    ],
-)
+# cc_library(
+#     name = "rpc_lib",
+#     srcs = glob(["src/rpc/*.cc"]),
+#     hdrs = glob(["src/rpc/*.h"]),
+#     strip_include_prefix = "//src",
+#     visibility = ["//visibility:public"],
+#     deps = [
+#         ":common_lib",
+#         ":raft_cc_grpc",
+#         "@asio",
+#         "@com_github_grpc_grpc//:grpc++",
+#     ],
+# )
 
 # TODO: (luhuanbing) rebuild examples.
 #cc_test(
@@ -190,7 +190,7 @@ cc_test(
         ":common_lib",
         ":node_lib",
         ":raft_cc_grpc",
-        ":rpc_lib",
+        # ":rpc_lib",
         "@com_github_grpc_grpc//:grpc++",
         "@com_google_googletest//:gtest_main",
     ],

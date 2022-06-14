@@ -1,0 +1,69 @@
+load("@com_github_grpc_grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_proto_grpc//cpp:defs.bzl", "cpp_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_proto_library", "cc_test")
+load("@rules_proto_grpc//python:defs.bzl", "python_grpc_compile")
+
+proto_library(
+    name = "counter_proto",
+    srcs = ["proto/counter.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_protobuf//:empty_proto",
+    ],
+)
+    
+cc_proto_library(
+    name = "counter_cc_proto",
+    deps = [":counter_proto"],
+)
+
+cc_grpc_library(
+    name = "counter_cc_grpc",
+    srcs = [":counter_proto"],
+    grpc_only = True,
+    deps = [
+        ":counter_cc_proto",
+    ],
+)
+
+# cc_binary(
+#     name = "rpexample_counter_server_mainc_lib",
+#     srcs = glob(["src/rpc/*.cc"]),
+#     hdrs = glob(["src/rpc/*.h"]),
+#     strip_include_prefix = "//src",
+#     visibility = ["//visibility:public"],
+#     deps = [
+#         ":common_lib",
+#         ":raft_cc_grpc",
+#         "@asio",
+#         "@com_github_grpc_grpc//:grpc++",
+#     ],
+# )
+
+# cc_binary(
+#    name = "example_counter_server_main",
+#    srcs = glob([
+#        "counter/counter_server_main.cc",
+#    ]),
+#    deps = [
+#        "@com_github_purecpp_raftcpp//:node_lib",
+#        "@com_github_gflags_gflags//:gflags",
+#        "@com_google_googletest//:gtest_main",
+#    ],
+# )
+
+
+# TODO: (luhuanbing) rebuild examples.
+#cc_test(
+#    name = "example_counter_client_main",
+#    srcs = glob([
+#        "examples/counter/counter_client_main.cc",
+#    ]),
+#    deps = [
+#        ":common_lib",
+#        "@com_github_gflags_gflags//:gflags",
+#        "@com_google_googletest//:gtest_main",
+#    ],
+#)
+#
