@@ -7,8 +7,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "protos/raft.grpc.pb.h"
-#include "protos/raft.pb.h"
+#include "proto/raft.grpc.pb.h"
+#include "proto/raft.pb.h"
 #include "src/common/config.h"
 #include "src/common/endpoint.h"
 #include "src/common/id.h"
