@@ -6,6 +6,9 @@ namespace raftcpp {
 
 class StateMachine {
 public:
+
+    virtual ~StateMachine() = default;
+
     virtual bool ShouldDoSnapshot() { return true; }
 
     virtual void SaveSnapshot() = 0;

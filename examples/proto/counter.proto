@@ -13,12 +13,12 @@ message IncrResponse {
 
 message GetRequest { }
 
-message getResponse {
+message GetResponse {
     bool ok = 1;
     int32 value = 2;
 }
 
 service CounterService {
     rpc Incr(IncrRequest) returns (IncrResponse) {}
-    rpc Get(GetRequest) returns (getResponse) {}
+    rpc Get(GetRequest) returns (GetResponse) {}
 }

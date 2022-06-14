@@ -5,50 +5,25 @@
 #include "common/config.h"
 #include "counter_state_machine.h"
 #include "node/node.h"
+#include "counter_server.h"
+
+#include "examples/proto/counter.pb.h"
+#include "examples/proto/counter.grpc.pb.h"
+
+#include <grpcpp/grpcpp.h>
+#include <grpcpp/health_check_service_interface.h>
+
+using grpc::Server;
+using grpc::ServerBuilder;
+using grpc::ServerContext;
+using grpc::Status;
 
 using namespace examples;
 using namespace examples::counter;
 
+
 DEFINE_string(conf, "", "The configurations of this raft group.");
 // DEFINE_string(this_addr, "", "This address of this instance listening on.");
-
-class CounterServiceImpl: public CounterService::Service, public std::enable_shared_from_this<CounterServiceImpl> {
-public:
-    // TODO(qwang): Are node and fsm uncopyable?
-    CounterServiceImpl(std::shared_ptr<raftcpp::node::RaftNode> node,
-                       std::shared_ptr<CounterStateMachine> &fsm)
-        : node_(std::move(node)), fsm_(std::move(fsm)) {}
-
-
-
-    grpc::Status Incr(::grpc::ServerContext *context,
-                                        const ::CounterService::IncrRequest *request,
-                                        ::CounterService::IncrResponse *response) {
-
-    }
-
-    void Incr(rpc_conn conn, int delta) {
-        // CHECK is leader.
-        RAFTCPP_LOG(RLL_INFO) << "=============Incring: " << delta;
-        // Does this should be enabled from this?
-        std::shared_ptr<IncrRequest> request = std::make_shared<IncrRequest>(delta);
-        if (!node_->IsLeader()) {
-            //// RETURN redirect.
-        }
-        node_->PushRequest(request);
-    }
-
-    int64_t Get(rpc_conn conn) {
-        // There is no need to gurantee the write-read consistency,
-        // so we can get the value directly from this fsm instead of
-        // apply it to all nodes.
-        return fsm_->GetValue();
-    }
-
-private:
-    std::shared_ptr<raftcpp::node::RaftNode> node_;
-    std::shared_ptr<CounterStateMachine> fsm_;
-};
 
 int main(int argc, char *argv[]) {
     std::string conf_str;
@@ -65,19 +40,28 @@ int main(int argc, char *argv[]) {
         return -1;
     }
     const auto config = raftcpp::common::Config::From(conf_str);
-
-    // Initial a rpc server and listening on its port.
-    rpc_server server(config.GetThisEndpoint().GetPort(),
-                      std::thread::hardware_concurrency());
-
     auto fsm = std::make_shared<CounterStateMachine>();
-    auto node = std::make_shared<raftcpp::node::RaftNode>(fsm, server, config);
+    auto node = std::make_shared<raftcpp::node::RaftNode>(fsm, config);
     node->Init();
 
+    ////////grpc server
+    std::string server_address("0.0.0.0:50051");
     CounterServiceImpl service(node, fsm);
-    server.register_handler("incr", &CounterServiceImpl::Incr, &service);
-    server.register_handler("get", &CounterServiceImpl::Get, &service);
-    server.run();
+
+    grpc::EnableDefaultHealthCheckService(true);
+    ServerBuilder builder;
+    // Listen on the given address without any authentication mechanism.
+    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+    // Register "service" as the instance through which we'll communicate with
+    // clients. In this case it corresponds to an *synchronous* service.
+    builder.RegisterService(&service);
+    // Finally assemble the server.
+    std::unique_ptr<Server> server(builder.BuildAndStart());
+    std::cout << "Server listening on " << server_address << std::endl;
+
+    // Wait for the server to shutdown. Note that some other thread must be
+    // responsible for shutting down the server for this call to ever return.
+    server->Wait();
 
     return 0;
 }
