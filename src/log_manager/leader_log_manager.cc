@@ -3,7 +3,7 @@
 #include <condition_variable>
 #include <memory>
 
-#include "protos/raft.pb.h"
+#include "proto/raft.pb.h"
 
 namespace raftcpp {
 
