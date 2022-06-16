@@ -42,7 +42,9 @@ public:
     grpc::Status Get(::grpc::ServerContext *context,
                                         const ::examples::counter::GetRequest *request,
                                         ::examples::counter::GetResponse *response) {
-
+        response->set_value(9999);
+        std::cout << "============Geting" << std::endl;
+        return grpc::Status::OK;
     }
 
     // void Incr(rpc_conn conn, int delta) {
