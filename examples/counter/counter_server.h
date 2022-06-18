@@ -35,8 +35,6 @@ public:
                        std::shared_ptr<CounterStateMachine> &fsm)
         : node_(std::move(node)), fsm_(std::move(fsm)) {}
 
-
-
     grpc::Status Incr(::grpc::ServerContext *context,
                                         const ::examples::counter::IncrRequest *request,
                                         ::examples::counter::IncrResponse *response) {
