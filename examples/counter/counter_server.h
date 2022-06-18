@@ -24,6 +24,10 @@ using namespace examples::counter;
 namespace examples {
 namespace counter {
 
+class A : public google::protobuf::Message {
+
+};
+
 class CounterServiceImpl: public examples::counter::CounterService::Service, public std::enable_shared_from_this<CounterServiceImpl> {
 public:
     // TODO(qwang): Are node and fsm uncopyable?
@@ -36,14 +40,23 @@ public:
     grpc::Status Incr(::grpc::ServerContext *context,
                                         const ::examples::counter::IncrRequest *request,
                                         ::examples::counter::IncrResponse *response) {
-
+        // CHECK is leader.
+        auto detla = request->detla();
+        RAFTCPP_LOG(RLL_INFO) << "=============Incring: " << detla;
+        // Does this should be enabled from this?
+        if (!node_->IsLeader()) {
+            //// RETURN redirect.
+        }
+        node_->PushRequest(request);
     }
 
     grpc::Status Get(::grpc::ServerContext *context,
                                         const ::examples::counter::GetRequest *request,
                                         ::examples::counter::GetResponse *response) {
-        response->set_value(9999);
-        std::cout << "============Geting" << std::endl;
+        // There is no need to gurantee the write-read consistency,
+        // so we can get the value directly from this fsm instead of
+        // applying it to all nodes.
+        response->set_value(fsm_->GetValue());
         return grpc::Status::OK;
     }
 
@@ -56,13 +69,6 @@ public:
     //         //// RETURN redirect.
     //     }
     //     node_->PushRequest(request);
-    // }
-
-    // int64_t Get(rpc_conn conn) {
-    //     // There is no need to gurantee the write-read consistency,
-    //     // so we can get the value directly from this fsm instead of
-    //     // apply it to all nodes.
-    //     return fsm_->GetValue();
     // }
 
 private:
