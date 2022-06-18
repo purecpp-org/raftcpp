@@ -41,7 +41,7 @@ public:
 
     bool IsLeader() const;
 
-    void PushRequest(const std::shared_ptr<PushLogsRequest> &request);
+    void PushRequest(google::protobuf::Message *request);
 
     void RequestPreVote();
 
