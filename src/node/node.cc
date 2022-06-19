@@ -66,12 +66,11 @@ RaftNode::~RaftNode() {
     non_leader_log_manager_->Stop();
 }
 
-void RaftNode::PushRequest(google::protobuf::Message *request) {
+void RaftNode::PushRequest(const std::shared_ptr<PushLogsRequest> &request) {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     RAFTCPP_CHECK(request != nullptr);
     RAFTCPP_CHECK(curr_state_ == RaftState::LEADER);
     // This is leader code path.
-    PushLog
     leader_log_manager_->Push(curr_term_id_, request);
     //    AsyncAppendLogsToFollowers(entry);
     // TODO(qwang)

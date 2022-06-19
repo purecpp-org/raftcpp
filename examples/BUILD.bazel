@@ -29,7 +29,7 @@ cc_grpc_library(
 
 
 cc_library(
-    name = "counter_server_lib",
+    name = "example_counter_server_lib",
     srcs = glob([
         "counter/counter_server.cc",
     ]),
@@ -52,34 +52,34 @@ cc_binary(
        "counter/counter_server_main.cc",
    ]),
    deps = [
-       ":counter_server_lib",
+       ":example_counter_server_lib",
    ],
 )
 
-cc_library(
-    name = "counter_client_lib",
-    srcs = glob([
-        "examples/counter/counter_client.cc",
-    ]),
-    hdrs = glob(["counter/*.h"]),
-    strip_include_prefix = "//examples",
-    visibility = ["//visibility:public"],
-    deps = [
-        "@com_github_purecpp_raftcpp//:node_lib",
-        ":counter_cc_grpc",
-        "@asio",
-        "@com_github_grpc_grpc//:grpc++",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
+# cc_library(
+#     name = "example_counter_client_lib",
+#     srcs = glob([
+#         "examples/counter/counter_client.cc",
+#     ]),
+#     hdrs = glob(["counter/*.h"]),
+#     strip_include_prefix = "//examples",
+#     visibility = ["//visibility:public"],
+#     deps = [
+#         "@com_github_purecpp_raftcpp//:node_lib",
+#         ":counter_cc_grpc",
+#         "@asio",
+#         "@com_github_grpc_grpc//:grpc++",
+#         "@com_github_gflags_gflags//:gflags",
+#         "@com_google_googletest//:gtest_main",
+#     ],
+# )
 
-cc_binary(
-   name = "counter_client_main",
-   srcs = glob([
-       "counter/counter_client_main.cc",
-   ]),
-   deps = [
-       ":counter_client_lib",
-   ],
-)
+# cc_binary(
+#    name = "counter_client_main",
+#    srcs = glob([
+#        "counter/counter_client_main.cc",
+#    ]),
+#    deps = [
+#        ":example_counter_client_lib",
+#    ],
+# )
