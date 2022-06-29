@@ -17,17 +17,15 @@ def raftcpp_deps_setup():
     maybe(
         http_archive,
         name = "com_github_grpc_grpc",
-        # NOTE: If you update this, also update @boringssl's hash.
-        url = "https://github.com/grpc/grpc/archive/refs/tags/v1.43.2.tar.gz",
-        strip_prefix = "grpc-1.43.2",
+        url = "https://github.com/grpc/grpc/archive/refs/tags/v1.47.0.tar.gz",
+        strip_prefix = "grpc-1.47.0",
     )
 
     maybe(
-        http_archive,
+        git_repository,
         name = "rules_proto_grpc",
-        sha256 = "507e38c8d95c7efa4f3b1c0595a8e8f139c885cb41a76cab7e20e4e67ae87731",
-        strip_prefix = "rules_proto_grpc-4.1.1",
-        urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/archive/4.1.1.tar.gz"],
+        branch = "dev",
+        remote = "https://github.com/rules-proto-grpc/rules_proto_grpc.git",
     )
 
     maybe(
@@ -49,10 +47,9 @@ def raftcpp_deps_setup():
     maybe(
         http_archive,
         name = "asio",
-        sha256 = "4cd5cd0ad97e752a4075f02778732a3737b587f5eeefab59cd98dc43b0dcadb3",
         urls = [
-            "https://shutian.oss-cn-hangzhou.aliyuncs.com/cdn/asio/asio-1.20.0.tar.gz",
+            "https://udomain.dl.sourceforge.net/project/asio/asio/1.22.1%20%28Stable%29/asio-1.22.1.tar.gz",
         ],
-        strip_prefix = "asio-1.20.0",
+        strip_prefix = "asio-1.22.1",
         build_file = "@com_github_purecpp_raftcpp//bazel/thirdparty:asio.BUILD",
     )
