@@ -9,7 +9,7 @@
 namespace raftcpp {
 
 NonLeaderLogManager::NonLeaderLogManager(
-    const NodeID &this_node_id, std::shared_ptr<StateMachine> fsm,
+    int64_t this_node_id, std::shared_ptr<StateMachine> fsm,
     std::function<bool()> is_leader_func,
     std::function<std::shared_ptr<raftrpc::Stub>()> get_leader_rpc_client_func,
     const std::shared_ptr<common::TimerManager> &timer_manager)
@@ -32,21 +32,21 @@ void NonLeaderLogManager::Stop() { is_running_.store(false); }
 
 bool NonLeaderLogManager::IsRunning() const { return is_running_.load(); }
 
-void NonLeaderLogManager::Push(int64_t committed_log_index, int32_t pre_log_term,
+void NonLeaderLogManager::Push(int64_t committed_log_index, int64_t pre_log_term,
                                LogEntry log_entry) {
     std::lock_guard<std::mutex> lock(mutex_);
     // RAFTCPP_CHECK(log_entry.log_index >= 0);
-    RAFTCPP_CHECK(log_entry.log_index() >= 0);
+    RAFTCPP_CHECK(log_entry.index() >= 0);
 
     /// Ignore if duplicated log_index.
-    if (all_log_entries_.count(log_entry.log_index()) > 0) {
-        RAFTCPP_LOG(RLL_DEBUG) << "Duplicated log index = " << log_entry.log_index();
+    if (all_log_entries_.count(log_entry.index()) > 0) {
+        RAFTCPP_LOG(RLL_DEBUG) << "Duplicated log index = " << log_entry.index();
     }
 
-    auto pre_log_index = log_entry.log_index() - 1;
-    if (log_entry.log_index() > 0) {
+    auto pre_log_index = log_entry.index() - 1;
+    if (log_entry.index() > 0) {
         auto it = all_log_entries_.find(pre_log_index);
-        if (it == all_log_entries_.end() || it->second.termid() != pre_log_term) {
+        if (it == all_log_entries_.end() || it->second.term() != pre_log_term) {
             next_index_ = pre_log_index;
             push_log_result_ = false;
 
@@ -55,22 +55,22 @@ void NonLeaderLogManager::Push(int64_t committed_log_index, int32_t pre_log_term
         }
     }
 
-    auto req_term = log_entry.termid();
-    auto it = all_log_entries_.find(log_entry.log_index());
-    if (it != all_log_entries_.end() && it->second.termid() != req_term) {
-        auto index = log_entry.log_index();
+    auto req_term = log_entry.term();
+    auto it = all_log_entries_.find(log_entry.index());
+    if (it != all_log_entries_.end() && it->second.term() != req_term) {
+        auto index = log_entry.index();
         while ((it = all_log_entries_.find(index)) != all_log_entries_.end()) {
             all_log_entries_.erase(it);
             index++;
         }
 
-        next_index_ = log_entry.log_index();
+        next_index_ = log_entry.index();
         RAFTCPP_LOG(RLL_DEBUG) << "conflict at log index = " << next_index_;
     }
 
-    all_log_entries_[log_entry.log_index()] = log_entry;
-    if (log_entry.log_index() >= next_index_) {
-        next_index_ = log_entry.log_index() + 1;
+    all_log_entries_[log_entry.index()] = log_entry;
+    if (log_entry.index() >= next_index_) {
+        next_index_ = log_entry.index() + 1;
     }
 
     push_log_result_ = true;

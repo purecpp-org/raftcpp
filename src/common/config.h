@@ -1,8 +1,8 @@
 #pragma once
 
+#include <map>
 #include <regex>
 #include <string>
-#include <vector>
 
 #include "endpoint.h"
 
@@ -17,9 +17,11 @@ public:
 
     static Config From(const std::string &config_str);
 
-    std::vector<Endpoint> GetOtherEndpoints() const { return other_endpoints_; }
+    const std::map<int64_t, Endpoint>& GetOtherEndpoints() const { return other_endpoints_; }
 
-    Endpoint GetThisEndpoint() const { return this_endpoint_; }
+    Endpoint GetThisEndpoint() const { return this_endpoint_.second; }
+
+    int64_t GetThisId() const { return this_endpoint_.first; }
 
     Config(const Config &c) = default;
 
@@ -28,9 +30,9 @@ public:
     bool GreaterThanHalfNodesNum(size_t num) const { return num > GetNodesNum() / 2; }
 
     std::string ToString() const {
-        std::string s = this_endpoint_.ToString();
+        std::string s = this_endpoint_.second.ToString();
         for (const auto &e : other_endpoints_) {
-            s.append("," + e.ToString());
+            s.append("," + e.second.ToString());
         }
         return s;
     }
@@ -52,12 +54,14 @@ public:
             return false;
         }
 
-        std::vector<Endpoint> v1 = other_endpoints_;
-        std::vector<Endpoint> v2 = c.other_endpoints_;
-        std::sort(v1.begin(), v1.end(), Endpoint());
-        std::sort(v2.begin(), v2.end(), Endpoint());
+        for (auto this_iter = other_endpoints_.begin(), c_iter = c.other_endpoints_.begin();
+            (this_iter != other_endpoints_.end()) && (c_iter != c.other_endpoints_.end()); ++this_iter, ++c_iter) {
+            if (this_iter->first != c_iter->first) {
+                return false;
+            }
+        }
 
-        return v1 == v2;
+        return true;
     };
 
     bool operator!=(const Config &c) const { return !(*this == c); }
@@ -66,11 +70,11 @@ public:
 
 private:
     // Push to other endpoints.
-    void PushBack(const Endpoint &endpoint) { other_endpoints_.push_back(endpoint); }
+    void PushBack(int64_t id , Endpoint endpoint) { other_endpoints_.emplace(id, endpoint); }
 
-    std::vector<Endpoint> other_endpoints_;
+    std::map<int64_t, Endpoint> other_endpoints_;
 
-    Endpoint this_endpoint_;
+    std::pair<int64_t, Endpoint> this_endpoint_;
 };
 
 }  // namespace common

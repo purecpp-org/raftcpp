@@ -8,10 +8,10 @@
 namespace raftcpp {
 
 LeaderLogManager::LeaderLogManager(
-    NodeID this_node_id, std::function<AllRpcClientType()> get_all_rpc_clients_func,
+    int64_t this_node_id, std::function<AllRpcClientType()> get_all_rpc_clients_func,
     const std::shared_ptr<common::TimerManager> &timer_manager)
     : io_service_(),
-      this_node_id_(std::move(this_node_id)),
+      this_node_id_(this_node_id),
       get_all_rpc_clients_func_(get_all_rpc_clients_func),
       all_log_entries_(),
       timer_manager_(timer_manager) {
@@ -19,14 +19,11 @@ LeaderLogManager::LeaderLogManager(
                                  std::bind(&LeaderLogManager::DoPushLogs, this));
 }
 
-void LeaderLogManager::Push(const TermID &term_id,
-                            const std::shared_ptr<PushLogsRequest> &request) {
+void LeaderLogManager::Push(int64_t term_id, LogEntry &entry) {
     std::lock_guard<std::mutex> lock(mutex_);
     ++curr_log_index_;
-    LogEntry entry;
-    entry.set_termid(term_id.getTerm());
-    entry.set_log_index(curr_log_index_);
-    entry.set_data(request->log().data());
+    entry.set_term(term_id);
+    entry.set_index(curr_log_index_);
     all_log_entries_[curr_log_index_] = entry;
 }
 
@@ -46,7 +43,7 @@ void LeaderLogManager::Stop() {
 }
 
 void LeaderLogManager::TryAsyncCommitLogs(
-    const NodeID &node_id, size_t next_log_index,
+    int64_t node_id, size_t next_log_index,
     std::function<void(int64_t)> committed_callback) {
     /// TODO(qwang): Trigger commit.
 
@@ -92,7 +89,7 @@ void LeaderLogManager::DoPushLogs() {
             auto it = all_log_entries_.find(next_log_index_to_be_sent - 1);
             if (it != all_log_entries_.end()) {
                 // pre_log_term_num = it->second.term_id.getTerm();
-                pre_log_term_num = it->second.termid();
+                pre_log_term_num = it->second.term();
             }
         }
 
