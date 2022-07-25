@@ -6,7 +6,10 @@ namespace raftcpp {
 
 class RaftcppConstants {
 public:
-    constexpr static uint64_t DEFAULT_ELECTION_TIMER_TIMEOUT_MS = 3000;
+    /// Election timeout, randomly selected from the range of base ~ top
+    constexpr static uint64_t DEFAULT_ELECTION_TIMER_TIMEOUT_BASE_MS = 1500;
+
+    constexpr static uint64_t DEFAULT_ELECTION_TIMER_TIMEOUT_TOP_MS = 3000;
 
     constexpr static uint64_t DEFAULT_VOTE_TIMER_TIMEOUT_MS = 2000;
 
