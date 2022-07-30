@@ -8,7 +8,6 @@
 
 #include "blocking_queue_interface.h"
 #include "blocking_queue_mutex_impl.h"
-#include "external/asio/_virtual_includes/asio/asio/io_service.hpp"
 #include "proto/raft.grpc.pb.h"
 #include "proto/raft.pb.h"
 #include "src/common/constants.h"
@@ -18,18 +17,18 @@
 
 namespace raftcpp {
 
-using AllRpcClientType = std::unordered_map<NodeID, std::shared_ptr<raftrpc::Stub>>;
+using AllRpcClientType = std::unordered_map<int64_t, std::shared_ptr<raftrpc::Stub>>;
 
 /// TODO(qwang): Should clean all inmemory data once this is Ran().
 class LeaderLogManager final {
 public:
-    explicit LeaderLogManager(NodeID this_node_id,
+    explicit LeaderLogManager(int64_t this_node_id,
                               std::function<AllRpcClientType()> get_all_rpc_clients_func,
                               const std::shared_ptr<common::TimerManager> &timer_manager);
 
     ~LeaderLogManager() { timer_manager_->StopTimer(RaftcppConstants::TIMER_PUSH_LOGS); }
 
-    void Push(const TermID &term_id, const std::shared_ptr<PushLogsRequest> &request);
+    void Push(int64_t term_id, LogEntry &entry);
 
     void Run(std::unordered_map<int64_t, LogEntry> &logs, int64_t committedIndex);
 
@@ -55,7 +54,7 @@ private:
     /// Try to commit the logs asynchronously. If a log was replied
     /// by more than one half of followers, it will be async-commit,
     /// and apply the user state machine. otherwise we don't dump it.
-    void TryAsyncCommitLogs(const NodeID &node_id, size_t next_log_index,
+    void TryAsyncCommitLogs(int64_t node_id, size_t next_log_index,
                             std::function<void(int64_t)> committed_callback);
 
     void DoPushLogs();
@@ -71,16 +70,16 @@ private:
     std::unordered_map<int64_t, LogEntry> all_log_entries_;
 
     /// The map that contains the non-leader nodes to the next_log_index.
-    std::unordered_map<NodeID, int64_t> next_log_indexes_;
+    std::unordered_map<int64_t, int64_t> next_log_indexes_;
 
     /// The map that contains the non-leader nodes to follower already has max log index.
-    std::unordered_map<NodeID, int64_t> match_log_indexes_;
+    std::unordered_map<int64_t, int64_t> match_log_indexes_;
 
     /// The function to get all rpc clients to followers(Including this node self).
     std::function<AllRpcClientType()> get_all_rpc_clients_func_;
 
     /// ID of this node.
-    NodeID this_node_id_;
+    int64_t this_node_id_;
 
     asio::io_service io_service_;
 
