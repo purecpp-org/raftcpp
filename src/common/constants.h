@@ -11,8 +11,6 @@ public:
 
     constexpr static uint64_t DEFAULT_ELECTION_TIMER_TIMEOUT_TOP_MS = 3000;
 
-    constexpr static uint64_t DEFAULT_VOTE_TIMER_TIMEOUT_MS = 2000;
-
     /// Note that the heartbeat interval must be smaller than election timeout.
     /// Otherwise followers will always request pre vote.
     constexpr static uint64_t DEFAULT_HEARTBEAT_INTERVAL_MS = 2000;
@@ -28,8 +26,6 @@ public:
 
     /// timer keys
     constexpr static const char *TIMER_PUSH_LOGS = "push_logs_timer";
-
-    constexpr static const char *TIMER_VOTE = "vote_timer";
 
     constexpr static const char *TIMER_HEARTBEAT = "heartbeat_timer";
 
