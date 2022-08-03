@@ -139,8 +139,8 @@ grpc::Status RaftNode::HandleRequestPreVote(::grpc::ServerContext *context,
         if (request->term() > curr_term_) {
             RAFTCPP_LOG(RLL_DEBUG)
                 << "HandleRequestPreVote Received a RequestPreVote,now  step down";
-            StepBack(request->term());
-            
+            BecomeFollower(request->term());
+            RescheduleElection();
         }
     }
     return grpc::Status::OK;
@@ -166,9 +166,7 @@ void RaftNode::OnPreVote(const asio::error_code &ec, ::raftcpp::PreVoteResponse 
                               << this->config_.GetThisEndpoint().ToString()
                               << " has became a candidate now.";
         ++curr_term_;
-        timer_manager_->StopTimer(RaftcppConstants::TIMER_ELECTION);
-        timer_manager_->StartTimer(RaftcppConstants::TIMER_VOTE,
-                                   RaftcppConstants::DEFAULT_VOTE_TIMER_TIMEOUT_MS);
+        RescheduleElection();
         this->RequestVote();
     } else {
     }
@@ -224,8 +222,8 @@ grpc::Status RaftNode::HandleRequestVote(::grpc::ServerContext *context,
     } else if (curr_state_ == RaftState::CANDIDATE || curr_state_ == RaftState::LEADER) {
         // TODO(qwang):
         if (request->term() > curr_term_) {
-            StepBack(request->term());
-            
+            BecomeFollower(request->term());
+            RescheduleElection();
         }
     }
     return grpc::Status::OK;
@@ -244,24 +242,7 @@ void RaftNode::OnVote(const asio::error_code &ec, ::raftcpp::VoteResponse respon
         // so stop the election timer and send the vote rpc request to all nodes.
         //
         // TODO(qwang): We should post these rpc methods to a separated io service.
-        curr_state_ = RaftState::LEADER;
-        RAFTCPP_LOG(RLL_INFO) << "This node "
-                              << this->config_.GetThisEndpoint().ToString()
-                              << " has became a leader now";
-        ++curr_term_;
-        timer_manager_->StopTimer(RaftcppConstants::TIMER_VOTE);
-        timer_manager_->StopTimer(RaftcppConstants::TIMER_ELECTION);
-        timer_manager_->ResetTimer(RaftcppConstants::TIMER_HEARTBEAT,
-                                   RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS);
-
-        BroadcastHeartbeat();
-
-        // This node became the leader, so run the leader log manager.
-        leader_log_manager_->Run(non_leader_log_manager_->Logs(),
-                                 non_leader_log_manager_->CommittedLogIndex());
-        LogEntry entry;
-        leader_log_manager_->Push(curr_term_, entry);  // no-op
-        non_leader_log_manager_->Stop();
+        BecomeLeader();
     } else {
     }
 }
@@ -319,44 +300,90 @@ void RaftNode::ConnectToOtherNodes() {
 }
 
 void RaftNode::InitTimers() {
-    timer_manager_->RegisterTimer(RaftcppConstants::TIMER_ELECTION,
-                                  std::bind(&RaftNode::RequestPreVote, this));
+    timer_manager_->RegisterTimer(RaftcppConstants::TIMER_ELECTION, [this]{
+        std::lock_guard<std::recursive_mutex> guard{mutex_};
+        if (curr_state_ == RaftState::FOLLOWER) {
+            BecomePerCandidate();
+            RequestPreVote();
+        } else if (curr_state_ == RaftState::PERCANDIDATE) {
+            BecomeCandidate();
+            RequestVote();
+        } else {
+            RAFTCPP_LOG(RLL_ERROR) << "An unexpect error occurred when the election timeout";
+        }
+        RescheduleElection();
+    });
     timer_manager_->RegisterTimer(RaftcppConstants::TIMER_HEARTBEAT,
                                   std::bind(&RaftNode::BroadcastHeartbeat, this));
-    timer_manager_->RegisterTimer(RaftcppConstants::TIMER_VOTE,
-                                  std::bind(&RaftNode::RequestVote, this));
 
-    timer_manager_->StartTimer(RaftcppConstants::TIMER_ELECTION,
-                               randomer_.TakeOne(1000, 2000));
+    timer_manager_->StartTimer(RaftcppConstants::TIMER_ELECTION, GetRandomizedElectionTimeout());
     timer_manager_->Run();
 }
 
-void RaftNode::StepBack(int64_t term_id) {
+void RaftNode::BecomeFollower(int64_t term, int64_t leader_id = -1) {
+    // In order to better control the time of resetting the election timer,
+    // do not RescheduleElection() here first
+    // RescheduleElection();
     timer_manager_->StopTimer(RaftcppConstants::TIMER_HEARTBEAT);
-    timer_manager_->StopTimer(RaftcppConstants::TIMER_VOTE);
-    RescheduleElection();
-
     curr_state_ = RaftState::FOLLOWER;
+    curr_term_ = term;
+    leader_node_id_ = leader_id;
+    vote_for_ = -1;
     leader_log_manager_->Stop();
     non_leader_log_manager_->Run(leader_log_manager_->Logs(),
                                  leader_log_manager_->CommittedLogIndex());
-    curr_term_ = term_id;
-}
-
-void RaftNode::BecomeFollower(int64_t term, int64_t leader_id = -1) {
-
+    RAFTCPP_LOG(RLL_INFO) << "Node[" << this_node_id_ << "] became follower at term " << term;
 }
 
 void RaftNode::BecomePerCandidate() {
-
+    // Becoming a pre-candidate does not increase curr_term_ or change vote_for_.
+    curr_state_ = RaftState::PERCANDIDATE;
+    leader_node_id_ = -1;
+    RAFTCPP_LOG(RLL_INFO) << "Node[" << this_node_id_ << "] became PerCandidate at term " << curr_term_;
 }
 
 void RaftNode::BecomeCandidate() {
-
+    curr_state_ = RaftState::CANDIDATE;
+    ++curr_term_;
+    vote_for_ = this_node_id_;
+    RAFTCPP_LOG(RLL_INFO) << "Node[" << this_node_id_ << "] became Candidate at term " << curr_term_;
 }
 
 void RaftNode::BecomeLeader() {
+    timer_manager_->StopTimer(RaftcppConstants::TIMER_ELECTION);
 
+    curr_state_ = RaftState::LEADER;
+    leader_node_id_ = this_node_id_;
+    
+    // After becoming a leader, the leader does not know the logs of other nodes, 
+    // so he needs to synchronize the logs with other nodes. The leader does not know 
+    // the status of other nodes in the cluster, so he chooses to keep trying. 
+    // Nextindex and matchindex are used to save the next log index to be synchronized
+    // and the matched log index of other nodes respectively. The initialization value 
+    // of nextindex is lastindex+1, that is, the leader's last log sequence number +1. 
+    // Therefore, in fact, this log sequence number does not exist. Obviously, the leader
+    // does not expect to synchronize successfully at one time, but takes out a value 
+    // to test. The initialization value of matchindex is 0, which is easy to understand.
+    // Because it has not been synchronized with any node successfully, it is directly 0.
+    for ([[maybe_unused]] auto& [id, _] : config_.GetOtherEndpoints()) {
+        // TODO
+        // nextIndex[id] = lastIndex() + 1
+        // matchIndex[id] = 0;
+    }
+
+    RAFTCPP_LOG(RLL_INFO) << "Node[" << this_node_id_ << "] became Leader at term " << curr_term_;
+
+    leader_log_manager_->Run(non_leader_log_manager_->Logs(),
+                                 non_leader_log_manager_->CommittedLogIndex());
+    // The leader cannot submit the entry of non current term, so submit an empty entry 
+    // to indirectly submit the entry of previous term
+    LogEntry empty;
+    leader_log_manager_->Push(curr_term_, empty);
+    non_leader_log_manager_->Stop();
+
+    BroadcastHeartbeat();
+
+    timer_manager_->StartTimer(RaftcppConstants::TIMER_HEARTBEAT, RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS);
 }
 
 uint64_t RaftNode::GetRandomizedElectionTimeout() {
@@ -369,10 +396,6 @@ void RaftNode::RescheduleElection() {
 }
 
 void RaftNode::ReplicateOneRound(int64_t node_id) {
-    std::lock_guard<std::recursive_mutex> guard{mutex_};
-    if (curr_state_ != RaftState::LEADER) {
-        return;
-    }
     AppendEntriesRequest request;
     auto context = std::make_shared<grpc::ClientContext>();
     auto response = std::make_shared<AppendEntriesResponse>();
@@ -385,6 +408,10 @@ void RaftNode::ReplicateOneRound(int64_t node_id) {
 
 // With the heartbeat, the follower's log will be replicated to the same location as the leader
 void RaftNode::BroadcastHeartbeat() {
+    std::lock_guard<std::recursive_mutex> guard{mutex_};
+    if (curr_state_ != RaftState::LEADER) {
+        return;
+    }
     for ([[maybe_unused]] auto& [id, _] : config_.GetOtherEndpoints()) {
         // This is asynchronous replication
         ReplicateOneRound(id);
