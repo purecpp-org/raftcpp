@@ -77,42 +77,43 @@ void RaftNode::PushEntry(LogEntry &entry) {
 
 void RaftNode::RequestPreVote() {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
-    RAFTCPP_LOG(RLL_DEBUG) << "Node " << this->config_.GetThisEndpoint().ToString()
-                           << " request prevote";
-    // only follower can request pre_vote
-    if (curr_state_ != RaftState::FOLLOWER) return;
-
-    // Note that it's to clear the set.
-    responded_pre_vote_nodes_.clear();
-    ++curr_term_;
-    // Pre vote for myself.
-    responded_pre_vote_nodes_.insert(this->config_.GetThisEndpoint().ToString());
-    for (auto &item : all_rpc_clients_) {
-        auto &rpc_client = item.second;
-        RAFTCPP_LOG(RLL_DEBUG) << "RequestPreVote Node "
-                               << this->config_.GetThisEndpoint().ToString()
-                               << " request_vote_callback client" << rpc_client;
-
-        // Construct pre vote request to other nodes(followers and candidates).
-        PreVoteRequest request;
-        request.set_candidate_id(config_.GetThisId());
-        request.set_term(curr_term_);
-        
-        // TODO implment last log
-        request.set_last_log_index(0);
-        request.set_last_log_term(0);
-
-        // We can receive response from other handle pre votes messages;
-        PreVoteResponse response;
-        grpc::ClientContext context;
-        auto s = rpc_client->HandleRequestPreVote(&context, request, &response);
-        if (s.ok()) {
-            // TODO: Handle empty string
-            const asio::error_code ec;
-            OnPreVote(ec, response);
-        } else {
-            std::cout << s.error_code() << ": " << s.error_message() << std::endl;
-        }
+    RAFTCPP_LOG(RLL_DEBUG) << "Node[" << this_node_id_ << "] request pre-vote";
+    PreVoteRequest request;
+    request.set_candidate_id(config_.GetThisId());
+    request.set_term(curr_term_);
+    // TODO implment last log
+    request.set_last_log_index(0);
+    request.set_last_log_term(0);
+    // Count the results of the vote and have one vote at the beginning
+    std::shared_ptr<int64_t> granted_votes = std::make_shared<int64_t>(1);
+    auto context = std::make_shared<grpc::ClientContext>();
+    auto response = std::make_shared<PreVoteResponse>();
+    for (auto& peer : config_.GetOtherEndpoints()) {
+        all_rpc_clients_[peer.first]->async()
+            ->HandleRequestPreVote(context.get(), &request, response.get(),
+            [context, request, response, granted_votes, this](grpc::Status s){
+            if(!s.ok()) {
+                RAFTCPP_LOG(RLL_DEBUG) << s.error_code() << ": " << s.error_message();
+                return;
+            }
+            std::lock_guard<std::recursive_mutex> guard{mutex_};
+            if (curr_term_ != request.term() || curr_state_ != RaftState::PRECANDIDATE) return;
+            if (response->vote_granted()) {
+                ++(*granted_votes);
+                if (config_.GreaterThanHalfNodesNum(*granted_votes)) {
+                    RAFTCPP_LOG(RLL_DEBUG) << "Node[" << this_node_id_ << "] receives majority pre-votes in term " << curr_term_;
+                    BecomeCandidate();
+                    RescheduleElection();
+                    RequestVote();
+                }
+            } else if (response->term() > curr_term_) {
+                RAFTCPP_LOG(RLL_DEBUG) << "Node[" << this_node_id_ << "] finds a new leader Node[" 
+                                       << response->leader_id() << "] with term " << response->term() 
+                                       << " and steps down in term " << curr_term_;
+                BecomeFollower(response->term(), response->leader_id());
+                RescheduleElection();
+            }
+        });
     }
 }
 
@@ -120,133 +121,124 @@ grpc::Status RaftNode::HandleRequestPreVote(::grpc::ServerContext *context,
                                             const ::raftcpp::PreVoteRequest *request,
                                             ::raftcpp::PreVoteResponse *response) {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
-    if (this->config_.GetThisId() == request->candidate_id())
+    RAFTCPP_LOG(RLL_DEBUG) << "Node[" << this_node_id_ << "] received a RequestPreVote from node[" 
+                           << request->candidate_id() << "] at term " << curr_term_;
+    
+    // Reject to pre-vote for pre-candidates whose terms are shorter than this node
+    if (request->term() < curr_term_) {
+        response->set_vote_granted(false);
+        response->set_term(curr_term_);
+        response->set_leader_id(leader_node_id_);
         return grpc::Status::OK;
-    RAFTCPP_LOG(RLL_DEBUG) << "HandleRequestPreVote this node "
-                           << this->config_.GetThisEndpoint().ToString()
-                           << " Received a RequestPreVote from node "
-                           << request->candidate_id() << " term_id=" << request->term();
-
-    if (curr_state_ == RaftState::FOLLOWER) {
-        if (request->term() > curr_term_) {
-            curr_term_ = request->term();
-            timer_manager_->ResetTimer(RaftcppConstants::TIMER_ELECTION,
-                                       RaftcppConstants::DEFAULT_HEARTBEAT_INTERVAL_MS +
-                                           randomer_.TakeOne(1000, 2000));
-
-        }
-    } else if (curr_state_ == RaftState::CANDIDATE || curr_state_ == RaftState::LEADER) {
-        if (request->term() > curr_term_) {
-            RAFTCPP_LOG(RLL_DEBUG)
-                << "HandleRequestPreVote Received a RequestPreVote,now  step down";
-            BecomeFollower(request->term());
-            RescheduleElection();
-        }
     }
+
+    if (request->term() > curr_term_) {
+        BecomeFollower(request->term());
+    }
+
+    // TODO log match
+    // Reject requests that entry older than this node
+    // if (!logs.isUpToDate(request->last_log_index(), request->last_log_term())) {
+    //     response->set_vote_granted(false);
+    //     response->set_term(curr_term_);
+    //     response->set_leader_id(leader_node_id_);
+    //     return grpc::Status::OK;
+    // }
+
+
+    // Note: The election timer is reset after successful voting, which will help the liveness problem of 
+    // choosing the master under the condition of network instability
+    RescheduleElection();
+
+    response->set_vote_granted(true);
+    response->set_term(curr_term_);
+    response->set_leader_id(leader_node_id_);
+
     return grpc::Status::OK;
-}
-
-void RaftNode::OnPreVote(const asio::error_code &ec, ::raftcpp::PreVoteResponse response) {
-    // RAFTCPP_LOG(RLL_DEBUG) << "Received response of request_vote from node " << data
-    //                        << ", error code= " << ec.message();
-    if (ec.message() == "Transport endpoint is not connected") return;
-    // Exclude itself under multi-thread
-    // RAFTCPP_LOG(RLL_DEBUG) << "OnPreVote Response node: " << data.data()
-    //                        << " this node:" << this->config_.GetThisEndpoint().ToString();
-    std::lock_guard<std::recursive_mutex> guard{mutex_};
-    //responded_pre_vote_nodes_.insert(data.data());
-    if (this->config_.GreaterThanHalfNodesNum(responded_pre_vote_nodes_.size()) &&
-        this->curr_state_ == RaftState::FOLLOWER) {
-        // There are greater than a half of the nodes responded the pre vote request,
-        // so stop the election timer and send the vote rpc request to all nodes.
-        //
-        // TODO(qwang): We should post these rpc methods to a separated io service.
-        curr_state_ = RaftState::CANDIDATE;
-        RAFTCPP_LOG(RLL_INFO) << "This node "
-                              << this->config_.GetThisEndpoint().ToString()
-                              << " has became a candidate now.";
-        ++curr_term_;
-        RescheduleElection();
-        this->RequestVote();
-    } else {
-    }
 }
 
 void RaftNode::RequestVote() {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
-    RAFTCPP_LOG(RLL_DEBUG) << "Node " << this->config_.GetThisEndpoint().ToString()
-                           << " request vote";
-    // only candidate can request vote
-    if (curr_state_ != RaftState::CANDIDATE) return;
-
-    // Note that it's to clear the set.
-    // TODO(qwang): Considering that whether it shouldn't clear this in every request,
-    // because some nodes may responds the last request.
-    responded_vote_nodes_.clear();
-    // Vote for myself.
-    responded_vote_nodes_.insert(this->config_.GetThisEndpoint().ToString());
-    for (auto &item : all_rpc_clients_) {
-        VoteRequest request;
-        request.set_candidate_id(config_.GetThisId());
-        request.set_term(curr_term_);
-        
-        // TODO implment last log
-        request.set_last_log_index(0);
-        request.set_last_log_term(0);
-
-        VoteResponse response;
-        grpc::ClientContext context;
-        auto s = item.second->HandleRequestVote(&context, request, &response);
-
-        if (s.ok()) {
-            const asio::error_code ec;
-            OnVote(ec, response);
-        } else {
-            std::cout << s.error_code() << ": " << s.error_message() << std::endl;
-        }
+    RAFTCPP_LOG(RLL_DEBUG) << "Node[" << this_node_id_ << "] request vote";
+    VoteRequest request;
+    request.set_candidate_id(config_.GetThisId());
+    request.set_term(curr_term_);
+    // TODO implment last log
+    request.set_last_log_index(0);
+    request.set_last_log_term(0);
+    vote_for_ = this_node_id_;
+    // Count the results of the vote and have one vote at the beginning
+    std::shared_ptr<int64_t> granted_votes = std::make_shared<int64_t>(1);
+    auto context = std::make_shared<grpc::ClientContext>();
+    auto response = std::make_shared<VoteResponse>();
+    for (auto& peer : config_.GetOtherEndpoints()) {
+        all_rpc_clients_[peer.first]->async()
+            ->HandleRequestVote(context.get(), &request, response.get(),
+            [context, request, response, granted_votes, this](grpc::Status s){
+            if(!s.ok()) {
+                RAFTCPP_LOG(RLL_DEBUG) << s.error_code() << ": " << s.error_message();
+                return;
+            }
+            std::lock_guard<std::recursive_mutex> guard{mutex_};
+            if (curr_term_ != request.term() || curr_state_ != RaftState::CANDIDATE) return;
+            if (response->vote_granted()) {
+                ++(*granted_votes);
+                if (config_.GreaterThanHalfNodesNum(*granted_votes)) {
+                    RAFTCPP_LOG(RLL_DEBUG) << "Node[" << this_node_id_ << "] receives majority votes in term " << curr_term_;
+                    BecomeLeader();
+                }
+            } else if (response->term() > curr_term_) {
+                RAFTCPP_LOG(RLL_DEBUG) << "Node[" << this_node_id_ << "] finds a new leader Node[" 
+                                       << response->leader_id() << "] with term " << response->term() 
+                                       << " and steps down in term " << curr_term_;
+                BecomeFollower(response->term(), response->leader_id());
+                RescheduleElection();
+            }
+        });
     }
 }
 
 grpc::Status RaftNode::HandleRequestVote(::grpc::ServerContext *context,
                                          const ::raftcpp::VoteRequest *request,
                                          ::raftcpp::VoteResponse *response) {
-    RAFTCPP_LOG(RLL_DEBUG) << "Node " << this->config_.GetThisEndpoint().ToString()
-                           << " response vote";
     std::lock_guard<std::recursive_mutex> guard{mutex_};
-    if (curr_state_ == RaftState::FOLLOWER) {
-        if (request->term() > curr_term_) {
-            curr_term_ = request->term();
-            RescheduleElection();
-            
-        }
-    } else if (curr_state_ == RaftState::CANDIDATE || curr_state_ == RaftState::LEADER) {
-        // TODO(qwang):
-        if (request->term() > curr_term_) {
-            BecomeFollower(request->term());
-            RescheduleElection();
-        }
+    RAFTCPP_LOG(RLL_DEBUG) << "Node[" << this_node_id_ << "] received a RequestVote from node[" 
+                           << request->candidate_id() << "] at term " << curr_term_;
+    // Reject to vote for candidates whose terms are shorter than this node
+    if (request->term() < curr_term_ ||
+            // A situation in which more than one candidate request vote
+            (request->term() == curr_term_ && vote_for_ != -1 && vote_for_ != request->candidate_id())) {
+        response->set_vote_granted(false);
+        response->set_term(curr_term_);
+        response->set_leader_id(leader_node_id_);
+        return grpc::Status::OK;
     }
+
+    if (request->term() > curr_term_) {
+        BecomeFollower(request->term());
+    }
+
+    // TODO log match
+    // Reject requests that entry older than this node
+    // if (!logs.isUpToDate(request->last_log_index(), request->last_log_term())) {
+    //     response->set_vote_granted(false);
+    //     response->set_term(curr_term_);
+    //     response->set_leader_id(leader_node_id_);
+    //     return grpc::Status::OK;
+    // }
+
+    vote_for_ = request->candidate_id();
+
+    // Note: The election timer is reset after successful voting, which will help the liveness problem of 
+    // choosing the master under the condition of network instability
+    RescheduleElection();
+
+    response->set_vote_granted(true);
+    response->set_term(curr_term_);
+    response->set_leader_id(leader_node_id_);
+
     return grpc::Status::OK;
 }
-
-void RaftNode::OnVote(const asio::error_code &ec, ::raftcpp::VoteResponse response) {
-    if (ec.message() == "Transport endpoint is not connected") return;
-    // Exclude itself under multi-thread
-    // RAFTCPP_LOG(RLL_DEBUG) << "OnVote Response node: " << data.data()
-    //                        << " this node:" << this->config_.GetThisEndpoint().ToString();
-    std::lock_guard<std::recursive_mutex> guard{mutex_};
-    // responded_vote_nodes_.insert(data.data());
-    if (this->config_.GreaterThanHalfNodesNum(responded_vote_nodes_.size()) &&
-        this->curr_state_ == RaftState::CANDIDATE) {
-        // There are greater than a half of the nodes responded the pre vote request,
-        // so stop the election timer and send the vote rpc request to all nodes.
-        //
-        // TODO(qwang): We should post these rpc methods to a separated io service.
-        BecomeLeader();
-    } else {
-    }
-}
-
 
 grpc::Status RaftNode::HandleRequestAppendEntries(::grpc::ServerContext *context,
                                        const ::raftcpp::AppendEntriesRequest *request,
@@ -302,12 +294,10 @@ void RaftNode::ConnectToOtherNodes() {
 void RaftNode::InitTimers() {
     timer_manager_->RegisterTimer(RaftcppConstants::TIMER_ELECTION, [this]{
         std::lock_guard<std::recursive_mutex> guard{mutex_};
-        if (curr_state_ == RaftState::FOLLOWER) {
-            BecomePerCandidate();
+        // Except for LEADER, all other states become PreCandidate after election timeout
+        if (curr_state_ != RaftState::LEADER) {
+            BecomePreCandidate();
             RequestPreVote();
-        } else if (curr_state_ == RaftState::PERCANDIDATE) {
-            BecomeCandidate();
-            RequestVote();
         } else {
             RAFTCPP_LOG(RLL_ERROR) << "An unexpect error occurred when the election timeout";
         }
@@ -335,11 +325,11 @@ void RaftNode::BecomeFollower(int64_t term, int64_t leader_id = -1) {
     RAFTCPP_LOG(RLL_INFO) << "Node[" << this_node_id_ << "] became follower at term " << term;
 }
 
-void RaftNode::BecomePerCandidate() {
+void RaftNode::BecomePreCandidate() {
     // Becoming a pre-candidate does not increase curr_term_ or change vote_for_.
-    curr_state_ = RaftState::PERCANDIDATE;
+    curr_state_ = RaftState::PRECANDIDATE;
     leader_node_id_ = -1;
-    RAFTCPP_LOG(RLL_INFO) << "Node[" << this_node_id_ << "] became PerCandidate at term " << curr_term_;
+    RAFTCPP_LOG(RLL_INFO) << "Node[" << this_node_id_ << "] became PreCandidate at term " << curr_term_;
 }
 
 void RaftNode::BecomeCandidate() {

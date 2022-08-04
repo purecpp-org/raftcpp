@@ -56,8 +56,6 @@ public:
                                    const ::raftcpp::VoteRequest *request,
                                    ::raftcpp::VoteResponse *response);
 
-    void OnVote(const asio::error_code &ec, ::raftcpp::VoteResponse response);
-
     grpc::Status HandleRequestAppendEntries(::grpc::ServerContext *context,
                                        const ::raftcpp::AppendEntriesRequest *request,
                                        ::raftcpp::AppendEntriesResponse *response);
@@ -87,7 +85,7 @@ private:
 
     void BecomeFollower(int64_t term, int64_t leader_id = -1);
 
-    void BecomePerCandidate();
+    void BecomePreCandidate();
 
     void BecomeCandidate();
 
@@ -124,14 +122,6 @@ private:
     std::unordered_map<int64_t, std::shared_ptr<raftrpc::Stub>> all_rpc_clients_;
 
     common::Config config_;
-
-    // This set is used to cache the endpoints of the nodes which is responded for the pre
-    // vote request.
-    std::unordered_set<std::string> responded_pre_vote_nodes_;
-
-    // This set is used to cache the endpoints of the nodes which is reponded for the vote
-    // request.
-    std::unordered_set<std::string> responded_vote_nodes_;
 
     // The recursive mutex that protects all of the node state.
     mutable std::recursive_mutex mutex_;
