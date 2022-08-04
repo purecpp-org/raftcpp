@@ -52,7 +52,7 @@ message AppendEntriesRequest {
 message AppendEntriesResponse {
     bool success = 1;           // true if follower contained entry matching prev_log_index and prev_log_term
     int64 term = 2;             // current Term, for leader to update itself
-    int64 leader_id = 3;        // current Leader id, for candidate to update itself
+    int64 leader_id = 3;        // current Leader id, for leader to update itself
     int64 conflict_index = 4;   // if the append fails, this field indicates the index of the log conflict
     int64 conflict_term = 5;    // the term of the conflict index
 }

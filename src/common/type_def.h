@@ -7,7 +7,7 @@ namespace raftcpp {
  */
 enum class RaftState {
     LEADER = 0,
-    PERCANDIDATE = 1,
+    PRECANDIDATE = 1,
     CANDIDATE = 2,
     FOLLOWER = 3,
 };
