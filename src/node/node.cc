@@ -136,6 +136,14 @@ grpc::Status RaftNode::HandleRequestPreVote(::grpc::ServerContext *context,
         BecomeFollower(request->term());
     }
 
+    // If the current node has not election timeout and there is a leader, reject the voting request
+    if (curr_state_ == RaftState::FOLLOWER && leader_node_id_ != -1) {
+        response->set_vote_granted(false);
+        response->set_term(curr_term_);
+        response->set_leader_id(leader_node_id_);
+        return grpc::Status::OK;
+    }
+
     // TODO log match
     // Reject requests that entry older than this node
     // if (!logs.isUpToDate(request->last_log_index(), request->last_log_term())) {
