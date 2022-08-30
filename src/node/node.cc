@@ -80,7 +80,7 @@ void RaftNode::RequestPreVote() {
     RAFTCPP_LOG(RLL_DEBUG) << "Node[" << this_node_id_ << "] request pre-vote";
     PreVoteRequest request;
     request.set_candidate_id(config_.GetThisId());
-    request.set_term(curr_term_);
+    request.set_term(curr_term_ + 1);
     // TODO implment last log
     request.set_last_log_index(0);
     request.set_last_log_term(0);
@@ -123,17 +123,19 @@ grpc::Status RaftNode::HandleRequestPreVote(::grpc::ServerContext *context,
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     RAFTCPP_LOG(RLL_DEBUG) << "Node[" << this_node_id_ << "] received a RequestPreVote from node[" 
                            << request->candidate_id() << "] at term " << curr_term_;
-    
-    // Reject to pre-vote for pre-candidates whose terms are shorter than this node
-    if (request->term() < curr_term_) {
+    // The current node is leader or in the leader's lease
+    if (curr_state_ == RaftState::LEADER || curr_state_ == RaftState::FOLLOWER && leader_node_id_ != -1) {
         response->set_vote_granted(false);
         response->set_term(curr_term_);
         response->set_leader_id(leader_node_id_);
         return grpc::Status::OK;
     }
-
-    if (request->term() > curr_term_) {
-        BecomeFollower(request->term());
+    // Reject to pre-vote for pre-candidates whose terms are shorter than or equal to this node
+    if (request->term() <= curr_term_) {
+        response->set_vote_granted(false);
+        response->set_term(curr_term_);
+        response->set_leader_id(leader_node_id_);
+        return grpc::Status::OK;
     }
 
     // TODO log match

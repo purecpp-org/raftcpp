@@ -47,9 +47,7 @@ public:
     grpc::Status HandleRequestPreVote(::grpc::ServerContext *context,
                                       const ::raftcpp::PreVoteRequest *request,
                                       ::raftcpp::PreVoteResponse *response);
-
-    void OnPreVote(const asio::error_code &ec, ::raftcpp::PreVoteResponse response);
-
+                                      
     void RequestVote();
 
     grpc::Status HandleRequestVote(::grpc::ServerContext *context,
