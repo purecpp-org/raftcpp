@@ -301,12 +301,15 @@ void RaftNode::InitTimers() {
             BecomePreCandidate();
             RequestPreVote();
         } else {
-            RAFTCPP_LOG(RLL_ERROR) << "An unexpect error occurred when the election timeout";
+            // Leader try to CheckQuorum after election timeout
+            BroadcastHeartbeat(true);
         }
         RescheduleElection();
     });
-    timer_manager_->RegisterTimer(RaftcppConstants::TIMER_HEARTBEAT,
-                                  std::bind(&RaftNode::BroadcastHeartbeat, this));
+
+    timer_manager_->RegisterTimer(RaftcppConstants::TIMER_HEARTBEAT, [this] {
+        BroadcastHeartbeat(false);
+    });
 
     timer_manager_->StartTimer(RaftcppConstants::TIMER_ELECTION, GetRandomizedElectionTimeout());
     timer_manager_->Run();
@@ -342,8 +345,6 @@ void RaftNode::BecomeCandidate() {
 }
 
 void RaftNode::BecomeLeader() {
-    timer_manager_->StopTimer(RaftcppConstants::TIMER_ELECTION);
-
     curr_state_ = RaftState::LEADER;
     leader_node_id_ = this_node_id_;
     
@@ -387,28 +388,57 @@ void RaftNode::RescheduleElection() {
     timer_manager_->ResetTimer(RaftcppConstants::TIMER_ELECTION, GetRandomizedElectionTimeout());
 }
 
-void RaftNode::ReplicateOneRound(int64_t node_id) {
+void RaftNode::ReplicateOneRound(int64_t node_id, std::shared_ptr<int64_t> quorum) {
     AppendEntriesRequest request;
     auto context = std::make_shared<grpc::ClientContext>();
     auto response = std::make_shared<AppendEntriesResponse>();
     all_rpc_clients_[node_id]->async()
         ->HandleRequestAppendEntries(context.get(), &request, response.get(),
-        [context, response](grpc::Status s){
-        // TODO asynchronous replication
+        [context, response, quorum, this](grpc::Status s){
+            if(!s.ok()) {
+                RAFTCPP_LOG(RLL_DEBUG) << s.error_code() << ": " << s.error_message();
+                return;
+            }
+            std::lock_guard<std::recursive_mutex> guard{mutex_};
+            if (response->term() < curr_term_ || curr_state_ != RaftState::LEADER) {
+                return;
+            }
+            if (response->term() > curr_term_) {
+                BecomeFollower(response->term(), response->leader_id());
+                return;
+            }
+            
+            // TODO
+
+            if (quorum) {
+                ++(*quorum);
+            }
     });
 }
 
 // With the heartbeat, the follower's log will be replicated to the same location as the leader
-void RaftNode::BroadcastHeartbeat() {
+void RaftNode::BroadcastHeartbeat(bool check_quorum) {
     std::lock_guard<std::recursive_mutex> guard{mutex_};
     if (curr_state_ != RaftState::LEADER) {
         return;
     }
-    for ([[maybe_unused]] auto& [id, _] : config_.GetOtherEndpoints()) {
+    std::shared_ptr<int64_t> quorum;
+    if (check_quorum) {
+        quorum = std::make_shared<int64_t>(1, [term = curr_term_, this](int64_t *p){
+            std::lock_guard<std::recursive_mutex> guard{mutex_};
+            if (curr_term_ != term || curr_state_ != RaftState::LEADER) {
+                return;
+            }
+            if (!config_.GreaterThanHalfNodesNum(*p)) {
+                BecomeFollower(term);
+            }
+            delete p;
+        });
+    }
+    for (auto& peer : config_.GetOtherEndpoints()) {
         // This is asynchronous replication
-        ReplicateOneRound(id);
+        ReplicateOneRound(peer.first, quorum);
     }
 }
-
 
 }  // namespace raftcpp::node

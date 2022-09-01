@@ -95,10 +95,10 @@ private:
     void RescheduleElection();
 
     // Asynchronous replication to a raft node
-    void ReplicateOneRound(int64_t node_id);
+    void ReplicateOneRound(int64_t node_id, std::shared_ptr<int64_t> quorum);
 
     // With the heartbeat, the follower's log will be replicated to the same location as the leader
-    void BroadcastHeartbeat();
+    void BroadcastHeartbeat(bool check_quorum = false);
 
 private:
     // Current state of this node. This initial value of this should be a FOLLOWER.
