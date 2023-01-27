@@ -100,6 +100,9 @@ private:
     // With the heartbeat, the follower's log will be replicated to the same location as the leader
     void BroadcastHeartbeat();
 
+    // Check whether most slave nodes are active
+    bool QuorumActive();
+
 private:
     // Current state of this node. This initial value of this should be a FOLLOWER.
     RaftState curr_state_ = RaftState::FOLLOWER;
@@ -136,6 +139,9 @@ private:
     std::unique_ptr<LeaderLogManager> leader_log_manager_;
 
     std::unique_ptr<NonLeaderLogManager> non_leader_log_manager_;
+
+    // Record the active status of nodes
+    std::map<int64_t, bool> actives_;
 };
 
 }  // namespace node
