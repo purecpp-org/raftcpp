@@ -310,6 +310,7 @@ void RaftNode::InitTimers() {
         }
         RescheduleElection();
     });
+
     timer_manager_->RegisterTimer(RaftcppConstants::TIMER_HEARTBEAT,
                                   std::bind(&RaftNode::BroadcastHeartbeat, this));
 
