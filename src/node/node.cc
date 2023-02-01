@@ -296,15 +296,21 @@ void RaftNode::ConnectToOtherNodes() {
 void RaftNode::InitTimers() {
     timer_manager_->RegisterTimer(RaftcppConstants::TIMER_ELECTION, [this]{
         std::lock_guard<std::recursive_mutex> guard{mutex_};
-        // Except for LEADER, all other states become PreCandidate after election timeout
-        if (curr_state_ != RaftState::LEADER) {
+        if (curr_state_ == RaftState::FOLLOWER) {
             BecomePreCandidate();
             RequestPreVote();
-        } else {
-            RAFTCPP_LOG(RLL_ERROR) << "An unexpect error occurred when the election timeout";
+        } else if (curr_state_ == RaftState::PRECANDIDATE) {
+            BecomeFollower(curr_term_);
+        } else if (curr_state_ == RaftState::CANDIDATE) {
+            RequestVote();
+        } else if (curr_state_ == RaftState::LEADER) {
+            if (QuorumActive()) {
+                RAFTCPP_LOG(RLL_DEBUG) << "Node[" << this_node_id_ << "] stepped down to follower since quorum is not active";
+            }
         }
         RescheduleElection();
     });
+
     timer_manager_->RegisterTimer(RaftcppConstants::TIMER_HEARTBEAT,
                                   std::bind(&RaftNode::BroadcastHeartbeat, this));
 
@@ -342,8 +348,6 @@ void RaftNode::BecomeCandidate() {
 }
 
 void RaftNode::BecomeLeader() {
-    timer_manager_->StopTimer(RaftcppConstants::TIMER_ELECTION);
-
     curr_state_ = RaftState::LEADER;
     leader_node_id_ = this_node_id_;
     
@@ -393,8 +397,16 @@ void RaftNode::ReplicateOneRound(int64_t node_id) {
     auto response = std::make_shared<AppendEntriesResponse>();
     all_rpc_clients_[node_id]->async()
         ->HandleRequestAppendEntries(context.get(), &request, response.get(),
-        [context, response](grpc::Status s){
+        [context, response, node_id, this](grpc::Status s) {
+        if(!s.ok()) {
+            std::lock_guard<std::recursive_mutex> guard{mutex_};
+            actives_[node_id] = false;
+            return;
+        }
+        std::lock_guard<std::recursive_mutex> guard{mutex_};
         // TODO asynchronous replication
+
+        actives_[node_id] = true;
     });
 }
 
@@ -408,6 +420,17 @@ void RaftNode::BroadcastHeartbeat() {
         // This is asynchronous replication
         ReplicateOneRound(id);
     }
+}
+
+bool RaftNode::QuorumActive() {
+    size_t active = 1;
+    for (auto& item: actives_) {
+        if (item.second) {
+            active++;
+            item.second = false;
+        }
+    }
+    return config_.GreaterThanHalfNodesNum(active);
 }
 
 
