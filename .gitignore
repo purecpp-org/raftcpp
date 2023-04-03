@@ -29,3 +29,7 @@ log
 
 # MacOS
 .DS_Store
+
+# protobuf
+**/*.pb.cc
+**/*.pb.h
