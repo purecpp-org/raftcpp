@@ -4,55 +4,58 @@ package raftcpp;
 service raftrpc {
     rpc HandleRequestPreVote(PreVoteRequest) returns (PreVoteResponse) {}
     rpc HandleRequestVote(VoteRequest) returns (VoteResponse) {}
-    rpc HandleRequestAppendEntries(AppendEntriesRequest) returns (AppendEntriesResponse) {}
+    rpc HandleRequestAppendEntries(AppendEntriesRequest) returns (AppendEntriesResponse) {
+    }
 }
 
 message PreVoteRequest {
-    int64 candidate_id = 1;     // the ID of the candidate who requested the ballot
-    int64 term = 2;             // candidate's term
-    int64 last_log_index = 3;   // index of candidate’s last log entry
-    int64 last_log_term = 4;    // term of candidate’s last log entry
+    int64 candidate_id = 1;    // the ID of the candidate who requested the ballot
+    int64 term = 2;            // candidate's term
+    int64 last_log_index = 3;  // index of candidate’s last log entry
+    int64 last_log_term = 4;   // term of candidate’s last log entry
 }
 
 message PreVoteResponse {
-    bool vote_granted = 1;      // true means candidate received vote
-    int64 term = 2;             // current Term, for candidate to update itself
-    int64 leader_id = 3;        // current Leader id, for candidate to update itself
+    bool vote_granted = 1;  // true means candidate received vote
+    int64 term = 2;         // current Term, for candidate to update itself
+    int64 leader_id = 3;    // current Leader id, for candidate to update itself
 }
 
 message VoteRequest {
-    int64 candidate_id = 1;     // the ID of the candidate who requested the ballot
-    int64 term = 2;             // candidate's term
-    int64 last_log_index = 3;   // index of candidate’s last log entry
-    int64 last_log_term = 4;    // term of candidate’s last log entry
+    int64 candidate_id = 1;    // the ID of the candidate who requested the ballot
+    int64 term = 2;            // candidate's term
+    int64 last_log_index = 3;  // index of candidate’s last log entry
+    int64 last_log_term = 4;   // term of candidate’s last log entry
 }
 
 message VoteResponse {
-    bool vote_granted = 1;      // true means candidate received vote
-    int64 term = 2;             // current Term, for candidate to update itself
-    int64 leader_id = 3;        // current Leader id, for candidate to update itself
+    bool vote_granted = 1;  // true means candidate received vote
+    int64 term = 2;         // current Term, for candidate to update itself
+    int64 leader_id = 3;    // current Leader id, for candidate to update itself
 }
 
-
 message LogEntry {
-    int64 term = 1;             // log term
-    int64 index = 2;            // log index
-    string data = 3;            // log data
+    int64 term = 1;   // log term
+    int64 index = 2;  // log index
+    string data = 3;  // log data
 }
 
 message AppendEntriesRequest {
-    int64 leader_id = 1;        // so follower can redirect clients
-    int64 term = 2;             // leader’s term
-    int64 leader_commit = 3;    // leader’s commitIndex
-    int64 prev_log_index = 4;   // index of log entry immediately preceding new ones
-    int64 prev_log_term = 5;    // term of prev_log_lndex entry
-    repeated LogEntry entries = 6; // log entries to store (empty for heartbeat; may send more than one for efficiency)
+    int64 leader_id = 1;            // so follower can redirect clients
+    int64 term = 2;                 // leader’s term
+    int64 leader_commit = 3;        // leader’s commitIndex
+    int64 prev_log_index = 4;       // index of log entry immediately preceding new ones
+    int64 prev_log_term = 5;        // term of prev_log_lndex entry
+    repeated LogEntry entries = 6;  // log entries to store (empty for heartbeat; may send
+                                    // more than one for efficiency)
 }
 
 message AppendEntriesResponse {
-    bool success = 1;           // true if follower contained entry matching prev_log_index and prev_log_term
-    int64 term = 2;             // current Term, for leader to update itself
-    int64 leader_id = 3;        // current Leader id, for leader to update itself
-    int64 conflict_index = 4;   // if the append fails, this field indicates the index of the log conflict
-    int64 conflict_term = 5;    // the term of the conflict index
+    bool success =
+        1;  // true if follower contained entry matching prev_log_index and prev_log_term
+    int64 term = 2;       // current Term, for leader to update itself
+    int64 leader_id = 3;  // current Leader id, for leader to update itself
+    int64 conflict_index =
+        4;  // if the append fails, this field indicates the index of the log conflict
+    int64 conflict_term = 5;  // the term of the conflict index
 }
