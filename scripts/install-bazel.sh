@@ -44,7 +44,7 @@ esac
   fi
 )
 
-version="5.1.1"
+version="5.3.0"
 if [ "${OSTYPE}" = "msys" ]; then
   target="${MINGW_DIR-/usr}/bin/bazel.exe"
   mkdir -p "${target%/*}"

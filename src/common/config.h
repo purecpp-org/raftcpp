@@ -17,7 +17,9 @@ public:
 
     static Config From(const std::string &config_str);
 
-    const std::map<int64_t, Endpoint>& GetOtherEndpoints() const { return other_endpoints_; }
+    const std::map<int64_t, Endpoint> &GetOtherEndpoints() const {
+        return other_endpoints_;
+    }
 
     Endpoint GetThisEndpoint() const { return this_endpoint_.second; }
 
@@ -50,18 +52,8 @@ public:
         if (&c == this) {
             return true;
         }
-        if (this_endpoint_ != c.this_endpoint_) {
-            return false;
-        }
-
-        for (auto this_iter = other_endpoints_.begin(), c_iter = c.other_endpoints_.begin();
-            (this_iter != other_endpoints_.end()) && (c_iter != c.other_endpoints_.end()); ++this_iter, ++c_iter) {
-            if (this_iter->first != c_iter->first) {
-                return false;
-            }
-        }
-
-        return true;
+        return this_endpoint_ == c.this_endpoint_ &&
+               other_endpoints_ == c.other_endpoints_;
     };
 
     bool operator!=(const Config &c) const { return !(*this == c); }
@@ -70,7 +62,9 @@ public:
 
 private:
     // Push to other endpoints.
-    void PushBack(int64_t id , Endpoint endpoint) { other_endpoints_.emplace(id, endpoint); }
+    void PushBack(int64_t id, Endpoint endpoint) {
+        other_endpoints_.emplace(id, endpoint);
+    }
 
     std::map<int64_t, Endpoint> other_endpoints_;
 

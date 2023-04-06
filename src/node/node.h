@@ -47,16 +47,16 @@ public:
     grpc::Status HandleRequestPreVote(::grpc::ServerContext *context,
                                       const ::raftcpp::PreVoteRequest *request,
                                       ::raftcpp::PreVoteResponse *response);
-                                      
+
     void RequestVote();
 
     grpc::Status HandleRequestVote(::grpc::ServerContext *context,
                                    const ::raftcpp::VoteRequest *request,
                                    ::raftcpp::VoteResponse *response);
 
-    grpc::Status HandleRequestAppendEntries(::grpc::ServerContext *context,
-                                       const ::raftcpp::AppendEntriesRequest *request,
-                                       ::raftcpp::AppendEntriesResponse *response);
+    grpc::Status HandleRequestAppendEntries(
+        ::grpc::ServerContext *context, const ::raftcpp::AppendEntriesRequest *request,
+        ::raftcpp::AppendEntriesResponse *response);
 
     RaftState GetCurrState() {
         std::lock_guard<std::recursive_mutex> guard{mutex_};
@@ -97,7 +97,8 @@ private:
     // Asynchronous replication to a raft node
     void ReplicateOneRound(int64_t node_id);
 
-    // With the heartbeat, the follower's log will be replicated to the same location as the leader
+    // With the heartbeat, the follower's log will be replicated to the same location as
+    // the leader
     void BroadcastHeartbeat();
 
     // Check whether most slave nodes are active

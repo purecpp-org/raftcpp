@@ -76,7 +76,7 @@ private:
 
     std::function<bool()> is_leader_func_ = nullptr;
 
-    std::atomic_bool is_running_ = false;
+    std::atomic_bool is_running_{false};
 
     int64_t this_node_id_;
 
